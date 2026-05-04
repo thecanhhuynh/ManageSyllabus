@@ -1,50 +1,29 @@
 import axios from "axios";
 
-const API_URL = import.meta.env.VITE_API_BASE_URL;
+const BASE_URL = process.env.VITE_API_BASE_URL;
+const CLIENT_ID = process.meta.env.VITE_CLIENT_ID;
+const CLIENT_SECRET = process.meta.env.VITE_CLIENT_SECRET;
 
 export const endpoints = {
     login: '/login',
-    profile: '/profile',
+    profile: '/users/current-user',
     users: '/users',
-    user_details: (user_id) => `users/${user_id}`,
-    subjects: '/subjects',
-    subject_details: (subject_id) => `subjects/${subject_id}`,
-    syllabuses: '/syllabuses',
-    roles: '/roles',
 };
 
 
-const axiosClient = axios.create({
-    baseURL: API_URL,
-    headers: {
-        'Content-Type': 'application/json',
-    },
+export default axios.create({
+    baseURL: BASE_URL,
 });
 
-axiosClient.interceptors.request.use(
-    (config) => {
-        const token = localStorage.getItem('access_token');
-        if (token) {
-            config.headers.Authorization = `Bearer ${token}`;
-        }
-        return config;
-    },
-    (error) => Promise.reject(error)
-);
+export const authApis = () => {
+    const token = localStorage.getItem('access_token');
+    return axios.create({
+        baseURL: BASE_URL,
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+    });
+};
 
-axiosClient.interceptors.response.use(
-    (response) => response,
-    (error) => {
-        if (error.response && error.response.status === 401) {
-            console.error('Token không hợp lệ hoặc đã hết hạn!');
-            localStorage.removeItem('access_token');
-            localStorage.removeItem('user_info');
-            if (window.location.pathname !== '/login') {
-                window.location.href = '/login';
-            }
-        }
-        return Promise.reject(error);
-    }
-);
+export { CLIENT_ID, CLIENT_SECRET };
 
-export default axiosClient;
