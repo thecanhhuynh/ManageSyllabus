@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 
 from pathlib import Path
 import os
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 MEDIA_ROOT = '%s/syllabuses/static/' % BASE_DIR
@@ -25,6 +26,7 @@ SECRET_KEY = 'django-insecure-xip=nlds614968_x=o4yy4i&w9zjkp*7)knb^67ux_td=3-1rh
 DEBUG = True
 
 ALLOWED_HOSTS = ['*']
+CORS_ALLOWED_ORIGINS = ["http://localhost:3000"]
 
 # Application definition
 
@@ -41,11 +43,13 @@ INSTALLED_APPS = [
     'rest_framework',
     'drf_yasg',
     'oauth2_provider',
+    'corsheaders'
 ]
 
 AUTH_USER_MODEL = 'syllabuses.User'
-
+CORS_ALLOW_CREDENTIALS = True
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -152,4 +156,3 @@ cloudinary.config(
 )
 CLIENT_ID = "ZcdECiY9HC3yewo5Z8LTPfUfUrZrUBiNHJnvBmTT"
 CLIENT_SECRET = "OLRlsGfMfKloGoDGLGC04xWUiwZhvdbgojU6PcjepvqXdZ0a1ox3Bmmswd4XoApRX8rYDRs14BQ8rSOx8Pzh1lr4lDO9OV4PbTSKv6xzpJKJK04HINUJHpIUEFLcxoFK"
-

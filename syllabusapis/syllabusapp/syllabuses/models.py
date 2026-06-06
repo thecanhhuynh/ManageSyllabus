@@ -29,8 +29,7 @@ class Faculty(BaseModel):
     name = models.CharField(max_length=100, unique=True)
 
 class Lecturer(BaseModel):
-    name = models.CharField(max_length=100, unique=True)
-    email = models.CharField(max_length=100, null=True, blank=True)
+    user = models.OneToOneField('User', on_delete=models.CASCADE, related_name='lecturer_profile')
     room = models.CharField(max_length=200, null=True, blank=True)
     faculty = models.ForeignKey(Faculty, on_delete=models.SET_NULL, null=True, blank=True, related_name='lecturers')
 
@@ -236,8 +235,6 @@ class TeachingSessionLearningMaterial(models.Model):
 # USER & ROLE
 # =============================================================================
 
-
-# Sử dụng AbstractBaseUser
 class User(AbstractUser):
     class UserRole(models.TextChoices):
         ADMIN = 'admin'
@@ -247,5 +244,4 @@ class User(AbstractUser):
     joined_date = models.DateTimeField(default=timezone.now)
     avatar = CloudinaryField('image', null=True)
     user_role = models.CharField(choices=UserRole.choices,max_length=20, default=UserRole.USER)
-    lecturer = models.OneToOneField(Lecturer, on_delete=models.SET_NULL, null=True, blank=True, related_name='user')
 
