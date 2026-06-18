@@ -1,0 +1,15 @@
+.chrome-tabs .ant-tabs-nav-wrap {
+    width: 100%;
+}
+
+.chrome-tabs .ant-tabs-nav-list {
+    width: 100%;
+}
+
+.chrome-tabs .ant-tabs-tab {
+    flex: 1;
+    justify-content: center;
+    max-width: 150px;
+    min-width: 60px;
+    transition: all 0.2s ease-in-out;
+}

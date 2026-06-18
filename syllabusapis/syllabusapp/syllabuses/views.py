@@ -1,13 +1,19 @@
 from django.shortcuts import render
 from django.views import generic
+from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import viewsets, status, generics, parsers, permissions, mixins
 from rest_framework.decorators import action, permission_classes
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
 
-from syllabuses.models import User
-from syllabuses.paginators import UserPaginator
-from syllabuses.serializer import UserSerializer, UserDetailSerializer
+from syllabuses import perms
+from syllabuses.filters import SyllabusFilter, SubjectFilter
+from syllabuses.models import User, Syllabus, Faculty, Subject, AttributeGroup, TypeRequirement, \
+    ProgrammeLearningOutcome
+from syllabuses.paginators import UserPaginator, SyllabusPagination, FacultyPagination, SubjectsPagination
+from syllabuses.serializer import UserSerializer, UserDetailSerializer, SyllabusSerializer, FacultySerializer, \
+    SubjectSerializer, SyllabusDetailSerializer, AttributeGroupListSerializer, TypeRequirementSerializer, \
+    ProgrammeLearningOutcomeSerializer
 
 
 class UserView(mixins.ListModelMixin,
@@ -41,3 +47,54 @@ class UserView(mixins.ListModelMixin,
             return Response(serializer.data, status=status.HTTP_200_OK)
         serializer = self.get_serializer(u)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+class SyllabusView(viewsets.ModelViewSet):
+    queryset = Syllabus.objects.all().order_by("-created_date")
+    pagination_class = SyllabusPagination
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = SyllabusFilter
+    def get_serializer_class(self):
+        if self.action in ['retrieve', 'update', 'partial_update']:
+            return SyllabusDetailSerializer
+        return SyllabusSerializer
+
+    def get_permissions(self):
+        if self.action == 'create':
+            return [perms.IsSpecialist()]
+        return [permissions.IsAuthenticated()]
+
+    def get_queryset(self):
+        query = self.queryset
+
+        user = self.request.user
+        if user.is_superuser:
+            return query
+        return query.filter(lecturer__user=user)
+
+class FacultyView(viewsets.ViewSet, generics.ListAPIView):
+    queryset = Faculty.objects.all().order_by("-created_date")
+    serializer_class = FacultySerializer
+    pagination_class = FacultyPagination
+
+class SubjectView(viewsets.ViewSet, generics.ListAPIView):
+    queryset = Subject.objects.all()
+    serializer_class = SubjectSerializer
+    pagination_class = SubjectsPagination
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = SubjectFilter
+
+
+class AttributeGroupView(viewsets.ViewSet, generics.ListAPIView):
+    queryset = AttributeGroup.objects.all()
+    serializer_class = AttributeGroupListSerializer
+
+class TypeRequirementView(viewsets.ViewSet, generics.ListAPIView):
+    queryset = TypeRequirement.objects.all()
+    serializer_class = TypeRequirementSerializer
+
+class ProgrammeLearningOutcomeView(viewsets.ViewSet, generics.ListAPIView):
+    queryset = ProgrammeLearningOutcome.objects.all()
+    serializer_class = ProgrammeLearningOutcomeSerializer
+
+
+

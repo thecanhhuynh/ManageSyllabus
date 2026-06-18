@@ -7,6 +7,12 @@ from syllabuses import views
 
 routes = DefaultRouter()
 routes.register('users', views.UserView )
+routes.register('syllabuses', views.SyllabusView)
+routes.register('faculties', views.FacultyView)
+routes.register('subjects', views.SubjectView)
+routes.register('attribute-groups', views.AttributeGroupView)
+routes.register('type-requirements', views.TypeRequirementView)
+routes.register('programme-learning-outcomes', views.ProgrammeLearningOutcomeView)
 urlpatterns = [
     path('', include(routes.urls)),
 ]

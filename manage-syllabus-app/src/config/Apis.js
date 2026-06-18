@@ -4,6 +4,13 @@ export const endpoints = {
   login: "/o/token/",
   register: "/register/",
   profile: "/users/current-user/",
+  syllabuses: "/syllabuses/",
+  "syllabus-detail": (syllabusId) => `/syllabuses/${syllabusId}/`,
+  faculties: "/faculties/",
+  subjects: "/subjects/",
+  "attribute-groups": "/attribute-groups/",
+  "type-requirements": "/type-requirements/",
+  "programme-learning-outcomes": "/programme-learning-outcomes/",
 };
 const CLIENT_ID = process.env.REACT_APP_CLIENT_ID;
 const CLIENT_SECRET = process.env.REACT_APP_CLIENT_SECRET;
