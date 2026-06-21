@@ -1,7 +1,7 @@
 import django_filters
 from django.db.models import Q
 
-from syllabuses.models import Syllabus, Subject
+from syllabuses.models import Syllabus, Subject, LearningMaterial
 
 
 class SyllabusFilter(django_filters.FilterSet):
@@ -22,3 +22,9 @@ class SubjectFilter(django_filters.FilterSet):
         return queryset.filter(
             Q(id__icontains=value) | Q(name__icontains=value)
         )
+
+class LearningMaterialsFilter(django_filters.FilterSet):
+    q = django_filters.CharFilter(field_name='name', lookup_expr='icontains')
+    class Meta:
+        model = LearningMaterial
+        fields = ['q']

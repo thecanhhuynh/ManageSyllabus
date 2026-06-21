@@ -72,6 +72,9 @@ const ObjectiveOutcomeReference = ({refPath}) => {
                     borderRadius: "6px",
                   }}
                 >
+                  <Form.Item name={[field.name, "id"]} hidden>
+                    <Input />
+                  </Form.Item>
                   <Col span={14}>
                     <Form.Item
                       {...field}
@@ -99,12 +102,11 @@ const ObjectiveOutcomeReference = ({refPath}) => {
                       name={[field.name, "programme_learning_outcomes"]}
                       label="Thuộc PLO"
                       style={{marginBottom: 0}}
-                      // Xử lý chuyển đổi array objects (API) <-> array IDs (Select mode multiple)
                       getValueProps={(valueArray) => ({
                         value: valueArray?.map((v) => v.id) || [],
                       })}
                       getValueFromEvent={(selectedIds) =>
-                        selectedIds.map((id) => ({id}))
+                        selectedIds ? selectedIds.map((id) => ({id})) : []
                       }
                     >
                       <Select
@@ -113,8 +115,8 @@ const ObjectiveOutcomeReference = ({refPath}) => {
                         placeholder="Chọn PLO..."
                         options={ploOptions}
                         loading={isFetching}
-                        optionLabelProp="tagLabel" // Rút gọn chỉ hiển thị "PLO2" trên tag
-                        maxTagCount="responsive" // Ẩn bớt nếu chọn quá nhiều
+                        optionLabelProp="tagLabel"
+                        maxTagCount="responsive"
                       />
                     </Form.Item>
                   </Col>

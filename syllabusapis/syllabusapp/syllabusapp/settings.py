@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'ckeditor',
     'ckeditor_uploader',
     'rest_framework',
+    'django_filters',
     'drf_yasg',
     'oauth2_provider',
     'corsheaders'

@@ -142,8 +142,7 @@ class TypeLearningMaterial(BaseModel):
 
 
 class LearningMaterial(BaseModel):
-    name = models.CharField(max_length=100, unique=True)
-    type_material = models.ForeignKey(TypeLearningMaterial, on_delete=models.CASCADE, related_name='learning_materials')
+    name = models.CharField(max_length=255, unique=True)
 
 
 # =============================================================================
@@ -248,6 +247,10 @@ class TeachingSession(models.Model):
 class SyllabusLearningMaterial(models.Model):
     syllabus = models.ForeignKey(Syllabus, on_delete=models.CASCADE)
     learning_material = models.ForeignKey(LearningMaterial, on_delete=models.CASCADE)
+    type_material = models.ForeignKey(TypeLearningMaterial, on_delete=models.CASCADE)
+
+    class Meta:
+        unique_together = ('syllabus', 'learning_material')
 
 
 class SubSectionAttributeValue(models.Model):

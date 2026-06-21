@@ -22,6 +22,21 @@ const App = () => {
   const [selectionDictionary, setSelectionDictionary] = useState({});
   const [isDictLoading, setIsDictLoading] = useState(true);
 
+  const autoLogin = async () => {
+    const token = cookies.load("token");
+    if (token) {
+      try {
+        let res = await authApis(token).get(endpoints["profile"]);
+        dispatch({
+          type: "login",
+          payload: res.data,
+        });
+      } catch (error) {
+        console.error("Tự động đăng nhập thất bại:", error);
+      }
+    }
+  };
+
   const fetchMasterData = async () => {
     try {
       setIsDictLoading(true);
@@ -43,6 +58,7 @@ const App = () => {
   };
   useEffect(() => {
     fetchMasterData();
+    autoLogin();
   }, []);
   return (
     <ConfigProvider

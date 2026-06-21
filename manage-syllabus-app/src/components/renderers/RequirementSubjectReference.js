@@ -2,7 +2,6 @@ import React, {useState, useEffect, useRef} from "react";
 import {Form, Input, Select, Button, Row, Col, message} from "antd";
 import {PlusOutlined, DeleteOutlined} from "@ant-design/icons";
 import {authApis, endpoints} from "../../config/Apis";
-// import { authApis, endpoints } from ".......";
 
 const RequirementSubjectReference = ({refPath}) => {
   const form = Form.useFormInstance();
@@ -12,17 +11,13 @@ const RequirementSubjectReference = ({refPath}) => {
   const [hasNext, setHasNext] = useState(false);
   const [q, setQ] = useState("");
   const searchTimeoutRef = useRef(null);
-  const [requirementTypeOptions, setRequirementTypeOptions] = useState([]);
+
+  const [reqTypeRawData, setReqTypeRawData] = useState([]);
 
   const loadRequirementTypeOptions = async () => {
     try {
       const res = await authApis().get(endpoints["type-requirements"]);
-      const formattedOptions = res.data.map((item) => ({
-        label: item.name,
-        value: item.id,
-      }));
-
-      setRequirementTypeOptions(formattedOptions);
+      setReqTypeRawData(res.data);
     } catch (error) {
       console.error(error);
     }
@@ -32,11 +27,9 @@ const RequirementSubjectReference = ({refPath}) => {
     try {
       setLoading(true);
       let url = `${endpoints["subjects"]}?page=${page}`;
-      if (q) {
-        url += `&q=${q}`;
-      }
+      if (q) url += `&q=${q}`;
+
       const res = await authApis().get(url);
-      setSubjectsList(res.data.results);
 
       if (res.status === 200) {
         const newData = res.data.results;
@@ -44,7 +37,7 @@ const RequirementSubjectReference = ({refPath}) => {
         if (page === 1) {
           setSubjectsList(newData);
         } else {
-          setSubjectsList([...subjectsList, ...newData]);
+          setSubjectsList((prev) => [...prev, ...newData]);
         }
       } else {
         message.error("Tải môn học thất bại");
@@ -60,7 +53,6 @@ const RequirementSubjectReference = ({refPath}) => {
     let timer = setTimeout(() => {
       loadSubjects();
     }, 500);
-
     return () => clearTimeout(timer);
   }, [page, q]);
 
@@ -74,12 +66,10 @@ const RequirementSubjectReference = ({refPath}) => {
     subjectName: sub.name,
   }));
 
-  const handleSubjectSelect = (value, option, fieldName) => {
-    form.setFieldValue(
-      [...refPath, fieldName, "subject_name"],
-      option.subjectName,
-    );
-  };
+  const requirementTypeOptions = reqTypeRawData.map((item) => ({
+    label: item.name,
+    value: item.id,
+  }));
 
   const handlePopupScroll = (e) => {
     const {target} = e;
@@ -94,11 +84,27 @@ const RequirementSubjectReference = ({refPath}) => {
     if (searchTimeoutRef.current) {
       clearTimeout(searchTimeoutRef.current);
     }
-
     searchTimeoutRef.current = setTimeout(() => {
       setQ(keyword);
       setPage(1);
     }, 500);
+  };
+
+  const handleSubjectSelect = (value, option, fieldName) => {
+    form.setFieldValue(
+      [...refPath, fieldName, "subject_name"],
+      option.subjectName,
+    );
+  };
+
+  const handleRequirementTypeSelect = (value, fieldName) => {
+    const selectedObj = reqTypeRawData.find((item) => item.id === value);
+    if (selectedObj) {
+      form.setFieldValue([...refPath, fieldName, "requirement_type"], {
+        id: selectedObj.id,
+        name: selectedObj.name,
+      });
+    }
   };
 
   return (
@@ -122,9 +128,9 @@ const RequirementSubjectReference = ({refPath}) => {
                 marginBottom: fields.length > 0 ? "16px" : "0",
               }}
             >
-              {fields.map((field) => (
+              {fields.map(({key, name, ...restField}) => (
                 <Row
-                  key={field.key}
+                  key={key}
                   gutter={12}
                   align="bottom"
                   style={{
@@ -135,10 +141,22 @@ const RequirementSubjectReference = ({refPath}) => {
                     borderRadius: "6px",
                   }}
                 >
+                  <Form.Item {...restField} name={[name, "id"]} hidden>
+                    <Input />
+                  </Form.Item>
+
+                  <Form.Item
+                    {...restField}
+                    name={[name, "subject_name"]}
+                    hidden
+                  >
+                    <Input />
+                  </Form.Item>
+
                   <Col span={10}>
                     <Form.Item
-                      {...field}
-                      name={[field.name, "subject_id"]}
+                      {...restField}
+                      name={[name, "subject_id"]}
                       label="Môn học điều kiện"
                       rules={[{required: true, message: "Vui lòng chọn môn"}]}
                       style={{marginBottom: 0}}
@@ -152,7 +170,7 @@ const RequirementSubjectReference = ({refPath}) => {
                         onSearch={handleSearch}
                         listHeight={250}
                         onChange={(val, opt) =>
-                          handleSubjectSelect(val, opt, field.name)
+                          handleSubjectSelect(val, opt, name)
                         }
                         onPopupScroll={handlePopupScroll}
                       />
@@ -161,15 +179,21 @@ const RequirementSubjectReference = ({refPath}) => {
 
                   <Col span={12}>
                     <Form.Item
-                      {...field}
-                      name={[field.name, "requirement_type"]}
+                      {...restField}
+                      name={[name, "requirement_type"]}
                       label="Loại điều kiện"
                       rules={[{required: true, message: "Chọn loại"}]}
                       style={{marginBottom: 0}}
+                      getValueProps={(val) => ({
+                        value: val && typeof val === "object" ? val.id : val,
+                      })}
                     >
                       <Select
                         options={requirementTypeOptions}
                         placeholder="Chọn..."
+                        onChange={(val) =>
+                          handleRequirementTypeSelect(val, name)
+                        }
                       />
                     </Form.Item>
                   </Col>
@@ -179,7 +203,7 @@ const RequirementSubjectReference = ({refPath}) => {
                       type="text"
                       danger
                       icon={<DeleteOutlined />}
-                      onClick={() => remove(field.name)}
+                      onClick={() => remove(name)}
                     />
                   </Col>
                 </Row>

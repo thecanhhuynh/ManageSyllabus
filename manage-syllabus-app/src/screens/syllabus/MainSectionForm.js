@@ -1,32 +1,77 @@
-import {Button, Form, message, Spin} from "antd";
-import {useState} from "react";
-import MySpinner from "../../components/MySpinner";
-import SubSectionRenderer from "../../components/SubSectionRender";
+import {Button, Col, Form, Input, message, Row, Spin} from "antd";
+import {useRef, useState, useEffect} from "react";
 import {SaveOutlined} from "@ant-design/icons";
+import {authApis, endpoints} from "../../config/Apis";
+import SubSectionRenderer from "../../components/SubSectionRender";
+
 const MainSectionForm = ({syllabusId, mainSection}) => {
   const [form] = Form.useForm();
   const [isSaving, setIsSaving] = useState(false);
+  const timerRef = useRef(null);
+  const isMountedRef = useRef(true);
+
   const initValues = {
     sub_sections: mainSection.sub_sections,
   };
 
-  const onFinish = async (values) => {
+  const handleSave = async (values) => {
     try {
-      setIsSaving(true);
       const payload = {
         main_sections: [
           {id: mainSection.id, sub_sections: values.sub_sections},
         ],
       };
+      console.log(payload);
 
-      message.success("Lưu thành công");
+      const res = await authApis().patch(
+        endpoints["syllabus-detail"](syllabusId),
+        payload,
+      );
+
+      if (res.status === 200) {
+        message.success("Lưu thành công");
+      }
     } catch (error) {
-      message.error("Lỗi khi lưu");
-      console.error(error);
+      console.error("Chi tiết lỗi:", error.response?.data);
+
+      if (error.response?.data) {
+        const errData = error.response.data;
+
+        let errorMsg = "Lỗi khi lưu";
+        if (errData.err_msg) {
+          errorMsg = Array.isArray(errData.err_msg)
+            ? errData.err_msg[0]
+            : errData.err_msg;
+        }
+
+        message.error(errorMsg);
+      }
     } finally {
-      setIsSaving(false);
+      if (isMountedRef.current) {
+        setIsSaving(false);
+      }
     }
   };
+
+  const onFinish = (values) => {
+    clearTimeout(timerRef.current);
+
+    setIsSaving(true);
+
+    timerRef.current = setTimeout(() => {
+      handleSave(values);
+    }, 500);
+  };
+
+  useEffect(() => {
+    isMountedRef.current = true;
+
+    return () => {
+      isMountedRef.current = false;
+      clearTimeout(timerRef.current);
+      setIsSaving(false);
+    };
+  }, []);
 
   return (
     <Spin spinning={isSaving} tip="Đang lưu...">
@@ -36,21 +81,42 @@ const MainSectionForm = ({syllabusId, mainSection}) => {
         initialValues={initValues}
         onFinish={onFinish}
       >
-        {mainSection.sub_sections?.map((subSection, subIndex) => (
-          <div key={subSection.id} style={{marginBottom: 16}}>
-            {subSection.name && (
-              <p style={{fontWeight: "bold"}}>{subSection.name}</p>
-            )}
+        <Row gutter={[16, 16]}>
+          {mainSection.sub_sections?.map((subSection, subIndex) => {
+            const colSpan =
+              subSection.display_mode === "textarea" ||
+              subSection.type === "reference"
+                ? 24
+                : 12;
 
-            <SubSectionRenderer
-              item={subSection}
-              basePath={["sub_sections", subIndex]}
-            />
-          </div>
-        ))}
+            return (
+              <Col span={colSpan} key={subSection.id}>
+                {subSection.name && (
+                  <p style={{fontWeight: "bold", marginBottom: 4}}>
+                    {subSection.position}. {subSection.name}
+                  </p>
+                )}
+
+                <Form.Item name={["sub_sections", subIndex, "id"]} hidden>
+                  <Input />
+                </Form.Item>
+
+                <SubSectionRenderer
+                  item={subSection}
+                  basePath={["sub_sections", subIndex]}
+                />
+              </Col>
+            );
+          })}
+        </Row>
 
         <Form.Item style={{textAlign: "right", marginTop: 24}}>
-          <Button type="primary" htmlType="submit" icon={<SaveOutlined />}>
+          <Button
+            type="primary"
+            htmlType="submit"
+            icon={<SaveOutlined />}
+            loading={isSaving}
+          >
             Lưu phần {mainSection.name}
           </Button>
         </Form.Item>

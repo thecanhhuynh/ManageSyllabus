@@ -1,5 +1,5 @@
 import React from "react";
-import {Form, InputNumber, Row, Col} from "antd";
+import {Form, InputNumber, Row, Col, Input} from "antd";
 
 const CreditReference = ({refPath}) => {
   return (
@@ -12,6 +12,9 @@ const CreditReference = ({refPath}) => {
       }}
     >
       <Row gutter={16}>
+        <Form.Item name={[...refPath, "id"]} hidden>
+          <Input />
+        </Form.Item>
         <Col span={8}>
           <Form.Item
             name={[...refPath, "number_theory"]}

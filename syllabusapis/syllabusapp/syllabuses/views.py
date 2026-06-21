@@ -7,13 +7,14 @@ from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
 
 from syllabuses import perms
-from syllabuses.filters import SyllabusFilter, SubjectFilter
+from syllabuses.filters import SyllabusFilter, SubjectFilter, LearningMaterialsFilter
 from syllabuses.models import User, Syllabus, Faculty, Subject, AttributeGroup, TypeRequirement, \
-    ProgrammeLearningOutcome
-from syllabuses.paginators import UserPaginator, SyllabusPagination, FacultyPagination, SubjectsPagination
+    ProgrammeLearningOutcome, LearningMaterial, TypeLearningMaterial
+from syllabuses.paginators import UserPaginator, SyllabusPagination, FacultyPagination, SubjectsPagination, \
+    LearningMaterialsPagination
 from syllabuses.serializer import UserSerializer, UserDetailSerializer, SyllabusSerializer, FacultySerializer, \
     SubjectSerializer, SyllabusDetailSerializer, AttributeGroupListSerializer, TypeRequirementSerializer, \
-    ProgrammeLearningOutcomeSerializer
+    ProgrammeLearningOutcomeSerializer, LearningMaterialSerializer
 
 
 class UserView(mixins.ListModelMixin,
@@ -96,5 +97,15 @@ class ProgrammeLearningOutcomeView(viewsets.ViewSet, generics.ListAPIView):
     queryset = ProgrammeLearningOutcome.objects.all()
     serializer_class = ProgrammeLearningOutcomeSerializer
 
+class LearningMaterialsView(viewsets.ViewSet, generics.ListAPIView):
+    queryset = LearningMaterial.objects.all()
+    serializer_class = LearningMaterialSerializer
+    pagination_class = LearningMaterialsPagination
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = LearningMaterialsFilter
+
+class TypeLearningMaterialsView(viewsets.ViewSet, generics.ListAPIView):
+    queryset = TypeLearningMaterial.objects.all()
+    serializer_class = TypeRequirementSerializer
 
 

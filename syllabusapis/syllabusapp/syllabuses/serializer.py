@@ -1,8 +1,10 @@
 from rest_framework import serializers
+from rest_framework.exceptions import ValidationError
 
 from syllabuses.models import User, Lecturer, Faculty, Syllabus, Subject, SubSection, MainSection, TextSubSection, \
     SelectionSubSection, AttributeGroup, AttributeValue, ReferenceSubSection, Credit, RequirementSubject, \
-    ProgrammeLearningOutcome, CourseObjective, CourseLearningOutcome, LearningMaterial, TypeRequirement
+    ProgrammeLearningOutcome, CourseObjective, CourseLearningOutcome, LearningMaterial, TypeRequirement, \
+    TypeLearningMaterial, SyllabusLearningMaterial, CloPloAssociation
 
 
 class FacultySerializer(serializers.ModelSerializer):
@@ -139,7 +141,7 @@ class ReferenceSubSectionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ReferenceSubSection
-        fields = ['id', 'position', 'type', 'code', 'reference_code', 'reference_data']
+        fields = ['id', 'name' ,'position', 'type', 'code', 'reference_code', 'reference_data']
 
     def get_reference_data(self, obj):
         syllabus = obj.main_section.syllabus
@@ -151,7 +153,7 @@ class ReferenceSubSectionSerializer(serializers.ModelSerializer):
             'requirement_subject': (RequirementSubjectSerializer, syllabus.subject.required_by_relation.all(), True),
             'objective_outcomes': (CourseObjectiveSerializer, syllabus.subject.course_objectives.all(), True),
             'course_learning_outcomes': (COwithCLOSerializer, syllabus.subject.course_objectives.all(), True),
-            'learning_material': (LearningMaterialSerializer, syllabus.learning_materials_rel.all(), True),
+            'learning_material': (SyllabusLearningMaterialSerializer, syllabus.syllabuslearningmaterial_set.all(), True),
         }
 
         strategy = strategy_map.get(code)
@@ -188,7 +190,8 @@ class SubSectionSerializer(serializers.ModelSerializer):
 
 
 class SectionSerializer(serializers.ModelSerializer):
-    sub_sections = SubSectionSerializer(many=True, read_only=True)
+    id = serializers.IntegerField(required=False)
+    sub_sections = SubSectionSerializer(many=True, required=False)
 
     class Meta:
         model = MainSection
@@ -196,11 +199,313 @@ class SectionSerializer(serializers.ModelSerializer):
 
 
 class SyllabusDetailSerializer(serializers.ModelSerializer):
-    main_sections = SectionSerializer(many=True, read_only=True)
+    main_sections = SectionSerializer(many=True, required=False)
 
     class Meta:
         model = Syllabus
         fields = ['id', 'name', 'status', 'main_sections']
+
+    def update(self, instance, validated_data):
+        validated_data.pop('main_sections', None)
+        instance = super().update(instance, validated_data)
+
+        main_sections_data = self.initial_data.get('main_sections', [])
+
+        for main_data in main_sections_data:
+            main_id = main_data.get('id')
+            if not main_id: continue
+
+            main_instance = MainSection.objects.filter(id=main_id, syllabus=instance).first()
+            if not main_instance: continue
+
+            for sub_data in main_data.get('sub_sections', []):
+                sub_id = sub_data.get('id')
+                if not sub_id: continue
+
+                sub_instance = SubSection.objects.filter(id=sub_id, main_section=main_instance).first()
+                if not sub_instance: continue
+
+                if sub_instance.type == 'text' and hasattr(sub_instance, 'textsubsection'):
+                    if 'content' in sub_data:
+                        sub_instance.textsubsection.content = sub_data['content']
+                        sub_instance.textsubsection.save()
+
+                elif sub_instance.type == 'selection' and hasattr(sub_instance, 'selectionsubsection'):
+                    if 'selected_values' in sub_data:
+                        val_ids = [item['id'] if isinstance(item, dict) else item for item in sub_data['selected_values']]
+                        sub_instance.selectionsubsection.selected_values.set(val_ids)
+
+                elif sub_instance.type == 'reference' and hasattr(sub_instance, 'referencesubsection'):
+                    ref_data = sub_data.get('reference_data')
+                    if ref_data is not None:
+                        ref_code = sub_instance.referencesubsection.reference_code
+                        print(f"--- DEBUG: ref_code là '{ref_code}' ---")
+
+                        strategy_map = {
+                            'credit': self._update_credit,
+                            'requirement_subject': self._update_requirement_subjects,
+                            'objectives_and_outcomes': self._update_objective_outcomes,
+                            'course_learning_outcomes':self._update_course_learning_outcomes,
+                            'learning_material': self._update_learning_material
+                        }
+
+                        update_func = strategy_map.get(ref_code)
+                        if update_func:
+                            print("--- DEBUG: Đã gọi được hàm update ---")
+                            update_func(instance, ref_data)
+                        else:
+                            print("--- DEBUG: KHÔNG TÌM THẤY HÀM MATCH VỚI ref_code ---")
+
+        return instance
+
+    def _update_credit(self, instance, ref_data):
+        id_credit = ref_data.get('id')
+        if id_credit:
+            Credit.objects.filter(id=id_credit).update(
+                number_theory=ref_data.get('number_theory'),
+                number_practice=ref_data.get('number_practice'),
+                hour_self_study=ref_data.get('hour_self_study')
+            )
+
+    def _update_requirement_subjects(self, instance, ref_data):
+        main_subject = instance.subject
+        if not main_subject:
+            return
+
+        ids_subject = []
+        seen_ids = set()
+        duplicate_ids = set()
+
+        for item in ref_data:
+            subj_id = item.get('subject_id')
+            if subj_id:
+                ids_subject.append(subj_id)
+                if subj_id in seen_ids:
+                    duplicate_ids.add(str(subj_id))
+                seen_ids.add(subj_id)
+
+        if duplicate_ids:
+            raise ValidationError({
+                "err_msg": f"Danh sách có chứa môn học bị trùng lặp: {', '.join(duplicate_ids)}."
+            })
+        main_subject.required_by_relation.exclude(require_subject_id__in=ids_subject).delete()
+
+        for subject in ref_data:
+            subject_id = subject.get('subject_id')
+
+            if not subject_id:
+                continue
+
+            if str(subject_id) == str(main_subject.id):
+                raise ValidationError({
+                    "err_msg": f"Môn học điều kiện không được trùng với môn học chính ({main_subject.name})."
+                })
+
+            req_type_data = subject.get('requirement_type')
+            type_req_obj = None
+
+            if req_type_data and isinstance(req_type_data, dict):
+                req_type_id = req_type_data.get('id')
+                if req_type_id:
+                    type_req_obj = TypeRequirement.objects.filter(id=req_type_id).first()
+
+            if not type_req_obj:
+                raise ValidationError({
+                    "err_msg": f"Vui lòng chọn Loại môn điều kiện cho môn {subject_id}."
+                })
+
+            RequirementSubject.objects.update_or_create(
+                subject=main_subject,
+                require_subject_id=subject_id,
+                type_requirement=type_req_obj
+            )
+
+    def _update_objective_outcomes(self, instance, ref_data):
+        subject = instance.subject
+        if not subject:
+            return
+
+        incoming_ids = [item.get('id') for item in ref_data if item.get('id')]
+        subject.course_objectives.exclude(id__in=incoming_ids).delete()
+
+        for index, item in enumerate(ref_data, start=1):
+            item_id = item.get('id')
+            content = item.get('content')
+            if not content:
+                raise ValidationError({
+                    "err_msg": "Thiếu nội dung mục tiêu."
+                })
+            plos = item.get('programme_learning_outcomes')
+            if not plos:
+                raise ValidationError({
+                    "err_msg": "Không được bỏ trống PLO."
+                })
+            if item_id:
+                co_obj = subject.course_objectives.filter(id=item_id).first()
+                if not co_obj:
+                    raise ValidationError({"err_msg": f"Không tìm thấy Mục tiêu (ID: {item_id})."})
+                co_obj.content = content
+                co_obj.position = index
+                co_obj.save()
+            else:
+                co_obj = subject.course_objectives.create(content=content, position=index)
+
+            plo_ids = []
+            for plo in plos:
+                plo_val = plo.get('id') if isinstance(plo, dict) else plo
+                if plo_val:
+                    plo_ids.append(int(plo_val))
+
+            co_obj.programme_learning_outcomes.set(plo_ids)
+
+    def _update_course_learning_outcomes(self, instance, ref_data):
+        from syllabuses.models import CloPloAssociation, ProgrammeLearningOutcome
+
+        for co_item in ref_data:
+            if not co_item or not isinstance(co_item, dict):
+                continue
+
+            co_id = co_item.get('id')
+            if not co_id:
+                continue
+
+            co = CourseObjective.objects.filter(id=co_id).first()
+            if not co:
+                raise ValidationError({
+                    "err_msg": f"Mục tiêu môn học (CO) mang ID {co_id} không tồn tại."
+                })
+
+            clos_data = co_item.get('clos', [])
+            incoming_clo_ids = [
+                clo.get('id') for clo in clos_data
+                if isinstance(clo, dict) and clo.get('id') and str(clo.get('id')).strip()
+            ]
+
+            CourseLearningOutcome.objects.filter(course_objective=co).exclude(id__in=incoming_clo_ids).delete()
+
+            for index, clo_item in enumerate(clos_data, start=1):
+                if not isinstance(clo_item, dict):
+                    continue
+
+                clo_id = clo_item.get('id')
+                content = clo_item.get('content')
+                plos_data = clo_item.get('plos', [])
+
+                if not content:
+                    raise ValidationError({
+                        "err_msg": f"Vui lòng nhập nội dung cho CLO (thuộc CO{co_id})."
+                    })
+
+                if clo_id and str(clo_id).strip():
+                    clo_obj = CourseLearningOutcome.objects.filter(id=clo_id, course_objective=co).first()
+                    if not clo_obj:
+                        raise ValidationError({
+                            "err_msg": f"Không tìm thấy Chuẩn đầu ra (ID: {clo_id})."
+                        })
+                    clo_obj.content = content
+                    clo_obj.position = index
+                    clo_obj.save()
+                else:
+                    clo_obj = CourseLearningOutcome.objects.create(
+                        course_objective=co,
+                        content=content,
+                        position=index
+                    )
+
+                incoming_plo_ids = [
+                    plo.get('plo_id') for plo in plos_data
+                    if isinstance(plo, dict) and plo.get('plo_id')
+                ]
+
+                CloPloAssociation.objects.filter(clo=clo_obj).exclude(plo_id__in=incoming_plo_ids).delete()
+
+                for plo_item in plos_data:
+                    plo_id = plo_item.get('plo_id')
+                    rating = plo_item.get('rating')
+
+                    if not plo_id or not rating:
+                        continue
+
+                    plo_obj = ProgrammeLearningOutcome.objects.filter(id=plo_id).first()
+                    if not plo_obj:
+                        raise ValidationError({
+                            "err_msg": f"Không tìm thấy PLO (ID: {plo_id})."
+                        })
+
+                    CloPloAssociation.objects.update_or_create(
+                        clo=clo_obj,
+                        plo=plo_obj,
+                        defaults={'rating': rating}
+                    )
+
+    def _update_learning_material(self, instance, ref_data):
+
+        seen_identifiers = set()
+        duplicate_names = set()
+
+        incoming_material_ids = []
+
+        for item in ref_data:
+            if not isinstance(item, dict):
+                continue
+
+            mat_id = item.get('id')
+            mat_name = item.get('name')
+
+            if not mat_name:
+                continue
+
+            identifier = str(mat_id).strip() if (mat_id and str(mat_id).strip()) else mat_name.strip().lower()
+
+            if identifier in seen_identifiers:
+                duplicate_names.add(mat_name)
+            seen_identifiers.add(identifier)
+
+            if mat_id and str(mat_id).strip():
+                incoming_material_ids.append(mat_id)
+
+        if duplicate_names:
+            raise ValidationError({
+                "err_msg": f"Danh sách có chứa tài liệu bị trùng lặp: {', '.join(duplicate_names)}."
+            })
+
+        SyllabusLearningMaterial.objects.filter(syllabus=instance).exclude(learning_material_id__in=incoming_material_ids).delete()
+
+        for item in ref_data:
+            if not isinstance(item, dict): continue
+
+            mat_id = item.get('id')
+            mat_name = item.get('name')
+            type_mat_data = item.get('type_material')
+
+            if not mat_name:
+                raise ValidationError({"learning_material": "Tên tài liệu không được để trống."})
+            if not type_mat_data or not isinstance(type_mat_data, dict) or not type_mat_data.get('id'):
+                raise ValidationError({"learning_material": f"Vui lòng chọn Loại tài liệu cho '{mat_name}'."})
+
+            type_mat_id = type_mat_data.get('id')
+            type_mat_obj = TypeLearningMaterial.objects.filter(id=type_mat_id).first()
+            if not type_mat_obj:
+                raise ValidationError({"learning_material": f"Không tìm thấy Phân loại tài liệu (ID: {type_mat_id})."})
+
+            if mat_id:
+                material_obj = LearningMaterial.objects.filter(id=mat_id).first()
+                if not material_obj:
+                    raise ValidationError({"learning_material": f"Không tìm thấy tài liệu ID: {mat_id}."})
+
+                # material_obj.name = mat_name
+                # material_obj.save()
+            else:
+                material_obj, _ = LearningMaterial.objects.get_or_create(name=mat_name)
+
+            SyllabusLearningMaterial.objects.update_or_create(
+                syllabus=instance,
+                learning_material=material_obj,
+                defaults={
+                    'type_material': type_mat_obj
+                }
+            )
+
 
 
 class CreditSerializer(serializers.ModelSerializer):
@@ -220,10 +525,16 @@ class LecturerInfoSerializer(serializers.ModelSerializer):
         fields = ['first_name', 'last_name', 'email', 'room', 'faculty']
 
 
+class TypeRequirementSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TypeRequirement
+        fields = ['id', 'name']
+
+
 class RequirementSubjectSerializer(serializers.ModelSerializer):
     subject_id = serializers.CharField(source='require_subject.id', read_only=True)
     subject_name = serializers.CharField(source='require_subject.name', read_only=True)
-    requirement_type = serializers.CharField(source='type_requirement.name', read_only=True)
+    requirement_type = TypeRequirementSerializer(source='type_requirement', read_only=True)
 
     class Meta:
         model = RequirementSubject
@@ -241,10 +552,19 @@ class CourseObjectiveSerializer(serializers.ModelSerializer):
         model = CourseObjective
         fields = ['id', 'content', 'programme_learning_outcomes']
 
+
+class CloPloAssociationSerializer(serializers.ModelSerializer):
+    plo_id = serializers.IntegerField(source='plo.id', read_only=True)
+
+    class Meta:
+        model = CloPloAssociation
+        fields = ['plo_id', 'rating']
+
 class CourseLearningOutcomeSerializer(serializers.ModelSerializer):
+    plos = CloPloAssociationSerializer(source='plo_association', many=True, read_only=True)
     class Meta:
         model = CourseLearningOutcome
-        fields = ['id', 'content', 'position']
+        fields = ['id', 'content', 'position', 'plos']
 
 class COwithCLOSerializer(serializers.ModelSerializer):
     clos = CourseLearningOutcomeSerializer(source='course_learning_outcomes', many=True, read_only=True)
@@ -253,15 +573,23 @@ class COwithCLOSerializer(serializers.ModelSerializer):
         model = CourseObjective
         fields = ['id', 'position', 'clos']
 
-class LearningMaterialSerializer(serializers.ModelSerializer):
-    type_name = serializers.CharField(source='type_material.name', read_only=True)
+class TypeLearningMaterialSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TypeLearningMaterial
+        fields = ['id', 'name']
 
+class LearningMaterialSerializer(serializers.ModelSerializer):
     class Meta:
         model = LearningMaterial
-        fields = ['id', 'name', 'type_name']
-
-
-class TypeRequirementSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = TypeRequirement
         fields = ['id', 'name']
+
+
+class SyllabusLearningMaterialSerializer(serializers.ModelSerializer):
+    type_material = TypeLearningMaterialSerializer(read_only=True)
+    id = serializers.IntegerField(source='learning_material.id', read_only=True)
+    name = serializers.CharField(source='learning_material.name', read_only=True)
+
+    class Meta:
+        model = SyllabusLearningMaterial
+        fields = ['id', 'name', 'type_material']
+
