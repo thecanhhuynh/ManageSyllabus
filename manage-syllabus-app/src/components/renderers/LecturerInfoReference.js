@@ -1,56 +1,75 @@
 import React from "react";
 import {Form, Input, Row, Col} from "antd";
+import {MailOutlined, BankOutlined} from "@ant-design/icons";
 
 const LecturerInfoReference = ({refPath}) => {
   return (
-    <div
-      style={{
-        padding: "16px",
-        backgroundColor: "#fafafa",
-        border: "1px solid #f0f0f0",
-        borderRadius: "8px",
-      }}
-    >
-      <Row gutter={16}>
+    <div className="w-full py-2">
+      <Row gutter={[24, 12]}>
         <Col span={12}>
-          <Form.Item name={[...refPath, "first_name"]} label="Họ và tên đệm">
-            <Input readOnly variant="filled" />
-          </Form.Item>
-        </Col>
-        <Col span={12}>
-          <Form.Item name={[...refPath, "last_name"]} label="Tên">
-            <Input readOnly variant="filled" />
-          </Form.Item>
-        </Col>
-        <Col span={12}>
-          <Form.Item
-            name={[...refPath, "email"]}
-            label="Email"
-            style={{marginBottom: 0}}
-          >
-            <Input readOnly variant="filled" />
-          </Form.Item>
-        </Col>
-        <Col span={12}>
-          <Form.Item
-            name={[...refPath, "faculty"]}
-            label="Khoa/Đơn vị phụ trách"
-            style={{marginBottom: 0}}
-          >
-            <Input readOnly variant="filled" />
+          <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">
+            Họ và tên đệm
+          </div>
+          <Form.Item name={[...refPath, "first_name"]} className="mb-0">
+            <Input
+              readOnly
+              variant="borderless"
+              className="p-0 text-sm font-medium text-gray-800"
+            />
           </Form.Item>
         </Col>
 
-        <Col span={24} style={{marginTop: 16}}>
-          <Form.Item
-            name={[...refPath, "room"]}
-            label="Phòng làm việc (nếu có)"
-            style={{marginBottom: 0}}
-          >
+        <Col span={12}>
+          <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">
+            Tên
+          </div>
+          <Form.Item name={[...refPath, "last_name"]} className="mb-0">
             <Input
               readOnly
-              variant="filled"
+              variant="borderless"
+              className="p-0 text-sm font-medium text-gray-800"
+            />
+          </Form.Item>
+        </Col>
+
+        <Col span={12}>
+          <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">
+            Email Address
+          </div>
+          <Form.Item name={[...refPath, "email"]} className="mb-0">
+            <Input
+              readOnly
+              variant="borderless"
+              prefix={<MailOutlined className="text-blue-500 mr-1" />}
+              className="p-0 text-sm font-medium text-blue-600"
+            />
+          </Form.Item>
+        </Col>
+
+        <Col span={12}>
+          <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">
+            Khoa / Đơn vị
+          </div>
+          <Form.Item name={[...refPath, "faculty"]} className="mb-0">
+            <Input
+              readOnly
+              variant="borderless"
+              className="p-0 text-sm font-medium text-gray-800"
+            />
+          </Form.Item>
+        </Col>
+
+        <Col span={24}>
+          <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">
+            Văn phòng / Phòng làm việc
+          </div>
+          <Form.Item name={[...refPath, "room"]} className="mb-0">
+            <Input
+              readOnly
+              variant="borderless"
+              prefix={<BankOutlined className="text-gray-400 mr-1" />}
               placeholder="Chưa có thông tin phòng làm việc"
+              className="p-0 text-sm font-medium text-gray-800"
             />
           </Form.Item>
         </Col>

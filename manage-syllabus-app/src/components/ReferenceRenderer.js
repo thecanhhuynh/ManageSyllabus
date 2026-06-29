@@ -5,6 +5,8 @@ import RequirementSubjectReference from "./renderers/RequirementSubjectReference
 import ObjectiveOutcomeReference from "./renderers/ObjectiveOutcomeReference";
 import CourseLearningOutcomeReference from "./renderers/CourseLearningOutcomeReference";
 import LearningMaterialReference from "./renderers/LearningMaterialReference";
+import AssessmentReference from "./renderers/AssessmentReference";
+import TeachingPlanReference from "./renderers/TeachingPlanReference";
 
 const REFERENCE_MAP = {
   credit: CreditReference,
@@ -13,6 +15,8 @@ const REFERENCE_MAP = {
   objectives_and_outcomes: ObjectiveOutcomeReference,
   course_learning_outcomes: CourseLearningOutcomeReference,
   learning_material: LearningMaterialReference,
+  assessment_method: AssessmentReference,
+  teaching_schedule: TeachingPlanReference,
 };
 
 const ReferenceRenderer = ({item, basePath}) => {

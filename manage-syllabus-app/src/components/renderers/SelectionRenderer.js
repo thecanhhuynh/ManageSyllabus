@@ -11,6 +11,7 @@ const SelectionRenderer = ({item, basePath}) => {
   return (
     <Form.Item
       name={[...basePath, "selected_values"]}
+      style={{marginBottom: 0}}
       getValueProps={(valueArray) => ({
         value: valueArray?.map((v) => v.id) || [],
       })}
@@ -22,6 +23,8 @@ const SelectionRenderer = ({item, basePath}) => {
         style={{width: "100%"}}
         options={optionsForThisSelect}
         loading={isDictLoading}
+        size="large"
+        className="rounded-lg-select"
       />
     </Form.Item>
   );

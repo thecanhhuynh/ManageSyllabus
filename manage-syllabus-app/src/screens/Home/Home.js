@@ -21,6 +21,7 @@ import {
 } from "@ant-design/icons";
 import MySpinner from "../../components/MySpinner";
 import {useNavigate} from "react-router-dom";
+import cookies from "react-cookies";
 const Home = () => {
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
@@ -40,6 +41,8 @@ const Home = () => {
 
   const loadDropdown = async () => {
     try {
+      const token = cookies.load("token");
+      if (!token) return;
       setLoading(true);
       await new Promise((resolve) => setTimeout(resolve, 500));
       const [resFaculties, resSubjects] = await Promise.all([
@@ -99,7 +102,6 @@ const Home = () => {
       }
     } catch (error) {
       console.error(error);
-      message.error("Lỗi khi tải danh sách đề cương");
     } finally {
       setLoading(false);
     }

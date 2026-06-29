@@ -1,18 +1,11 @@
 import React, {useState, useEffect} from "react";
+import {Form, Input, Button, Tabs, InputNumber, Table, Typography} from "antd";
 import {
-  Form,
-  Input,
-  Button,
-  Tabs,
-  Row,
-  Col,
-  InputNumber,
-  Table,
-  Typography,
-} from "antd";
-import {PlusOutlined, DeleteOutlined} from "@ant-design/icons";
+  PlusOutlined,
+  DeleteOutlined,
+  InfoCircleOutlined,
+} from "@ant-design/icons";
 import Apis, {endpoints} from "../../config/Apis";
-import "./style.css";
 
 const {TextArea} = Input;
 const {Text} = Typography;
@@ -21,17 +14,17 @@ const CourseLearningOutcomeReference = ({refPath}) => {
   const form = Form.useFormInstance();
   const [ploOptions, setPloOptions] = useState([]);
 
-  // 1. Fetch danh sách PLO từ API
   useEffect(() => {
     const fetchPLOs = async () => {
       try {
         const res = await Apis.get(endpoints["programme-learning-outcomes"]);
         const dataArray = res.data.results || res.data || [];
-        const options = dataArray.map((plo) => ({
-          label: plo.name || `PLO${plo.id}`,
-          value: plo.id,
-        }));
-        setPloOptions(options);
+        setPloOptions(
+          dataArray.map((plo) => ({
+            label: plo.name || `PLO${plo.id}`,
+            value: plo.id,
+          })),
+        );
       } catch (error) {
         console.error("Lỗi tải PLO", error);
       }
@@ -39,7 +32,6 @@ const CourseLearningOutcomeReference = ({refPath}) => {
     fetchPLOs();
   }, []);
 
-  // 2. Tìm đường dẫn và theo dõi dữ liệu của phần CO
   const parentPath = refPath.slice(0, -2);
   const allSubSections = form.getFieldValue(parentPath) || [];
   const coIndex = allSubSections.findIndex(
@@ -47,12 +39,9 @@ const CourseLearningOutcomeReference = ({refPath}) => {
   );
   const coRefPath =
     coIndex !== -1 ? [...parentPath, coIndex, "reference_data"] : [];
-
-  // Theo dõi dữ liệu CO để đồng bộ số lượng CLO tương ứng
   const coDataRaw = Form.useWatch(coRefPath, form);
   const coData = Array.isArray(coDataRaw) ? coDataRaw : [];
 
-  // Đồng bộ cấu trúc CLO (Thêm/bớt Tab khi CO thay đổi)
   useEffect(() => {
     if (coData.length === 0) return;
     const formCloData = form.getFieldValue(refPath) || [];
@@ -67,9 +56,8 @@ const CourseLearningOutcomeReference = ({refPath}) => {
       return {id: co.id, clos: []};
     });
 
-    if (formCloData.length !== syncedCloData.length) {
-      isChanged = true;
-    } else {
+    if (formCloData.length !== syncedCloData.length) isChanged = true;
+    else {
       for (let i = 0; i < syncedCloData.length; i++) {
         if (String(syncedCloData[i].id) !== String(formCloData[i].id)) {
           isChanged = true;
@@ -77,16 +65,13 @@ const CourseLearningOutcomeReference = ({refPath}) => {
         }
       }
     }
-
     if (isChanged) form.setFieldValue(refPath, syncedCloData);
   }, [coData, form, refPath]);
 
-  // 3. Xử lý logic nhập điểm trên Ma trận
   const handleMatrixChange = (val, coIdx, cloIdx, ploId) => {
     const plosPath = [...refPath, coIdx, "clos", cloIdx, "plos"];
     const currentPlos = form.getFieldValue(plosPath) || [];
     let newPlos = [...currentPlos];
-
     const existingIndex = newPlos.findIndex(
       (p) => Number(p.plo_id) === Number(ploId),
     );
@@ -94,148 +79,129 @@ const CourseLearningOutcomeReference = ({refPath}) => {
     if (val === null || val === undefined || val === "") {
       if (existingIndex > -1) newPlos.splice(existingIndex, 1);
     } else {
-      if (existingIndex > -1) {
+      if (existingIndex > -1)
         newPlos[existingIndex] = {...newPlos[existingIndex], rating: val};
-      } else {
-        newPlos.push({plo_id: ploId, rating: val});
-      }
+      else newPlos.push({plo_id: ploId, rating: val});
     }
     form.setFieldValue(plosPath, newPlos);
   };
 
   return (
-    <div
-      style={{
-        padding: "16px",
-        backgroundColor: "#fafafa",
-        border: "1px solid #f0f0f0",
-        borderRadius: "8px",
-      }}
-    >
-      {/* PHẦN 1: TẠO NỘI DUNG CLO */}
+    <div className="w-full">
       <Form.List name={refPath}>
         {(coFields) => {
           const tabItems = coFields.map(({key, name, ...restField}, coIdx) => ({
             key: key.toString(),
-            label: <span style={{fontWeight: 600}}>CO{coIdx + 1}</span>,
-            forceRender: true, // <--- FIX QUAN TRỌNG NHẤT: Ép render ngầm mọi Tab để Form không bị mất data
+            label: (
+              <div className="font-bold text-center leading-tight">
+                CO{coIdx + 1}
+                <br />
+                <span className="text-xs font-normal text-gray-400">
+                  Nội dung
+                </span>
+              </div>
+            ),
+            forceRender: true,
             children: (
-              <div
-                style={{
-                  padding: "16px",
-                  backgroundColor: "#fff",
-                  border: "1px solid #f0f0f0",
-                  borderRadius: "8px",
-                }}
-              >
+              <div className="p-6 border-2 border-indigo-100 rounded-xl bg-white mt-1">
                 <Form.Item {...restField} name={[name, "id"]} hidden>
                   <Input />
                 </Form.Item>
+
+                <div className="flex justify-between items-center mb-6">
+                  <h4 className="m-0 font-bold text-gray-800 text-base">
+                    Chuẩn đầu ra {coIdx + 1}
+                  </h4>
+                  <Form.List name={[name, "clos"]}>
+                    {(cloFields, {add}) => (
+                      <Button
+                        size="small"
+                        onClick={() => add({plos: []})}
+                        icon={<PlusOutlined />}
+                        className="rounded-md font-medium"
+                      >
+                        Thêm CLO
+                      </Button>
+                    )}
+                  </Form.List>
+                </div>
+
                 <Form.List name={[name, "clos"]}>
-                  {(cloFields, {add: addCLO, remove: removeCLO}) => (
-                    <>
+                  {(cloFields, {remove}) => (
+                    <div className="flex flex-col gap-3">
                       {cloFields.map(
                         (
                           {key: cloKey, name: cloName, ...restCloField},
                           cloIdx,
                         ) => (
-                          <Row
+                          <div
                             key={cloKey}
-                            gutter={16}
-                            style={{marginBottom: 16}}
+                            className="flex gap-4 p-4 border border-gray-100 bg-gray-50/50 rounded-xl items-start group transition-colors hover:border-blue-200"
                           >
-                            <Col span={22}>
-                              <Form.Item
-                                {...restCloField}
-                                name={[cloName, "id"]}
-                                hidden
-                              >
-                                <Input />
-                              </Form.Item>
-
-                              {/* Danh sách PLO Rating được giấu đi để submit và tránh mất data */}
-                              <div style={{display: "none"}}>
-                                <Form.List name={[cloName, "plos"]}>
-                                  {(ploFields) => (
-                                    <>
-                                      {ploFields.map(
-                                        ({
-                                          key: ploKey,
-                                          name: ploName,
-                                          ...restPloField
-                                        }) => (
-                                          <React.Fragment key={ploKey}>
-                                            <Form.Item
-                                              {...restPloField}
-                                              name={[ploName, "plo_id"]}
-                                            >
-                                              <Input />
-                                            </Form.Item>
-                                            <Form.Item
-                                              {...restPloField}
-                                              name={[ploName, "rating"]}
-                                            >
-                                              <Input />
-                                            </Form.Item>
-                                          </React.Fragment>
-                                        ),
-                                      )}
-                                    </>
-                                  )}
-                                </Form.List>
-                              </div>
-
-                              <Form.Item
-                                {...restCloField}
-                                name={[cloName, "content"]}
-                                label={
-                                  <span
-                                    style={{fontWeight: 500, color: "#1890ff"}}
-                                  >
-                                    CLO {coIdx + 1}.{cloIdx + 1}
-                                  </span>
-                                }
-                                rules={[
-                                  {
-                                    required: true,
-                                    message: "Vui lòng nhập nội dung CLO",
-                                  },
-                                ]}
-                                style={{marginBottom: 0}}
-                              >
-                                <TextArea
-                                  autoSize={{minRows: 2, maxRows: 4}}
-                                  placeholder="VD: Cài đặt thành công thuật toán..."
-                                />
-                              </Form.Item>
-                            </Col>
-                            <Col
-                              span={2}
-                              style={{
-                                display: "flex",
-                                alignItems: "center",
-                                marginTop: 28,
-                              }}
+                            <Form.Item
+                              {...restCloField}
+                              name={[cloName, "id"]}
+                              hidden
                             >
+                              <Input />
+                            </Form.Item>
+                            <div className="hidden">
+                              <Form.List name={[cloName, "plos"]}>
+                                {(ploFields) => (
+                                  <>
+                                    {ploFields.map((ploField) => (
+                                      <div key={ploField.key}>
+                                        <Form.Item
+                                          name={[ploField.name, "plo_id"]}
+                                        >
+                                          <Input />
+                                        </Form.Item>
+                                        <Form.Item
+                                          name={[ploField.name, "rating"]}
+                                        >
+                                          <Input />
+                                        </Form.Item>
+                                      </div>
+                                    ))}
+                                  </>
+                                )}
+                              </Form.List>
+                            </div>
+
+                            <div className="bg-blue-50 text-blue-600 font-bold px-3 py-1 rounded-md text-sm shrink-0 mt-1">
+                              CLO{coIdx + 1}.{cloIdx + 1}
+                            </div>
+
+                            <Form.Item
+                              {...restCloField}
+                              name={[cloName, "content"]}
+                              rules={[
+                                {required: true, message: "Nhập nội dung"},
+                              ]}
+                              className="mb-0 flex-1"
+                            >
+                              <TextArea
+                                autoSize={{minRows: 2, maxRows: 4}}
+                                variant="borderless"
+                                placeholder="Thêm nội dung......"
+                                className="p-0 text-sm font-medium text-gray-700 bg-transparent resize-none focus:bg-white focus:p-2 focus:rounded-md transition-all"
+                              />
+                            </Form.Item>
+
+                            <div className="flex flex-col items-center gap-2 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
                               <Button
                                 type="text"
                                 danger
                                 icon={<DeleteOutlined />}
-                                onClick={() => removeCLO(cloName)}
+                                onClick={() => remove(cloName)}
+                                size="small"
                               />
-                            </Col>
-                          </Row>
+                              <InfoCircleOutlined className="text-gray-400" />
+                            </div>
+                          </div>
                         ),
                       )}
-                      <Button
-                        type="dashed"
-                        onClick={() => addCLO({plos: []})}
-                        block
-                        icon={<PlusOutlined />}
-                      >
-                        Thêm CLO cho CO{coIdx + 1}
-                      </Button>
-                    </>
+                    </div>
                   )}
                 </Form.List>
               </div>
@@ -243,24 +209,17 @@ const CourseLearningOutcomeReference = ({refPath}) => {
           }));
 
           return coFields.length > 0 ? (
-            <Tabs
-              className="chrome-tabs"
-              type="card"
-              items={tabItems}
-              style={{marginBottom: 24}}
-            />
+            <Tabs type="card" items={tabItems} className="saas-clo-tabs mb-8" />
           ) : (
-            <div style={{textAlign: "center", padding: "20px", color: "#999"}}>
+            <div className="text-center p-8 text-gray-400 border border-dashed rounded-xl mb-8">
               Chưa có Mục tiêu (CO) nào được thiết lập.
             </div>
           );
         }}
       </Form.List>
 
-      {/* PHẦN 2: MA TRẬN CLO - PLO TỰ ĐỘNG CẬP NHẬT */}
       <Form.Item shouldUpdate={true} noStyle>
         {() => {
-          // Lấy dữ liệu Real-time trực tiếp từ form instance
           const allSections = form.getFieldValue(parentPath) || [];
           const coSection = allSections.find(
             (sub) => sub.reference_code === "objectives_and_outcomes",
@@ -271,16 +230,9 @@ const CourseLearningOutcomeReference = ({refPath}) => {
           const matrixData = [];
           const assignedPloIdsGlobal = new Set();
 
-          // Quét toàn bộ PLO đang được chọn ở Form CO
           liveCoData.forEach((co) => {
-            const plosOfCo =
-              co.plos ||
-              co.plo_ids ||
-              co.plo ||
-              co.program_learning_outcomes ||
-              co.programme_learning_outcomes ||
-              [];
-            if (Array.isArray(plosOfCo)) {
+            const plosOfCo = co.programme_learning_outcomes || [];
+            if (Array.isArray(plosOfCo))
               plosOfCo.forEach((val) => {
                 let id =
                   typeof val === "object" && val !== null
@@ -288,99 +240,85 @@ const CourseLearningOutcomeReference = ({refPath}) => {
                     : val;
                 if (id) assignedPloIdsGlobal.add(Number(id));
               });
-            }
           });
 
-          // Quét dự phòng các PLO đã lỡ chấm điểm trong CLO
-          currentData.forEach((co) => {
+          currentData.forEach((co) =>
             co.clos?.forEach((clo) => {
-              if (Array.isArray(clo.plos)) {
+              if (Array.isArray(clo.plos))
                 clo.plos.forEach((p) => {
                   if (p.plo_id) assignedPloIdsGlobal.add(Number(p.plo_id));
                 });
-              }
-            });
-          });
+            }),
+          );
 
           const displayPloOptions = ploOptions.filter((plo) =>
             assignedPloIdsGlobal.has(Number(plo.value)),
           );
-
-          // Chuẩn bị hàng cho bảng ma trận
-          currentData.forEach((co, coIdx) => {
-            co.clos?.forEach((clo, cloIdx) => {
+          currentData.forEach((co, coIdx) =>
+            co.clos?.forEach((clo, cloIdx) =>
               matrixData.push({
                 key: `${coIdx}-${cloIdx}`,
                 coIdx,
                 cloIdx,
-                cloName: `${coIdx + 1}.${cloIdx + 1}`,
+                cloName: `CLO${coIdx + 1}.${cloIdx + 1}`,
+                content: clo.content,
                 plos: clo.plos || [],
-              });
-            });
-          });
+              }),
+            ),
+          );
 
           if (matrixData.length === 0 || displayPloOptions.length === 0)
             return null;
 
-          // Chuẩn bị cột cho bảng ma trận
           const columns = [
             {
-              title: "CLOs",
+              title: "Course Learning Outcome",
               dataIndex: "cloName",
-              key: "cloName",
-              width: 80,
-              align: "center",
+              width: 120,
               fixed: "left",
-              render: (text) => <strong>{text}</strong>,
+              render: (text) => (
+                <span className="font-bold text-blue-600">{text}</span>
+              ),
             },
-            ...displayPloOptions.map((plo) => ({
-              title: plo.label,
+            {
+              title: "Outcome Description",
+              dataIndex: "content",
+              render: (text) => (
+                <span className="text-xs text-gray-500 italic line-clamp-2">
+                  {text || "..."}
+                </span>
+              ),
+            },
+            ...displayPloOptions.map((plo, idx) => ({
+              title: (
+                <div className="text-center text-xs text-gray-500">
+                  PLO{plo.value}
+                </div>
+              ),
               key: plo.value,
-              width: 100,
+              width: 70,
               align: "center",
               render: (_, record) => {
                 const parentCo = liveCoData[record.coIdx];
                 let parentPloIds = [];
-
                 if (parentCo) {
-                  const pCoPlos =
-                    parentCo.plos ||
-                    parentCo.plo_ids ||
-                    parentCo.plo ||
-                    parentCo.program_learning_outcomes ||
-                    parentCo.programme_learning_outcomes ||
-                    [];
-                  if (Array.isArray(pCoPlos)) {
-                    parentPloIds = pCoPlos.map((v) => {
-                      if (typeof v === "object" && v !== null)
-                        return Number(v.id || v.plo_id);
-                      return Number(v);
-                    });
-                  }
+                  const pCoPlos = parentCo.programme_learning_outcomes || [];
+                  if (Array.isArray(pCoPlos))
+                    parentPloIds = pCoPlos.map((v) =>
+                      Number(
+                        typeof v === "object" && v !== null
+                          ? v.id || v.plo_id
+                          : v,
+                      ),
+                    );
                 }
-
                 const existing = record.plos.find(
                   (p) => Number(p.plo_id) === Number(plo.value),
                 );
-                const isPloValidForThisClo =
+                const isPloValid =
                   parentPloIds.includes(Number(plo.value)) || existing;
 
-                if (!isPloValidForThisClo) {
-                  return (
-                    <div
-                      style={{
-                        backgroundColor: "#f5f5f5",
-                        color: "#bfbfbf",
-                        borderRadius: 4,
-                        padding: "4px 0",
-                        textAlign: "center",
-                      }}
-                    >
-                      -
-                    </div>
-                  );
-                }
-
+                if (!isPloValid) return <div className="text-gray-300">-</div>;
                 return (
                   <InputNumber
                     min={1}
@@ -394,8 +332,8 @@ const CourseLearningOutcomeReference = ({refPath}) => {
                         plo.value,
                       )
                     }
-                    style={{width: "100%"}}
-                    controls={false}
+                    className="w-12 text-center text-blue-600 font-bold border-gray-200"
+                    controls={true}
                   />
                 );
               },
@@ -403,41 +341,22 @@ const CourseLearningOutcomeReference = ({refPath}) => {
           ];
 
           return (
-            <div
-              style={{
-                marginTop: "24px",
-                padding: "16px",
-                backgroundColor: "#fff",
-                border: "1px solid #f0f0f0",
-                borderRadius: "8px",
-              }}
-            >
-              <h4 style={{marginBottom: 16}}>
-                Ma trận tích hợp giữa chuẩn đầu ra môn học và CĐR chương trình
-                đào tạo
-              </h4>
+            <div className="bg-white border border-gray-200 rounded-xl p-6 mt-8">
+              <div className="text-[12px] font-bold text-gray-500 uppercase tracking-wider mb-2">
+                Ma trận chuẩn đầu ra
+              </div>
+              <div className="text-xs text-gray-400 flex items-center gap-1 mb-4">
+                <InfoCircleOutlined /> Trọng số: 1 (Tác động ít) to 5 (Tác động
+                nhiều). Ô chưa đánh giá trị "-".
+              </div>
               <Table
                 dataSource={matrixData}
                 columns={columns}
                 pagination={false}
-                bordered
-                size="small"
+                size="middle"
                 scroll={{x: "max-content"}}
+                className="custom-matrix-table"
               />
-              <div
-                style={{
-                  marginTop: 16,
-                  display: "flex",
-                  gap: "24px",
-                  color: "#595959",
-                }}
-              >
-                <Text italic>1: Không đáp ứng</Text>
-                <Text italic>2: Ít đáp ứng</Text>
-                <Text italic>3: Đáp ứng trung bình</Text>
-                <Text italic>4: Đáp ứng nhiều</Text>
-                <Text italic>5: Đáp ứng rất nhiều</Text>
-              </div>
             </div>
           );
         }}

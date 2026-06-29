@@ -1,6 +1,11 @@
 import React, {useState, useEffect, useRef} from "react";
-import {Form, Input, Select, Button, Row, Col, message} from "antd";
-import {PlusOutlined, DeleteOutlined} from "@ant-design/icons";
+import {Form, Input, Select, Button, message} from "antd";
+import {
+  PlusOutlined,
+  DeleteOutlined,
+  BookOutlined,
+  CloseOutlined,
+} from "@ant-design/icons";
 import {authApis, endpoints} from "../../config/Apis";
 
 const RequirementSubjectReference = ({refPath}) => {
@@ -11,7 +16,6 @@ const RequirementSubjectReference = ({refPath}) => {
   const [hasNext, setHasNext] = useState(false);
   const [q, setQ] = useState("");
   const searchTimeoutRef = useRef(null);
-
   const [reqTypeRawData, setReqTypeRawData] = useState([]);
 
   const loadRequirementTypeOptions = async () => {
@@ -28,20 +32,13 @@ const RequirementSubjectReference = ({refPath}) => {
       setLoading(true);
       let url = `${endpoints["subjects"]}?page=${page}`;
       if (q) url += `&q=${q}`;
-
       const res = await authApis().get(url);
-
       if (res.status === 200) {
         const newData = res.data.results;
         setHasNext(res.data.next != null);
-        if (page === 1) {
-          setSubjectsList(newData);
-        } else {
-          setSubjectsList((prev) => [...prev, ...newData]);
-        }
-      } else {
-        message.error("Tải môn học thất bại");
-      }
+        if (page === 1) setSubjectsList(newData);
+        else setSubjectsList((prev) => [...prev, ...newData]);
+      } else message.error("Tải môn học thất bại");
     } catch (error) {
       console.log(error);
     } finally {
@@ -50,9 +47,7 @@ const RequirementSubjectReference = ({refPath}) => {
   };
 
   useEffect(() => {
-    let timer = setTimeout(() => {
-      loadSubjects();
-    }, 500);
+    let timer = setTimeout(() => loadSubjects(), 500);
     return () => clearTimeout(timer);
   }, [page, q]);
 
@@ -61,166 +56,208 @@ const RequirementSubjectReference = ({refPath}) => {
   }, []);
 
   const subjectOptions = subjectsList.map((sub) => ({
-    label: `${sub.id} - ${sub.name}`,
+    label: `${sub.code} - ${sub.name}`,
     value: sub.id,
     subjectName: sub.name,
-  }));
-
-  const requirementTypeOptions = reqTypeRawData.map((item) => ({
-    label: item.name,
-    value: item.id,
+    subjectCode: sub.code,
   }));
 
   const handlePopupScroll = (e) => {
     const {target} = e;
     if (target.scrollTop + target.offsetHeight >= target.scrollHeight - 10) {
-      if (hasNext && !loading) {
-        setPage((prev) => prev + 1);
-      }
+      if (hasNext && !loading) setPage((prev) => prev + 1);
     }
   };
 
   const handleSearch = (keyword) => {
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
-    }
+    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
     searchTimeoutRef.current = setTimeout(() => {
       setQ(keyword);
       setPage(1);
     }, 500);
   };
 
-  const handleSubjectSelect = (value, option, fieldName) => {
-    form.setFieldValue(
-      [...refPath, fieldName, "subject_name"],
-      option.subjectName,
-    );
-  };
-
-  const handleRequirementTypeSelect = (value, fieldName) => {
-    const selectedObj = reqTypeRawData.find((item) => item.id === value);
-    if (selectedObj) {
-      form.setFieldValue([...refPath, fieldName, "requirement_type"], {
-        id: selectedObj.id,
-        name: selectedObj.name,
-      });
-    }
-  };
-
   return (
-    <div
-      style={{
-        padding: "16px",
-        backgroundColor: "#fafafa",
-        border: "1px solid #f0f0f0",
-        borderRadius: "8px",
-      }}
-    >
+    <div className="w-full">
       <Form.List name={refPath}>
         {(fields, {add, remove}) => (
-          <>
-            <div
-              style={{
-                maxHeight: "300px",
-                overflowY: "auto",
-                overflowX: "hidden",
-                paddingRight: "8px",
-                marginBottom: fields.length > 0 ? "16px" : "0",
-              }}
-            >
-              {fields.map(({key, name, ...restField}) => (
-                <Row
-                  key={key}
-                  gutter={12}
-                  align="bottom"
-                  style={{
-                    marginBottom: 12,
-                    padding: "12px",
-                    backgroundColor: "#ffffff",
-                    border: "1px solid #e8e8e8",
-                    borderRadius: "6px",
-                  }}
+          <div className="flex flex-col gap-4">
+            {reqTypeRawData.map((reqType) => {
+              const typeFields = fields.filter((field) => {
+                const val = form.getFieldValue([
+                  ...refPath,
+                  field.name,
+                  "requirement_type",
+                ]);
+                if (!val) return false;
+                const id = typeof val === "object" ? val.id : val;
+                return String(id) === String(reqType.id);
+              });
+
+              return (
+                <div
+                  key={reqType.id}
+                  className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm"
                 >
-                  <Form.Item {...restField} name={[name, "id"]} hidden>
-                    <Input />
-                  </Form.Item>
+                  <div className="px-4 py-2 border-b border-gray-100 bg-gray-50/80">
+                    <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">
+                      {reqType.name}
+                    </span>
+                  </div>
 
-                  <Form.Item
-                    {...restField}
-                    name={[name, "subject_name"]}
-                    hidden
-                  >
-                    <Input />
-                  </Form.Item>
+                  <div className="p-3 flex flex-wrap gap-2 items-center min-h-[54px]">
+                    {typeFields.map((field) => (
+                      <div key={field.key} className="flex items-center">
+                        <Form.Item {...field} name={[field.name, "id"]} hidden>
+                          <Input />
+                        </Form.Item>
+                        <Form.Item
+                          {...field}
+                          name={[field.name, "subject_name"]}
+                          hidden
+                        >
+                          <Input />
+                        </Form.Item>
+                        <Form.Item
+                          {...field}
+                          name={[field.name, "requirement_type"]}
+                          hidden
+                        >
+                          <Input />
+                        </Form.Item>
 
-                  <Col span={10}>
-                    <Form.Item
-                      {...restField}
-                      name={[name, "subject_id"]}
-                      label="Môn học điều kiện"
-                      rules={[{required: true, message: "Vui lòng chọn môn"}]}
-                      style={{marginBottom: 0}}
+                        <Form.Item shouldUpdate noStyle>
+                          {() => {
+                            const subjectId = form.getFieldValue([
+                              ...refPath,
+                              field.name,
+                              "subject_id",
+                            ]);
+                            let subjectName = form.getFieldValue([
+                              ...refPath,
+                              field.name,
+                              "subject_name",
+                            ]);
+                            let subjectCode = form.getFieldValue([
+                              ...refPath,
+                              field.name,
+                              "subject_code",
+                            ]);
+
+                            if (!subjectName && subjectId) {
+                              const found = subjectsList.find(
+                                (s) => s.id === subjectId,
+                              );
+                              if (found) {
+                                subjectName = found.name;
+                                subjectCode = found.code;
+                              }
+                            }
+                            const displayText =
+                              subjectCode && subjectName
+                                ? `${subjectCode} - ${subjectName}`
+                                : subjectName || "Đang tải...";
+                            return subjectId ? (
+                              <div className="group flex items-center gap-1.5 bg-blue-50 border border-blue-200 text-blue-700 px-3 py-1 rounded-full text-[13px] font-medium transition-all hover:bg-blue-100 h-8">
+                                <BookOutlined className="text-blue-500" />
+                                <span
+                                  className="max-w-[200px] truncate"
+                                  title={displayText}
+                                >
+                                  {displayText}
+                                </span>
+                                <CloseOutlined
+                                  className="cursor-pointer text-blue-400 hover:text-red-500 ml-1 opacity-60 group-hover:opacity-100 transition-opacity"
+                                  onClick={() => remove(field.name)}
+                                />
+                                <Form.Item
+                                  {...field}
+                                  name={[field.name, "subject_id"]}
+                                  hidden
+                                >
+                                  <Input />
+                                </Form.Item>
+                              </div>
+                            ) : (
+                              <div className="flex items-center bg-white border border-blue-400 rounded-full pl-3 pr-1 h-8 shadow-sm transition-all hover:border-blue-500">
+                                <Form.Item
+                                  {...field}
+                                  name={[field.name, "subject_id"]}
+                                  rules={[
+                                    {required: true, message: "Chọn môn"},
+                                  ]}
+                                  className="mb-0"
+                                  style={{width: 180}}
+                                >
+                                  <Select
+                                    showSearch
+                                    autoFocus
+                                    bordered={false}
+                                    placeholder="Tìm môn học..."
+                                    options={subjectOptions}
+                                    loading={loading}
+                                    filterOption={false}
+                                    onSearch={handleSearch}
+                                    listHeight={250}
+                                    onChange={(val, opt) => {
+                                      form.setFieldValue(
+                                        [
+                                          ...refPath,
+                                          field.name,
+                                          "subject_name",
+                                        ],
+                                        opt.subjectName,
+                                      );
+                                      form.setFieldValue(
+                                        [
+                                          ...refPath,
+                                          field.name,
+                                          "subject_code",
+                                        ],
+                                        opt.subjectCode,
+                                      );
+                                    }}
+                                    onPopupScroll={handlePopupScroll}
+                                    className="w-full text-[13px]"
+                                  />
+                                </Form.Item>
+                                <Button
+                                  type="text"
+                                  danger
+                                  shape="circle"
+                                  icon={
+                                    <CloseOutlined className="text-[11px]" />
+                                  }
+                                  onClick={() => remove(field.name)}
+                                  size="small"
+                                  className="w-6 h-6 min-w-0 flex items-center justify-center bg-gray-50 hover:bg-red-50"
+                                />
+                              </div>
+                            );
+                          }}
+                        </Form.Item>
+                      </div>
+                    ))}
+
+                    <div
+                      className="flex items-center gap-1.5 border border-dashed border-gray-300 text-gray-500 px-3 py-1 rounded-full text-[13px] font-medium hover:text-blue-500 hover:border-blue-500 hover:bg-blue-50 cursor-pointer transition-all select-none h-8"
+                      onClick={() =>
+                        add({
+                          requirement_type: {
+                            id: reqType.id,
+                            name: reqType.name,
+                          },
+                        })
+                      }
                     >
-                      <Select
-                        showSearch
-                        placeholder="Chọn môn..."
-                        options={subjectOptions}
-                        loading={loading}
-                        filterOption={false}
-                        onSearch={handleSearch}
-                        listHeight={250}
-                        onChange={(val, opt) =>
-                          handleSubjectSelect(val, opt, name)
-                        }
-                        onPopupScroll={handlePopupScroll}
-                      />
-                    </Form.Item>
-                  </Col>
-
-                  <Col span={12}>
-                    <Form.Item
-                      {...restField}
-                      name={[name, "requirement_type"]}
-                      label="Loại điều kiện"
-                      rules={[{required: true, message: "Chọn loại"}]}
-                      style={{marginBottom: 0}}
-                      getValueProps={(val) => ({
-                        value: val && typeof val === "object" ? val.id : val,
-                      })}
-                    >
-                      <Select
-                        options={requirementTypeOptions}
-                        placeholder="Chọn..."
-                        onChange={(val) =>
-                          handleRequirementTypeSelect(val, name)
-                        }
-                      />
-                    </Form.Item>
-                  </Col>
-
-                  <Col span={2} style={{textAlign: "center"}}>
-                    <Button
-                      type="text"
-                      danger
-                      icon={<DeleteOutlined />}
-                      onClick={() => remove(name)}
-                    />
-                  </Col>
-                </Row>
-              ))}
-            </div>
-
-            <Form.Item style={{marginBottom: 0}}>
-              <Button
-                type="dashed"
-                onClick={() => add()}
-                block
-                icon={<PlusOutlined />}
-              >
-                Thêm môn học điều kiện
-              </Button>
-            </Form.Item>
-          </>
+                      <PlusOutlined className="text-[11px]" />
+                      <span>Thêm môn</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         )}
       </Form.List>
     </div>

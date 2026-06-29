@@ -1,28 +1,45 @@
-import {Spin} from "antd";
+import React from "react";
+import {Spin, Typography} from "antd";
 import {LoadingOutlined} from "@ant-design/icons";
+import PropTypes from "prop-types";
+
+const {Text} = Typography;
 
 const antIcon = (
   <LoadingOutlined
     style={{
-      fontSize: 60,
+      fontSize: 48,
+      color: "#1890ff",
     }}
     spin
   />
 );
 
-const MySpinner = () => {
+const MySpinner = ({message = "Đang tải dữ liệu...", fullScreen = true}) => {
   return (
     <div
+      className="flex flex-col items-center justify-center w-full"
       style={{
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        flex: 1,
+        minHeight: fullScreen ? "60vh" : "auto",
+        padding: "24px",
       }}
     >
-      <Spin indicator={antIcon} tip="Đang tải dữ liệu..." />
+      <Spin indicator={antIcon} />
+      {message && (
+        <Text
+          type="secondary"
+          style={{marginTop: 16, fontSize: 14, fontWeight: 500}}
+        >
+          {message}
+        </Text>
+      )}
     </div>
   );
+};
+
+MySpinner.propTypes = {
+  message: PropTypes.string,
+  fullScreen: PropTypes.bool,
 };
 
 export default MySpinner;

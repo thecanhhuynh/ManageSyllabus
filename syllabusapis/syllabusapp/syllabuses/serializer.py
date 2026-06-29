@@ -4,13 +4,18 @@ from rest_framework.exceptions import ValidationError
 from syllabuses.models import User, Lecturer, Faculty, Syllabus, Subject, SubSection, MainSection, TextSubSection, \
     SelectionSubSection, AttributeGroup, AttributeValue, ReferenceSubSection, Credit, RequirementSubject, \
     ProgrammeLearningOutcome, CourseObjective, CourseLearningOutcome, LearningMaterial, TypeRequirement, \
-    TypeLearningMaterial, SyllabusLearningMaterial, CloPloAssociation
+    TypeLearningMaterial, SyllabusLearningMaterial, CloPloAssociation, TypeAssessment, Assessment, Method, \
+    ScheduleGroup, TeachingSession, Major, TrainingProgram
 
 
 class FacultySerializer(serializers.ModelSerializer):
+    id = serializers.IntegerField(required=False)
     class Meta:
         model = Faculty
         fields = ['id', 'name']
+        extra_kwargs = {
+            'name': {'validators': []}
+        }
 
 
 class LecturerSerializer(serializers.ModelSerializer):
@@ -67,24 +72,59 @@ class UserDetailSerializer(UserSerializer):
 
     def update(self, instance, validated_data):
         room = validated_data.pop('room', None)
-        faculty_name = validated_data.pop('faculty', None)
+        faculty_id = validated_data.pop('faculty', None)
         instance = super().update(instance, validated_data)
-
         if hasattr(instance, 'lecturer_profile'):
             if room is not None:
                 instance.lecturer_profile.room = room
-            if faculty_name is not None:
-                faculty_obj, _ = Faculty.objects.get_or_create(name=faculty_name)
-                instance.lecturer_profile.faculty = faculty_obj
-                instance.lecturer_profile.save()
+            if faculty_id is not None:
+                faculty_obj = Faculty.objects.filter(id=faculty_id).first()
+                if faculty_obj:
+                    instance.lecturer_profile.faculty = faculty_obj
             instance.lecturer_profile.save()
         return instance
 
 
+class CreditSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Credit
+        fields = ['id', 'number_theory', 'number_practice', 'hour_self_study']
+
+
 class SubjectSerializer(serializers.ModelSerializer):
+    credit = CreditSerializer(required=True)
+
     class Meta:
         model = Subject
-        fields = ['id', 'name']
+        fields = ['id', 'name', 'code', 'credit']
+
+    def create(self, validated_data):
+        print("DEBUG VALIDATED DATA:", validated_data)
+        credit_data = validated_data.pop('credit')
+        credit_instance = Credit.objects.create(**credit_data)
+
+        subject = Subject.objects.create(credit=credit_instance, **validated_data)
+        return subject
+
+    def update(self, instance, validated_data):
+        print("DEBUG VALIDATED DATA:", validated_data)
+        credit_data = validated_data.pop('credit', None)
+
+        instance.code = validated_data.get('code', instance.code)
+        instance.name = validated_data.get('name', instance.name)
+        instance.save()
+
+        if credit_data and instance.credit:
+            credit_instance = instance.credit
+            credit_instance.number_theory = credit_data.get('number_theory', credit_instance.number_theory)
+            credit_instance.number_practice = credit_data.get('number_practice', credit_instance.number_practice)
+            credit_instance.hour_self_study = credit_data.get('hour_self_study', credit_instance.hour_self_study)
+            credit_instance.save()
+
+        return instance
+
+    def delete(self, instance, validated_data):
+        pass
 
 
 class SyllabusSerializer(serializers.ModelSerializer):
@@ -118,9 +158,11 @@ class SimpleAttributeValueSerializer(serializers.ModelSerializer):
 
 class AttributeGroupListSerializer(serializers.ModelSerializer):
     attribute_values = SimpleAttributeValueSerializer(many=True, read_only=True)
+
     class Meta:
         model = AttributeGroup
         fields = ['id', 'name', 'attribute_values']
+
 
 class TextSubSectionSerializer(serializers.ModelSerializer):
     class Meta:
@@ -141,7 +183,7 @@ class ReferenceSubSectionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ReferenceSubSection
-        fields = ['id', 'name' ,'position', 'type', 'code', 'reference_code', 'reference_data']
+        fields = ['id', 'name', 'position', 'type', 'code', 'reference_code', 'reference_data']
 
     def get_reference_data(self, obj):
         syllabus = obj.main_section.syllabus
@@ -153,7 +195,10 @@ class ReferenceSubSectionSerializer(serializers.ModelSerializer):
             'requirement_subject': (RequirementSubjectSerializer, syllabus.subject.required_by_relation.all(), True),
             'objective_outcomes': (CourseObjectiveSerializer, syllabus.subject.course_objectives.all(), True),
             'course_learning_outcomes': (COwithCLOSerializer, syllabus.subject.course_objectives.all(), True),
-            'learning_material': (SyllabusLearningMaterialSerializer, syllabus.syllabuslearningmaterial_set.all(), True),
+            'learning_material': (SyllabusLearningMaterialSerializer, syllabus.syllabuslearningmaterial_set.all(),
+                                  True),
+            'assessment_method': (AssessmentSerializer, syllabus.assessments.all(), True),
+            'teaching_schedule': (TeachingSessionSerializer, syllabus.teaching_sessions.all(), True)
         }
 
         strategy = strategy_map.get(code)
@@ -232,7 +277,8 @@ class SyllabusDetailSerializer(serializers.ModelSerializer):
 
                 elif sub_instance.type == 'selection' and hasattr(sub_instance, 'selectionsubsection'):
                     if 'selected_values' in sub_data:
-                        val_ids = [item['id'] if isinstance(item, dict) else item for item in sub_data['selected_values']]
+                        val_ids = [item['id'] if isinstance(item, dict) else item for item in
+                                   sub_data['selected_values']]
                         sub_instance.selectionsubsection.selected_values.set(val_ids)
 
                 elif sub_instance.type == 'reference' and hasattr(sub_instance, 'referencesubsection'):
@@ -245,8 +291,10 @@ class SyllabusDetailSerializer(serializers.ModelSerializer):
                             'credit': self._update_credit,
                             'requirement_subject': self._update_requirement_subjects,
                             'objectives_and_outcomes': self._update_objective_outcomes,
-                            'course_learning_outcomes':self._update_course_learning_outcomes,
-                            'learning_material': self._update_learning_material
+                            'course_learning_outcomes': self._update_course_learning_outcomes,
+                            'learning_material': self._update_learning_material,
+                            'assessment_method': self._update_assessment,
+                            'teaching_schedule': self._update_teaching_schedule
                         }
 
                         update_func = strategy_map.get(ref_code)
@@ -469,7 +517,8 @@ class SyllabusDetailSerializer(serializers.ModelSerializer):
                 "err_msg": f"Danh sách có chứa tài liệu bị trùng lặp: {', '.join(duplicate_names)}."
             })
 
-        SyllabusLearningMaterial.objects.filter(syllabus=instance).exclude(learning_material_id__in=incoming_material_ids).delete()
+        SyllabusLearningMaterial.objects.filter(syllabus=instance).exclude(
+            learning_material_id__in=incoming_material_ids).delete()
 
         for item in ref_data:
             if not isinstance(item, dict): continue
@@ -506,12 +555,114 @@ class SyllabusDetailSerializer(serializers.ModelSerializer):
                 }
             )
 
+    def _update_assessment(self, instance, ref_data):
+        total_weight = 0
+        has_method = False
 
+        for item in ref_data:
+            for method in item.get('assessment_methods', []):
+                has_method = True
+                total_weight += int(method.get('weight', 0))
 
-class CreditSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Credit
-        fields = ['id', 'number_theory', 'number_practice', 'hour_self_study']
+        if has_method and total_weight != 100:
+            raise serializers.ValidationError({
+                "err_msg": f"Tổng trọng số đánh giá phải đúng 100%. Hiện tại hệ thống ghi nhận {total_weight}%."
+            })
+
+        incoming_assessment_ids = []
+
+        for item in ref_data:
+            type_assessment_id = item.get('type_assessment', {}).get('id')
+            if not type_assessment_id:
+                continue
+
+            assessment, created = Assessment.objects.get_or_create(
+                syllabus=instance,
+                type_assessment_id=type_assessment_id
+            )
+            incoming_assessment_ids.append(assessment.id)
+
+            methods_data = item.get('assessment_methods', [])
+            incoming_method_ids = [m.get('id') for m in methods_data if m.get('id')]
+
+            assessment.assessment_methods.exclude(id__in=incoming_method_ids).delete()
+
+            for method_data in methods_data:
+                method_id = method_data.get('id')
+                clo_list = method_data.get('course_learning_outcomes', [])
+
+                clo_ids = [c['id'] if isinstance(c, dict) else c for c in clo_list]
+
+                if method_id:
+                    method = Method.objects.get(id=method_id, assessment=assessment)
+                    method.name = method_data.get('name', method.name)
+                    method.time = method_data.get('time', method.time)
+                    method.weight = method_data.get('weight', method.weight)
+                    method.save()
+                else:
+                    method = Method.objects.create(
+                        assessment=assessment,
+                        name=method_data.get('name', ''),
+                        time=method_data.get('time', ''),
+                        weight=method_data.get('weight', 0)
+                    )
+
+                method.course_learning_outcomes.set(clo_ids)
+
+    def _update_teaching_schedule(self, instance, ref_data):
+
+        incoming_session_ids = []
+
+        for group_data in ref_data:
+            schedule_group_id = group_data.get('schedule_group', {}).get('id')
+            if not schedule_group_id:
+                continue
+
+            sessions_data = group_data.get('teaching_sessions', [])
+
+            for session_item in sessions_data:
+                session_id = session_item.get('id')
+
+                clo_ids = [c['id'] if isinstance(c, dict) else c for c in
+                           session_item.get('course_learning_outcomes', [])]
+                assessment_ids = [a['id'] if isinstance(a, dict) else a for a in session_item.get('assessments', [])]
+                material_ids = [m['id'] if isinstance(m, dict) else m for m in
+                                session_item.get('learning_materials', [])]
+                session = TeachingSession.objects.filter(id=session_id,
+                                                         syllabus=instance).first() if session_id else None
+                if session:
+                    session = TeachingSession.objects.get(id=session_id, syllabus=instance)
+                    session.schedule_group_id = schedule_group_id
+                    session.session_no = session_item.get('session_no', session.session_no)
+                    session.content = session_item.get('content', session.content)
+                    session.offline_activity = session_item.get('offline_activity', '')
+                    session.offline_hours = float(session_item.get('offline_hours') or 0)
+                    session.online_activity = session_item.get('online_activity', '')
+                    session.online_hours = float(session_item.get('online_hours') or 0)
+                    session.self_study_activity = session_item.get('self_study_activity', '')
+                    session.self_study_hours = float(session_item.get('self_study_hours') or 0)
+                    session.save()
+                else:
+                    session = TeachingSession.objects.create(
+                        syllabus=instance,
+                        schedule_group_id=schedule_group_id,
+                        session_no=session_item.get('session_no', 1),
+                        content=session_item.get('content', ''),
+                        offline_activity=session_item.get('offline_activity', ''),
+                        offline_hours=float(session_item.get('offline_hours') or 0),
+                        online_activity=session_item.get('online_activity', ''),
+                        online_hours=float(session_item.get('online_hours') or 0),
+                        self_study_activity=session_item.get('self_study_activity', ''),
+                        self_study_hours=float(session_item.get('self_study_hours') or 0),
+                    )
+
+                incoming_session_ids.append(session.id)
+
+                session.course_learning_outcomes.set(clo_ids)
+                session.assessments.set(assessment_ids)
+                session.learning_materials.set(material_ids)
+
+        TeachingSession.objects.filter(syllabus=instance).exclude(id__in=incoming_session_ids).delete()
 
 
 class LecturerInfoSerializer(serializers.ModelSerializer):
@@ -535,10 +686,11 @@ class RequirementSubjectSerializer(serializers.ModelSerializer):
     subject_id = serializers.CharField(source='require_subject.id', read_only=True)
     subject_name = serializers.CharField(source='require_subject.name', read_only=True)
     requirement_type = TypeRequirementSerializer(source='type_requirement', read_only=True)
+    subject_code = serializers.CharField(source='require_subject.code', read_only=True)
 
     class Meta:
         model = RequirementSubject
-        fields = ['subject_id', 'subject_name', 'requirement_type']
+        fields = ['subject_id', 'subject_name', 'requirement_type', 'subject_code']
 
 
 class ProgrammeLearningOutcomeSerializer(serializers.ModelSerializer):
@@ -546,8 +698,10 @@ class ProgrammeLearningOutcomeSerializer(serializers.ModelSerializer):
         model = ProgrammeLearningOutcome
         fields = ['id', 'name', 'description']
 
+
 class CourseObjectiveSerializer(serializers.ModelSerializer):
     programme_learning_outcomes = ProgrammeLearningOutcomeSerializer(many=True, read_only=True)
+
     class Meta:
         model = CourseObjective
         fields = ['id', 'content', 'programme_learning_outcomes']
@@ -560,11 +714,14 @@ class CloPloAssociationSerializer(serializers.ModelSerializer):
         model = CloPloAssociation
         fields = ['plo_id', 'rating']
 
+
 class CourseLearningOutcomeSerializer(serializers.ModelSerializer):
     plos = CloPloAssociationSerializer(source='plo_association', many=True, read_only=True)
+
     class Meta:
         model = CourseLearningOutcome
         fields = ['id', 'content', 'position', 'plos']
+
 
 class COwithCLOSerializer(serializers.ModelSerializer):
     clos = CourseLearningOutcomeSerializer(source='course_learning_outcomes', many=True, read_only=True)
@@ -573,10 +730,12 @@ class COwithCLOSerializer(serializers.ModelSerializer):
         model = CourseObjective
         fields = ['id', 'position', 'clos']
 
+
 class TypeLearningMaterialSerializer(serializers.ModelSerializer):
     class Meta:
         model = TypeLearningMaterial
         fields = ['id', 'name']
+
 
 class LearningMaterialSerializer(serializers.ModelSerializer):
     class Meta:
@@ -593,3 +752,171 @@ class SyllabusLearningMaterialSerializer(serializers.ModelSerializer):
         model = SyllabusLearningMaterial
         fields = ['id', 'name', 'type_material']
 
+
+class TypeAssessmentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TypeAssessment
+        fields = ['id', 'name']
+
+
+class MethodAssessmentSerializer(serializers.ModelSerializer):
+    course_learning_outcomes = CourseLearningOutcomeSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Method
+        fields = ['id', 'name', 'time', 'weight', 'course_learning_outcomes']
+
+
+class AssessmentSerializer(serializers.ModelSerializer):
+    type_assessment = TypeAssessmentSerializer(read_only=True)
+    assessment_methods = MethodAssessmentSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Assessment
+        fields = ['id', 'type_assessment', 'assessment_methods']
+
+
+class ScheduleGroupSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ScheduleGroup
+        fields = ['id', 'name']
+
+
+class SlimCLOSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CourseLearningOutcome
+        fields = ['id']
+
+
+class SlimAssessmentSerializer(serializers.ModelSerializer):
+    name = serializers.CharField(source='type_assessment.name', read_only=True)
+
+    class Meta:
+        model = Assessment
+        fields = ['id', 'name']
+
+
+class SlimLearningMaterialSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = LearningMaterial
+        fields = ['id', 'name']
+
+
+class TeachingSessionSerializer(serializers.ModelSerializer):
+    schedule_group = ScheduleGroupSerializer(read_only=True)
+    course_learning_outcomes = SlimCLOSerializer(many=True, read_only=True)
+    assessments = SlimAssessmentSerializer(many=True, read_only=True)
+    learning_materials = SlimLearningMaterialSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = TeachingSession
+        fields = ['id', 'session_no', 'content', 'offline_activity', 'offline_hours', 'online_activity', 'online_hours',
+                  'self_study_activity', 'self_study_hours', 'course_learning_outcomes', 'assessments',
+                  'learning_materials', 'schedule_group']
+
+
+class MajorSerializer(serializers.ModelSerializer):
+    id = serializers.IntegerField(required=False)
+    faculty = FacultySerializer(required=True)
+    class Meta:
+        model = Major
+        fields = ['id', 'name', 'code', 'faculty']
+        extra_kwargs = {
+            'code': {'validators': []},
+            'name': {'validators': []}
+        }
+
+    def update(self, instance, validated_data):
+        faculty_data = validated_data.pop('faculty', None)
+
+        instance.name = validated_data.get('name', instance.name)
+        instance.code = validated_data.get('code', instance.code)
+
+        if faculty_data:
+            faculty_id = faculty_data.get('id')
+            try:
+                faculty_instance = Faculty.objects.get(id=faculty_id)
+                instance.faculty = faculty_instance
+            except Faculty.DoesNotExist:
+                raise serializers.ValidationError({"err_msg": "Khoa không tồn tại"})
+
+        instance.save()
+        return instance
+
+    def create(self, validated_data):
+        faculty_data = validated_data.pop('faculty', None)
+
+        faculty_id = faculty_data.get('id')
+
+        try:
+            faculty_instance = Faculty.objects.get(id=faculty_id)
+        except Faculty.DoesNotExist:
+            raise serializers.ValidationError({"err_msg": "Khoa không tồn tại."})
+
+        return Major.objects.create(faculty=faculty_instance, **validated_data)
+
+class SyllabusSimpleSerializer(serializers.ModelSerializer):
+    subject_name = serializers.CharField(source='subject.name', read_only=True)
+    lecturer_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Syllabus
+        fields = ['id', 'name', 'subject_name', 'lecturer_name', 'created_date']
+
+    def get_lecturer_name(self, obj):
+        if obj.lecturer and obj.lecturer.user:
+            return f"{obj.lecturer.user.last_name} {obj.lecturer.user.first_name}"
+        return "N/A"
+
+class TrainingProgramSerializer(serializers.ModelSerializer):
+    major = MajorSerializer(required=True)
+    inherit_from_id = serializers.IntegerField(write_only=True, required=False, allow_null=True)
+    class Meta:
+        model = TrainingProgram
+        fields = ['id', 'name', 'academic_year', 'major', 'inherit_from_id']
+
+
+    def update(self, instance, validated_data):
+        major_data = validated_data.pop('major', None)
+        inherit_from_id = validated_data.pop('inherit_from_id', None)
+
+        instance.name = validated_data.get('name', instance.name)
+        instance.academic_year = validated_data.get('academic_year', instance.academic_year)
+
+        if major_data:
+            try:
+                major_instance = Major.objects.get(id=major_data['id'])
+                instance.major = major_instance
+            except Major.DoesNotExist:
+                raise serializers.ValidationError({"err_msg": "Chuyên ngành không tồn tại."})
+
+        instance.save()
+
+        if inherit_from_id:
+            try:
+                old_program = TrainingProgram.objects.get(id=inherit_from_id)
+                old_syllabuses = old_program.syllabuses.all()
+                instance.syllabuses.set(old_syllabuses)
+            except TrainingProgram.DoesNotExist:
+                pass
+
+        return instance
+
+    def create(self, validated_data):
+        major_data = validated_data.pop('major')
+        inherit_from_id = validated_data.pop('inherit_from_id')
+
+        try:
+            major_instance = Major.objects.get(id=major_data['id'])
+        except Major.DoesNotExist:
+            raise serializers.ValidationError({"err_msg": "Chuyên ngành không tồn tại."})
+        program = TrainingProgram.objects.create(major=major_instance, **validated_data)
+        if inherit_from_id:
+            try:
+                old_program = TrainingProgram.objects.get(id=inherit_from_id)
+                old_syllabuses = old_program.syllabuses.all()
+                program.syllabuses.set(old_syllabuses)
+            except TrainingProgram.DoesNotExist:
+                pass
+
+        return program

@@ -1,6 +1,8 @@
 import TextRenderer from "./renderers/TextRenderer";
 import SelectionRenderer from "./renderers/SelectionRenderer";
 import ReferenceRenderer from "./ReferenceRenderer";
+import {Alert, Space} from "antd";
+import Text from "antd/es/typography/Text";
 
 const COMPONENT_MAP = {
   text: TextRenderer,
@@ -12,16 +14,22 @@ const SubSectionRenderer = ({item, basePath}) => {
 
   if (!TargetComponent) {
     return (
-      <div
-        style={{
-          padding: "10px",
-          border: "1px dashed #ccc",
-          marginBottom: "10px",
-        }}
-      >
-        <strong>Type không hợp lệ:</strong> {item.type} | <strong>Code:</strong>{" "}
-        {item.code}
-      </div>
+      <Alert
+        message="Cấu hình không hợp lệ"
+        description={
+          <Space direction="vertical" size={0}>
+            <Text>
+              Type: <Text code>{item.type}</Text>
+            </Text>
+            <Text>
+              Code: <Text code>{item.code}</Text>
+            </Text>
+          </Space>
+        }
+        type="warning"
+        showIcon
+        style={{marginBottom: 16, borderRadius: 8}}
+      />
     );
   }
 

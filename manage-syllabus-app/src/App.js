@@ -1,4 +1,4 @@
-import {BrowserRouter, Route, Routes} from "react-router-dom";
+import {BrowserRouter, Outlet, Route, Routes} from "react-router-dom";
 import MyHeader from "./components/MyHeader";
 import MyFooter from "./components/MyFooter";
 import {Container} from "react-bootstrap";
@@ -16,11 +16,19 @@ import cookies from "react-cookies";
 import User from "./screens/User/User";
 import SyllabusEdit from "./screens/syllabus/SyllabusEdit";
 import {authApis, endpoints} from "./config/Apis";
-
+import FacultyManagement from "./screens/admin/FacultyManagement";
+import AdminRoutes from "./screens/admin/AdminRoutes";
+import SubjectManagement from "./screens/admin/SubjectManagement";
+import MySpinner from "./components/MySpinner";
+import AdminManagement from "./screens/admin/AdminManagement";
+import MajorManagement from "./screens/admin/MajorManagement";
+import TrainingProgramManagement from "./screens/admin/TrainingProgramManagement";
+import SyllabusesProgram from "./screens/admin/SyllabusesProgram";
 const App = () => {
-  const [user, dispatch] = useReducer(MyUserReducer, cookies.load("user"));
+  const [user, dispatch] = useReducer(MyUserReducer, null);
   const [selectionDictionary, setSelectionDictionary] = useState({});
   const [isDictLoading, setIsDictLoading] = useState(true);
+  const [authLoading, setAuthLoading] = useState(true);
 
   const autoLogin = async () => {
     const token = cookies.load("token");
@@ -35,11 +43,14 @@ const App = () => {
         console.error("Tự động đăng nhập thất bại:", error);
       }
     }
+    setAuthLoading(false);
   };
 
   const fetchMasterData = async () => {
     try {
       setIsDictLoading(true);
+      const token = cookies.load("token");
+      if (!token) return;
       const res = await authApis().get(endpoints["attribute-groups"]);
       const rawApiData = res.data;
       const dictionary = rawApiData.reduce((acc, group) => {
@@ -60,6 +71,10 @@ const App = () => {
     fetchMasterData();
     autoLogin();
   }, []);
+
+  if (authLoading) {
+    return <MySpinner />;
+  }
   return (
     <ConfigProvider
       theme={{
@@ -94,6 +109,28 @@ const App = () => {
                       path="/syllabuses/:syllabusId"
                       element={<SyllabusEdit />}
                     />
+                    <Route
+                      path="/admin"
+                      element={
+                        <AdminRoutes>
+                          <Outlet />
+                        </AdminRoutes>
+                      }
+                    >
+                      <Route index element={<AdminManagement />} />
+
+                      <Route path="faculties" element={<FacultyManagement />} />
+                      <Route path="subjects" element={<SubjectManagement />} />
+                      <Route path="majors" element={<MajorManagement />} />
+
+                      <Route path="training-programs">
+                        <Route index element={<TrainingProgramManagement />} />
+                        <Route
+                          path=":programId/syllabuses"
+                          element={<SyllabusesProgram />}
+                        />
+                      </Route>
+                    </Route>
                   </Routes>
                 </Container>
               </div>

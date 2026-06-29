@@ -1,35 +1,25 @@
-import {Button, Card, Form, Input, message} from "antd";
+import React, {useContext, useState} from "react";
+import {Card, Form, Input, Button, Typography, message, Divider} from "antd";
+import {UserOutlined, LockOutlined, BookOutlined} from "@ant-design/icons";
+import {useNavigate, Link, useSearchParams} from "react-router-dom";
+import cookies from "react-cookies";
 import Apis, {
   authApis,
+  endpoints,
   CLIENT_ID,
   CLIENT_SECRET,
-  endpoints,
 } from "../../config/Apis";
-import {useContext, useState} from "react";
-import MySpinner from "../../components/MySpinner";
-import cookies from "react-cookies";
 import {MyUserContext} from "../../config/contexts/MyContext";
-import {UserOutlined, LockOutlined} from "@ant-design/icons";
-import Title from "antd/es/typography/Title";
-import {useNavigate} from "react-router-dom";
+
+const {Title, Text} = Typography;
+
 const Login = () => {
   const [loading, setLoading] = useState(false);
   const [, dispatch] = useContext(MyUserContext);
   const nav = useNavigate();
-  const userInfo = [
-    {
-      field: "username",
-      label: "Tên đăng nhập",
-      type: "text",
-      icon: <UserOutlined />,
-    },
-    {
-      field: "password",
-      label: "Mật khẩu",
-      type: "password",
-      icon: <LockOutlined />,
-    },
-  ];
+  const [params] = useSearchParams();
+  const [form] = Form.useForm();
+
   const handleLogin = async (values) => {
     try {
       setLoading(true);
@@ -37,123 +27,183 @@ const Login = () => {
         endpoints["login"],
         `grant_type=password&username=${values.username}&password=${values.password}&client_id=${CLIENT_ID}&client_secret=${CLIENT_SECRET}`,
         {
-          headers: {"Content-Type": "application/x-www-form-urlencoded"},
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
         },
       );
 
-      if (res.status === 200) {
-        cookies.save("token", res.data.access_token);
-        cookies.save("refresh_token", res.data.refresh_token);
-        message.success("Đăng nhập thành công");
+      cookies.save("token", res.data.access_token);
+      cookies.save("refresh_token", res.data.refresh_token);
+      const user = await authApis().get(endpoints["profile"]);
+      console.log(user);
+      dispatch({
+        type: "login",
+        payload: user.data,
+      });
 
-        const uInfo = await authApis().get(endpoints["profile"]);
-        console.log(uInfo.data);
-        dispatch({
-          type: "login",
-          payload: uInfo.data,
-        });
-        nav("/");
-      } else {
-        message.error("Đăng nhập thất bại");
-      }
+      message.success("Đăng nhập thành công!");
+      const next = params.get("next");
+
+      const roleRoutes = {
+        admin: "/admin",
+        specialist: "/specialist",
+      };
+
+      nav(next || roleRoutes[user.data.user_role] || "/");
     } catch (error) {
       console.error(error);
-      message.error("Lỗi khi đăng nhập");
+      message.error("Tên đăng nhập hoặc mật khẩu không chính xác!");
     } finally {
       setLoading(false);
     }
   };
+
   return (
     <div
-      style={{
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        minHeight: "80vh",
-      }}
+      className="min-h-screen flex flex-col items-center justify-center px-4"
+      style={{background: "#f8fafb"}}
     >
-      <Card
-        style={{
-          width: 400,
-          boxShadow: "0 8px 24px rgba(0, 82, 156, 0.15)",
-          borderRadius: "10px",
-          borderTop: "5px solid #00529C",
-        }}
-      >
-        <div style={{textAlign: "center", marginBottom: "30px"}}>
-          <Title
-            level={3}
-            style={{color: "#00529C", margin: 0, textTransform: "uppercase"}}
-          >
-            Đăng nhập
-          </Title>
-          <p style={{color: "#8c8c8c", marginTop: "8px"}}>
-            Hệ thống Quản lý Đề cương HCMOU
-          </p>
-        </div>
-
-        <Form
-          name="login_form"
-          layout="vertical"
-          initialValues={{remember: true}}
-          onFinish={handleLogin}
-          autoComplete="off"
-          size="large"
+      <div style={{width: "100%", maxWidth: 400}}>
+        <Card
+          bordered={false}
+          style={{
+            borderRadius: 12,
+            boxShadow:
+              "0 10px 30px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0,0,0,0.02)",
+            background: "#ffffff",
+          }}
+          bodyStyle={{padding: "40px 32px 32px 32px"}}
         >
-          {userInfo.map((u) => (
-            <Form.Item
-              key={u.field}
-              label={<span style={{fontWeight: 500}}>{u.label}</span>}
-              name={u.field}
-              rules={[
-                {
-                  required: true,
-                  message: `Vui lòng nhập ${u.label.toLowerCase()}!`,
-                },
-              ]}
+          <div className="flex flex-col items-center mb-8 text-center">
+            <div
+              style={{
+                width: 48,
+                height: 48,
+                borderRadius: 12,
+                background: "#1890ff",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                marginBottom: 16,
+              }}
             >
-              {u.type === "password" ? (
-                <Input.Password
-                  prefix={u.icon}
-                  placeholder={`Nhập ${u.label.toLowerCase()}`}
-                />
-              ) : (
-                <Input
-                  prefix={u.icon}
-                  placeholder={`Nhập ${u.label.toLowerCase()}`}
-                />
-              )}
-            </Form.Item>
-          ))}
-
-          <div style={{textAlign: "right", marginBottom: "20px"}}>
-            <a style={{color: "#00529C"}} href="#forgot">
-              Quên mật khẩu?
-            </a>
+              <BookOutlined style={{color: "#ffffff", fontSize: 22}} />
+            </div>
+            <Title
+              level={3}
+              style={{
+                margin: 0,
+                fontWeight: 700,
+                color: "#1890ff",
+                fontSize: 22,
+              }}
+            >
+              Hệ thống quản lí đề cương môn học
+            </Title>
           </div>
 
-          <Form.Item style={{marginBottom: 0}}>
-            {loading ? (
-              <MySpinner />
-            ) : (
+          <Form
+            form={form}
+            layout="vertical"
+            size="large"
+            onFinish={handleLogin}
+            requiredMark={true}
+          >
+            <Form.Item
+              name="username"
+              label={
+                <span
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 600,
+                    color: "#6b7280",
+                    letterSpacing: "0.5px",
+                  }}
+                >
+                  USERNAME
+                </span>
+              }
+              rules={[
+                {required: true, message: "Vui lòng nhập tên đăng nhập!"},
+              ]}
+              style={{marginBottom: 20}}
+            >
+              <Input
+                prefix={
+                  <UserOutlined style={{color: "#9ca3af", marginRight: 8}} />
+                }
+                placeholder="Enter your username"
+                style={{borderRadius: 8, fontSize: 14}}
+              />
+            </Form.Item>
+
+            <Form.Item
+              name="password"
+              label={
+                <span
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 600,
+                    color: "#6b7280",
+                    letterSpacing: "0.5px",
+                  }}
+                >
+                  PASSWORD
+                </span>
+              }
+              rules={[{required: true, message: "Vui lòng nhập mật khẩu!"}]}
+              style={{marginBottom: 24}}
+            >
+              <Input.Password
+                prefix={
+                  <LockOutlined style={{color: "#9ca3af", marginRight: 8}} />
+                }
+                placeholder="••••••••"
+                style={{borderRadius: 8, fontSize: 14}}
+              />
+            </Form.Item>
+
+            <Form.Item style={{marginBottom: 0}}>
               <Button
                 type="primary"
                 htmlType="submit"
                 block
                 loading={loading}
                 style={{
-                  backgroundColor: "#00529C",
-                  height: "45px",
-                  fontSize: "16px",
-                  fontWeight: "bold",
+                  fontWeight: 600,
+                  height: 42,
+                  borderRadius: 8,
+                  fontSize: 14,
+                  backgroundColor: "#1677ff",
+                  boxShadow: "none",
                 }}
               >
-                ĐĂNG NHẬP
+                Đăng nhập
               </Button>
-            )}
-          </Form.Item>
-        </Form>
-      </Card>
+            </Form.Item>
+          </Form>
+
+          <Divider style={{margin: "24px 0 20px 0", borderColor: "#f3f4f6"}} />
+
+          <div className="flex flex-col items-center gap-3">
+            <Link
+              to="/forgot-password"
+              style={{color: "#6b7280", fontSize: 13, fontWeight: 500}}
+              className="hover:text-blue-500 transition-colors"
+            >
+              Đăng ký tài khoản
+            </Link>
+          </div>
+        </Card>
+
+        <div className="text-center mt-8">
+          <Text style={{fontSize: 12, color: "#9ca3af"}}>
+            © {new Date().getFullYear()} Syllabus Management System. University
+            Faculty Administration Portal.
+          </Text>
+        </div>
+      </div>
     </div>
   );
 };

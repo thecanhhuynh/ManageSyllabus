@@ -15,6 +15,9 @@ routes.register('type-requirements', views.TypeRequirementView)
 routes.register('programme-learning-outcomes', views.ProgrammeLearningOutcomeView)
 routes.register('learning-materials', views.LearningMaterialsView)
 routes.register('type-learning-materials', views.TypeLearningMaterialsView)
+routes.register('schedule-groups', views.ScheduleView)
+routes.register('training-programs', views.TrainingProgramView)
+routes.register('majors', views.MajorView)
 
 urlpatterns = [
     path('', include(routes.urls)),

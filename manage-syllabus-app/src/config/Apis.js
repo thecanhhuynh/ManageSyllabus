@@ -6,13 +6,28 @@ export const endpoints = {
   profile: "/users/current-user/",
   syllabuses: "/syllabuses/",
   "syllabus-detail": (syllabusId) => `/syllabuses/${syllabusId}/`,
+  "syllabus-clos": (syllabusId) => `/syllabuses/${syllabusId}/clos/`,
+  "syllabus-assessments": (syllabusId) =>
+    `/syllabuses/${syllabusId}/assessments/`,
+  "syllabus-learning-materials": (syllabusId) =>
+    `/syllabuses/${syllabusId}/learning-materials/`,
   faculties: "/faculties/",
+  "update-faculty": (facultyId) => `/faculties/${facultyId}/`,
   subjects: "/subjects/",
+  "update-subject": (subjectId) => `/subjects/${subjectId}/`,
   "attribute-groups": "/attribute-groups/",
   "type-requirements": "/type-requirements/",
   "programme-learning-outcomes": "/programme-learning-outcomes/",
   "learning-materials": "/learning-materials/",
   "type-materials": "/type-learning-materials/",
+  "schedule-groups": "/schedule-groups/",
+  majors: "/majors/",
+  "update-major": (majorId) => `/majors/${majorId}/`,
+  "training-programs": "/training-programs/",
+  "update-training-program": (trainingProgramId) =>
+    `/training-programs/${trainingProgramId}/`,
+  "syllabuses-programs": (programId) =>
+    `/training-programs/${programId}/syllabuses/`,
 };
 const CLIENT_ID = process.env.REACT_APP_CLIENT_ID;
 const CLIENT_SECRET = process.env.REACT_APP_CLIENT_SECRET;

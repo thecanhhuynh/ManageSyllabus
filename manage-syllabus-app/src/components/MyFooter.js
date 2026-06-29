@@ -1,29 +1,48 @@
 import React from "react";
-import {Layout, Typography, Divider} from "antd";
+import {Layout, Typography} from "antd";
 
 const {Footer} = Layout;
-const {Text, Title} = Typography;
+const {Text} = Typography;
 
 const MyFooter = () => {
   return (
     <Footer
+      className="flex flex-col items-center justify-center"
       style={{
+        background: "#fafafa",
+        borderTop: "1px solid #f0f0f0",
+        padding: "24px 20px",
         textAlign: "center",
-        backgroundColor: "#00529C",
-        padding: "30px 20px",
+        marginTop: "auto",
       }}
     >
-      <Title level={5} style={{color: "#fff", margin: 0, letterSpacing: "1px"}}>
-        HỆ THỐNG QUẢN LÝ ĐỀ CƯƠNG MÔN HỌC
-      </Title>
-      <Divider
-        style={{borderColor: "rgba(255,255,255,0.2)", margin: "15px 0"}}
+      <Text
+        strong
+        style={{
+          color: "#595959",
+          fontSize: 14,
+          letterSpacing: "0.5px",
+          textTransform: "uppercase",
+        }}
+      >
+        Hệ thống quản lý đề cương môn học
+      </Text>
+
+      <div
+        style={{
+          width: "40px",
+          height: "2px",
+          backgroundColor: "#1890ff",
+          margin: "12px 0",
+          borderRadius: "2px",
+        }}
       />
-      <div style={{display: "flex", flexDirection: "column", gap: "5px"}}>
-        <Text style={{color: "rgba(255,255,255,0.8)", fontSize: "12px"}}>
+
+      <div className="flex flex-col gap-1">
+        <Text style={{color: "#8c8c8c", fontSize: 13}}>
           Trường Đại học Mở Thành phố Hồ Chí Minh
         </Text>
-        <Text style={{color: "rgba(255,255,255,0.6)", fontSize: "11px"}}>
+        <Text style={{color: "#bfbfbf", fontSize: 12}}>
           © {new Date().getFullYear()} - Bản quyền thuộc về Tôi Syllabus
         </Text>
       </div>

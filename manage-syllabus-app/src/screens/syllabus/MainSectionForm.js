@@ -1,5 +1,5 @@
+import React, {useRef, useState, useEffect} from "react";
 import {Button, Col, Form, Input, message, Row, Spin} from "antd";
-import {useRef, useState, useEffect} from "react";
 import {SaveOutlined} from "@ant-design/icons";
 import {authApis, endpoints} from "../../config/Apis";
 import SubSectionRenderer from "../../components/SubSectionRender";
@@ -22,50 +22,36 @@ const MainSectionForm = ({syllabusId, mainSection}) => {
         ],
       };
       console.log(payload);
-
       const res = await authApis().patch(
         endpoints["syllabus-detail"](syllabusId),
         payload,
       );
-
       if (res.status === 200) {
         message.success("Lưu thành công");
       }
     } catch (error) {
-      console.error("Chi tiết lỗi:", error.response?.data);
-
       if (error.response?.data) {
         const errData = error.response.data;
-
-        let errorMsg = "Lỗi khi lưu";
-        if (errData.err_msg) {
-          errorMsg = Array.isArray(errData.err_msg)
+        let errorMsg = errData.err_msg
+          ? Array.isArray(errData.err_msg)
             ? errData.err_msg[0]
-            : errData.err_msg;
-        }
-
+            : errData.err_msg
+          : "Lỗi khi lưu";
         message.error(errorMsg);
       }
     } finally {
-      if (isMountedRef.current) {
-        setIsSaving(false);
-      }
+      if (isMountedRef.current) setIsSaving(false);
     }
   };
 
   const onFinish = (values) => {
     clearTimeout(timerRef.current);
-
     setIsSaving(true);
-
-    timerRef.current = setTimeout(() => {
-      handleSave(values);
-    }, 500);
+    timerRef.current = setTimeout(() => handleSave(values), 500);
   };
 
   useEffect(() => {
     isMountedRef.current = true;
-
     return () => {
       isMountedRef.current = false;
       clearTimeout(timerRef.current);
@@ -80,8 +66,9 @@ const MainSectionForm = ({syllabusId, mainSection}) => {
         layout="vertical"
         initialValues={initValues}
         onFinish={onFinish}
+        requiredMark={false}
       >
-        <Row gutter={[16, 16]}>
+        <Row gutter={[24, 24]}>
           {mainSection.sub_sections?.map((subSection, subIndex) => {
             const colSpan =
               subSection.display_mode === "textarea" ||
@@ -91,35 +78,49 @@ const MainSectionForm = ({syllabusId, mainSection}) => {
 
             return (
               <Col span={colSpan} key={subSection.id}>
-                {subSection.name && (
-                  <p style={{fontWeight: "bold", marginBottom: 4}}>
-                    {subSection.position}. {subSection.name}
-                  </p>
-                )}
-
                 <Form.Item name={["sub_sections", subIndex, "id"]} hidden>
                   <Input />
                 </Form.Item>
 
-                <SubSectionRenderer
-                  item={subSection}
-                  basePath={["sub_sections", subIndex]}
-                />
+                <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm hover:shadow-md transition-shadow">
+                  {subSection.name && (
+                    <div className="flex items-center mb-2">
+                      <div className="w-1.5 h-4 bg-blue-600 rounded-full mr-3"></div>
+                      <div className="text-[13px] font-bold text-gray-800 uppercase tracking-wider">
+                        {subSection.position}. {subSection.name}
+                      </div>
+                    </div>
+                  )}
+
+                  <div>
+                    <SubSectionRenderer
+                      item={subSection}
+                      basePath={["sub_sections", subIndex]}
+                    />
+                  </div>
+                </div>
               </Col>
             );
           })}
         </Row>
 
-        <Form.Item style={{textAlign: "right", marginTop: 24}}>
+        <div className="flex justify-end mt-8">
           <Button
             type="primary"
             htmlType="submit"
             icon={<SaveOutlined />}
             loading={isSaving}
+            style={{
+              fontWeight: 600,
+              height: 42,
+              padding: "0 32px",
+              borderRadius: 8,
+              boxShadow: "none",
+            }}
           >
-            Lưu phần {mainSection.name}
+            Lưu thay đổi phần này
           </Button>
-        </Form.Item>
+        </div>
       </Form>
     </Spin>
   );

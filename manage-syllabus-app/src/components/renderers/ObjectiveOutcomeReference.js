@@ -1,6 +1,6 @@
 import React, {useState, useEffect} from "react";
 import {Form, Input, Select, Button, Row, Col, Tooltip} from "antd";
-import {PlusOutlined, DeleteOutlined} from "@ant-design/icons";
+import {PlusOutlined, DeleteOutlined, HolderOutlined} from "@ant-design/icons";
 import {authApis, endpoints} from "../../config/Apis";
 
 const {TextArea} = Input;
@@ -8,6 +8,7 @@ const {TextArea} = Input;
 const ObjectiveOutcomeReference = ({refPath}) => {
   const [ploOptions, setPloOptions] = useState([]);
   const [isFetching, setIsFetching] = useState(false);
+
   const fetchPLOs = async () => {
     try {
       setIsFetching(true);
@@ -35,122 +36,104 @@ const ObjectiveOutcomeReference = ({refPath}) => {
       setIsFetching(false);
     }
   };
+
   useEffect(() => {
     fetchPLOs();
   }, []);
 
   return (
-    <div
-      style={{
-        padding: "16px",
-        backgroundColor: "#fafafa",
-        border: "1px solid #f0f0f0",
-        borderRadius: "8px",
-      }}
-    >
+    <div className="w-full">
       <Form.List name={refPath}>
         {(fields, {add, remove}) => (
           <>
-            <div
-              style={{
-                maxHeight: "350px",
-                overflowY: "auto",
-                overflowX: "hidden",
-                paddingRight: "8px",
-                marginBottom: fields.length > 0 ? "16px" : "0",
-              }}
-            >
+            <div className="flex flex-col gap-3 mb-4">
               {fields.map((field, index) => (
-                <Row
+                <div
                   key={field.key}
-                  gutter={12}
-                  style={{
-                    marginBottom: 12,
-                    padding: "12px",
-                    backgroundColor: "#ffffff",
-                    border: "1px solid #e8e8e8",
-                    borderRadius: "6px",
-                  }}
+                  className="bg-white border border-gray-200 rounded-lg shadow-sm p-4 group hover:border-blue-300 transition-all"
                 >
                   <Form.Item name={[field.name, "id"]} hidden>
                     <Input />
                   </Form.Item>
-                  <Col span={14}>
-                    <Form.Item
-                      {...field}
-                      name={[field.name, "content"]}
-                      label={
-                        <span style={{fontWeight: 600, color: "#1890ff"}}>
-                          CO{index + 1} - Nội dung Mục tiêu
+
+                  <Row gutter={16} align="top">
+                    <Col span={13}>
+                      <div className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1.5 flex items-center gap-2 h-6">
+                        <span className="bg-blue-50 text-blue-600 px-2 py-0.5 rounded text-[11px]">
+                          CO-{index + 1}
                         </span>
-                      }
-                      rules={[
-                        {required: true, message: "Vui lòng nhập nội dung"},
-                      ]}
-                      style={{marginBottom: 0}}
-                    >
-                      <TextArea
-                        autoSize={{minRows: 3, maxRows: 5}}
-                        placeholder="VD: Hiểu và trình bày được nguyên lý..."
-                      />
-                    </Form.Item>
-                  </Col>
+                        Nội dung mục tiêu
+                      </div>
+                      <Form.Item
+                        {...field}
+                        name={[field.name, "content"]}
+                        rules={[
+                          {required: true, message: "Vui lòng nhập nội dung"},
+                        ]}
+                        className="mb-0"
+                      >
+                        <TextArea
+                          autoSize={{minRows: 2, maxRows: 4}}
+                          placeholder="VD: Phân tích và đánh giá độ phức tạp..."
+                          className="rounded-md text-sm"
+                        />
+                      </Form.Item>
+                    </Col>
 
-                  <Col span={8}>
-                    <Form.Item
-                      {...field}
-                      name={[field.name, "programme_learning_outcomes"]}
-                      label="Thuộc PLO"
-                      style={{marginBottom: 0}}
-                      getValueProps={(valueArray) => ({
-                        value: valueArray?.map((v) => v.id) || [],
-                      })}
-                      getValueFromEvent={(selectedIds) =>
-                        selectedIds ? selectedIds.map((id) => ({id})) : []
-                      }
-                    >
-                      <Select
-                        mode="multiple"
-                        allowClear
-                        placeholder="Chọn PLO..."
-                        options={ploOptions}
-                        loading={isFetching}
-                        optionLabelProp="tagLabel"
-                        maxTagCount="responsive"
-                      />
-                    </Form.Item>
-                  </Col>
+                    <Col span={10}>
+                      <div className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1.5 flex items-center gap-1 h-6">
+                        <span className="text-gray-400">≈</span> Chuẩn đầu ra
+                        (PLO)
+                      </div>
+                      <Form.Item
+                        {...field}
+                        name={[field.name, "programme_learning_outcomes"]}
+                        className="mb-0"
+                        getValueProps={(valueArray) => ({
+                          value: valueArray?.map((v) => v.id) || [],
+                        })}
+                        getValueFromEvent={(selectedIds) =>
+                          selectedIds ? selectedIds.map((id) => ({id})) : []
+                        }
+                      >
+                        <Select
+                          mode="multiple"
+                          allowClear
+                          placeholder="Chọn PLO..."
+                          options={ploOptions}
+                          loading={isFetching}
+                          optionLabelProp="tagLabel"
+                          maxTagCount="responsive"
+                          className="w-full rounded-md"
+                        />
+                      </Form.Item>
+                    </Col>
 
-                  <Col
-                    span={2}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      marginTop: "28px",
-                    }}
-                  >
-                    <Button
-                      type="text"
-                      danger
-                      icon={<DeleteOutlined />}
-                      onClick={() => remove(field.name)}
-                    />
-                  </Col>
-                </Row>
+                    <Col span={1} className="flex justify-center pb-1 mt-7">
+                      <Tooltip title="Xóa mục tiêu này">
+                        <Button
+                          type="text"
+                          danger
+                          icon={<DeleteOutlined className="text-base" />}
+                          onClick={() => remove(field.name)}
+                          className="opacity-40 group-hover:opacity-100 hover:bg-red-50 transition-opacity"
+                        />
+                      </Tooltip>
+                    </Col>
+                  </Row>
+                </div>
               ))}
             </div>
 
-            <Form.Item style={{marginBottom: 0}}>
-              <Button
-                type="dashed"
-                onClick={() => add()}
-                block
-                icon={<PlusOutlined />}
-              >
-                Thêm Mục tiêu / Chuẩn đầu ra
-              </Button>
-            </Form.Item>
+            <Button
+              type="dashed"
+              onClick={() => add({})}
+              block
+              icon={<PlusOutlined />}
+              className="h-10 border-gray-300 text-gray-600 font-medium rounded-lg hover:border-blue-500 hover:text-blue-500 bg-white"
+            >
+              Thêm Mục tiêu môn học (CO)
+            </Button>
           </>
         )}
       </Form.List>

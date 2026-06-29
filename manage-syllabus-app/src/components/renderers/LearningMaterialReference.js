@@ -1,16 +1,112 @@
 import React, {useState, useRef, useEffect} from "react";
-import {
-  Form,
-  Input,
-  Select,
-  Button,
-  Row,
-  Col,
-  AutoComplete,
-  message,
-} from "antd";
-import {PlusOutlined, DeleteOutlined} from "@ant-design/icons";
+import {Form, Input, AutoComplete, Button, message} from "antd";
+import {PlusOutlined, BookOutlined, CloseOutlined} from "@ant-design/icons";
 import Apis, {authApis, endpoints} from "../../config/Apis";
+
+// Component con: Xử lý trạng thái hiển thị của từng Tài liệu (Pill tĩnh <-> Input động)
+const MaterialItem = ({
+  field,
+  form,
+  refPath,
+  remove,
+  materialOptions,
+  loading,
+  handleSearch,
+  handlePopupScroll,
+  handleMaterialChange,
+}) => {
+  const initialName = form.getFieldValue([...refPath, field.name, "name"]);
+  // Nếu chưa có tên (vừa bấm Add), đặt isEditing = true để hiện ô nhập liệu
+  const [isEditing, setIsEditing] = useState(!initialName);
+  const inputRef = useRef(null);
+
+  // Tự động focus vào ô nhập liệu khi chuyển sang Edit Mode
+  useEffect(() => {
+    if (isEditing && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [isEditing]);
+
+  const onConfirm = () => {
+    // Dùng setTimeout nhỏ để AutoComplete kịp cập nhật value khi user chọn từ dropdown
+    setTimeout(() => {
+      const currentName = form.getFieldValue([...refPath, field.name, "name"]);
+      if (currentName && currentName.trim() !== "") {
+        setIsEditing(false); // Đã có chữ -> Thu nhỏ thành Pill
+      } else {
+        remove(field.name); // Bỏ trống -> Tự động xóa
+      }
+    }, 150);
+  };
+
+  return (
+    <div className="flex items-center">
+      {/* Input ẩn lưu trữ dữ liệu */}
+      <Form.Item {...field} name={[field.name, "id"]} hidden>
+        <Input />
+      </Form.Item>
+      <Form.Item {...field} name={[field.name, "type_material"]} hidden>
+        <Input />
+      </Form.Item>
+
+      {!isEditing ? (
+        /* UI: VIÊN THUỐC (PILL) KHI ĐÃ NHẬP XONG */
+        <div className="group flex items-center gap-1.5 bg-blue-50 border border-blue-200 text-blue-700 px-3 py-1 rounded-full text-[13px] font-medium transition-all hover:bg-blue-100 h-8">
+          <BookOutlined className="text-blue-500" />
+          <span
+            className="max-w-[250px] truncate cursor-pointer hover:underline"
+            title={form.getFieldValue([...refPath, field.name, "name"])}
+            onClick={() => setIsEditing(true)} // Click vào chữ để sửa lại
+          >
+            {form.getFieldValue([...refPath, field.name, "name"])}
+          </span>
+          <CloseOutlined
+            className="cursor-pointer text-blue-400 hover:text-red-500 ml-1 opacity-60 group-hover:opacity-100 transition-opacity"
+            onClick={() => remove(field.name)}
+          />
+          {/* Nơi chứa name thật khi ở dạng Pill */}
+          <Form.Item {...field} name={[field.name, "name"]} hidden>
+            <Input />
+          </Form.Item>
+        </div>
+      ) : (
+        /* UI: Ô AUTOCOMPLETE KHI ĐANG NHẬP LIỆU */
+        <div className="flex items-center bg-white border border-blue-400 rounded-full pl-3 pr-1 h-8 shadow-sm transition-all hover:border-blue-500">
+          <Form.Item
+            {...field}
+            name={[field.name, "name"]}
+            rules={[{required: true, message: "Nhập tên tài liệu"}]}
+            className="mb-0"
+            style={{width: 220}}
+          >
+            <AutoComplete
+              ref={inputRef}
+              bordered={false}
+              placeholder="Nhập tên tài liệu / sách..."
+              options={materialOptions}
+              onSearch={handleSearch}
+              onPopupScroll={handlePopupScroll}
+              onChange={(val) => handleMaterialChange(val, field.name)}
+              onSelect={onConfirm}
+              onBlur={onConfirm}
+              className="w-full text-[13px]"
+              notFoundContent={loading ? "Đang tìm..." : "Gõ để tạo sách mới"}
+            />
+          </Form.Item>
+          <Button
+            type="text"
+            danger
+            shape="circle"
+            icon={<CloseOutlined className="text-[11px]" />}
+            onClick={() => remove(field.name)}
+            size="small"
+            className="w-6 h-6 min-w-0 flex items-center justify-center bg-gray-50 hover:bg-red-50 ml-1"
+          />
+        </div>
+      )}
+    </div>
+  );
+};
 
 const LearningMaterialReference = ({refPath}) => {
   const form = Form.useFormInstance();
@@ -23,24 +119,15 @@ const LearningMaterialReference = ({refPath}) => {
   const searchTimeoutRef = useRef(null);
 
   const [materialTypeOptions, setMaterialTypeOptions] = useState([]);
-  const [loadingType, setLoadingType] = useState(false);
 
   const loadTypeOptions = async () => {
     try {
-      setLoadingType(true);
       const res = await Apis.get(endpoints["type-materials"]);
-
-      const options = res.data.map((item) => ({
-        label: item.name,
-        value: item.id,
-        typeObj: {id: item.id, name: item.name},
-      }));
-      setMaterialTypeOptions(options);
+      // Lưu thẳng mảng gốc {id, name} để dùng cho map Categories
+      setMaterialTypeOptions(res.data);
     } catch (error) {
       console.log(error);
       message.error("Lỗi tải loại tài liệu");
-    } finally {
-      setLoadingType(false);
     }
   };
 
@@ -59,15 +146,11 @@ const LearningMaterialReference = ({refPath}) => {
 
         setHasNext(res.data.next != null);
 
-        if (page === 1) {
-          setMaterialOptions(newData);
-        } else {
-          setMaterialOptions((prev) => [...prev, ...newData]);
-        }
+        if (page === 1) setMaterialOptions(newData);
+        else setMaterialOptions((prev) => [...prev, ...newData]);
       }
     } catch (error) {
       console.error("Lỗi tải tài liệu:", error);
-      message.error("Không thể tải danh sách tài liệu");
     } finally {
       setLoading(false);
     }
@@ -79,13 +162,10 @@ const LearningMaterialReference = ({refPath}) => {
 
   useEffect(() => {
     loadMaterials();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, q]);
 
   const handleSearchMaterials = (keyword) => {
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
-    }
+    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
     searchTimeoutRef.current = setTimeout(() => {
       setQ(keyword);
       setPage(1);
@@ -95,9 +175,7 @@ const LearningMaterialReference = ({refPath}) => {
   const handlePopupScroll = (e) => {
     const {target} = e;
     if (target.scrollTop + target.offsetHeight >= target.scrollHeight - 10) {
-      if (hasNext && !loading) {
-        setPage((prev) => prev + 1);
-      }
+      if (hasNext && !loading) setPage((prev) => prev + 1);
     }
   };
 
@@ -112,112 +190,75 @@ const LearningMaterialReference = ({refPath}) => {
     }
   };
 
+  // Hàm chuẩn hóa ID
+  const getMatTypeId = (val) => {
+    if (!val) return null;
+    return typeof val === "object" ? val.id : val;
+  };
+
   return (
-    <div
-      style={{
-        padding: "16px",
-        backgroundColor: "#fafafa",
-        border: "1px solid #f0f0f0",
-        borderRadius: "8px",
-      }}
-    >
+    <div className="w-full">
       <Form.List name={refPath}>
         {(fields, {add, remove}) => (
-          <>
-            <div
-              style={{
-                maxHeight: "300px",
-                overflowY: "auto",
-                overflowX: "hidden",
-                paddingRight: "8px",
-                marginBottom: fields.length > 0 ? "16px" : "0",
-              }}
-            >
-              {fields.map(({key, name, ...restField}) => (
-                <Row
-                  key={key}
-                  gutter={12}
-                  align="bottom"
-                  style={{
-                    marginBottom: 12,
-                    padding: "12px",
-                    backgroundColor: "#ffffff",
-                    border: "1px solid #e8e8e8",
-                    borderRadius: "6px",
-                  }}
+          <div className="flex flex-col gap-4">
+            {materialTypeOptions.map((matType) => {
+              // Lấy an toàn các field thuộc Category hiện tại (Không dùng useWatch để chống lag)
+              const typeFields = fields.filter((field) => {
+                const val = form.getFieldValue([
+                  ...refPath,
+                  field.name,
+                  "type_material",
+                ]);
+                if (!val) return false;
+                return String(getMatTypeId(val)) === String(matType.id);
+              });
+
+              return (
+                <div
+                  key={matType.id}
+                  className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm"
                 >
-                  <Form.Item {...restField} name={[name, "id"]} hidden>
-                    <Input />
-                  </Form.Item>
+                  {/* HEADER CỦA CATEGORY TÀI LIỆU */}
+                  <div className="px-4 py-2 border-b border-gray-100 bg-gray-50/80">
+                    <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">
+                      {matType.name}
+                    </span>
+                  </div>
 
-                  <Col span={14}>
-                    <Form.Item
-                      {...restField}
-                      name={[name, "name"]}
-                      label="Tên tài liệu / Sách"
-                      rules={[
-                        {required: true, message: "Vui lòng nhập tên tài liệu"},
-                      ]}
-                      style={{marginBottom: 0}}
-                    >
-                      <AutoComplete
-                        options={materialOptions}
-                        onSearch={handleSearchMaterials}
-                        onPopupScroll={handlePopupScroll}
-                        onChange={(value) => handleMaterialChange(value, name)}
-                        placeholder="VD: Introduction to Algorithms - CLRS"
-                        notFoundContent={
-                          loading
-                            ? "Đang tìm..."
-                            : "Gõ để tạo sách mới nếu chưa có"
-                        }
+                  {/* DANH SÁCH TÀI LIỆU */}
+                  <div className="p-3 flex flex-wrap gap-2 items-center min-h-[54px]">
+                    {typeFields.map((field) => (
+                      <MaterialItem
+                        key={field.key}
+                        field={field}
+                        form={form}
+                        refPath={refPath}
+                        remove={remove}
+                        materialOptions={materialOptions}
+                        loading={loading}
+                        handleSearch={handleSearchMaterials}
+                        handlePopupScroll={handlePopupScroll}
+                        handleMaterialChange={handleMaterialChange}
                       />
-                    </Form.Item>
-                  </Col>
+                    ))}
 
-                  <Col span={8}>
-                    <Form.Item
-                      {...restField}
-                      name={[name, "type_material"]}
-                      label="Loại tài liệu"
-                      rules={[{required: true, message: "Vui lòng chọn loại"}]}
-                      style={{marginBottom: 0}}
-                      getValueProps={(val) => ({
-                        value: val && typeof val === "object" ? val.id : val,
-                      })}
-                      getValueFromEvent={(val, option) => option.typeObj}
+                    {/* NÚT THÊM TÀI LIỆU */}
+                    <div
+                      className="flex items-center gap-1.5 border border-dashed border-gray-300 text-gray-500 px-3 py-1 rounded-full text-[13px] font-medium hover:text-blue-500 hover:border-blue-500 hover:bg-blue-50 cursor-pointer transition-all select-none h-8"
+                      onClick={() =>
+                        add({
+                          type_material: {id: matType.id, name: matType.name},
+                        })
+                      }
                     >
-                      <Select
-                        options={materialTypeOptions}
-                        loading={loadingType}
-                        placeholder="Chọn phân loại..."
-                      />
-                    </Form.Item>
-                  </Col>
-
-                  <Col span={2} style={{textAlign: "center"}}>
-                    <Button
-                      type="text"
-                      danger
-                      icon={<DeleteOutlined />}
-                      onClick={() => remove(name)}
-                    />
-                  </Col>
-                </Row>
-              ))}
-            </div>
-
-            <Form.Item style={{marginBottom: 0}}>
-              <Button
-                type="dashed"
-                onClick={() => add()}
-                block
-                icon={<PlusOutlined />}
-              >
-                Thêm tài liệu học tập
-              </Button>
-            </Form.Item>
-          </>
+                      <PlusOutlined className="text-[11px]" />
+                      <span>Thêm Tài liệu</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         )}
       </Form.List>
     </div>

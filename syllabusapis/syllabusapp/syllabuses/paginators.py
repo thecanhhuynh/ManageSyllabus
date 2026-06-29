@@ -15,3 +15,9 @@ class SubjectsPagination(PageNumberPagination):
 
 class LearningMaterialsPagination(PageNumberPagination):
     page_size = 10
+
+class MajorPagination(PageNumberPagination):
+    page_size = 10
+
+class TrainingPagination(PageNumberPagination):
+    page_size = 10

@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.urls import path
 
-from syllabuses.models import User
+from syllabuses.models import User, TypeAssessment, ScheduleGroup, TrainingProgram
 
 
 # Register your models here.
@@ -21,3 +21,6 @@ class MyAdminSite(admin.AdminSite):
 admin_site = MyAdminSite()
 
 admin_site.register(User)
+admin_site.register(TypeAssessment)
+admin_site.register(ScheduleGroup)
+admin_site.register(TrainingProgram)

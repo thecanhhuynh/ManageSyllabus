@@ -155,5 +155,5 @@ cloudinary.config(
     api_secret="zfwveRcXlclSOKM7mqSU2j0421c",
     api_proxy="http://proxy.server:3128"
 )
-CLIENT_ID = "ZcdECiY9HC3yewo5Z8LTPfUfUrZrUBiNHJnvBmTT"
-CLIENT_SECRET = "OLRlsGfMfKloGoDGLGC04xWUiwZhvdbgojU6PcjepvqXdZ0a1ox3Bmmswd4XoApRX8rYDRs14BQ8rSOx8Pzh1lr4lDO9OV4PbTSKv6xzpJKJK04HINUJHpIUEFLcxoFK"
+CLIENT_ID = "ivb9uKsLIPFr5u9kRFSZYAG9xadcbKD9woDUXn3O"
+CLIENT_SECRET = "e3V5YCrisUHseVSgS5qkEjoGev7VDq3xGI2uVnQHENjWXAhthk7pTUdEYl8iUJLtghJRExGnnr9IxIzueo2yh6rm4opZ2BHVdPpOgiwhiNckBL7YWyLFHhKwOwUN9TUm"
