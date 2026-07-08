@@ -24,6 +24,7 @@ import AdminManagement from "./screens/admin/AdminManagement";
 import MajorManagement from "./screens/admin/MajorManagement";
 import TrainingProgramManagement from "./screens/admin/TrainingProgramManagement";
 import SyllabusesProgram from "./screens/admin/SyllabusesProgram";
+import ProgrammeLearningOutcomeManagement from "./screens/admin/ProgrammeLearningOutcomeManagement";
 const App = () => {
   const [user, dispatch] = useReducer(MyUserReducer, null);
   const [selectionDictionary, setSelectionDictionary] = useState({});
@@ -130,6 +131,10 @@ const App = () => {
                           element={<SyllabusesProgram />}
                         />
                       </Route>
+                      <Route
+                        path="programs-learning-outcomes"
+                        element={<ProgrammeLearningOutcomeManagement />}
+                      />
                     </Route>
                   </Routes>
                 </Container>

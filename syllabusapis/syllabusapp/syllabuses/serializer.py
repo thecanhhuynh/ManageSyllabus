@@ -10,6 +10,7 @@ from syllabuses.models import User, Lecturer, Faculty, Syllabus, Subject, SubSec
 
 class FacultySerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(required=False)
+
     class Meta:
         model = Faculty
         fields = ['id', 'name']
@@ -27,12 +28,14 @@ class LecturerSerializer(serializers.ModelSerializer):
 
 
 class LecturerBasicSerializer(serializers.ModelSerializer):
+    id = serializers.IntegerField(source='user.id', read_only=True)
     first_name = serializers.CharField(source='user.first_name')
     last_name = serializers.CharField(source='user.last_name')
+    faculty_name = serializers.CharField(source='faculty.name', read_only=True, default="Chưa có khoa")
 
     class Meta:
         model = Lecturer
-        fields = ['id', 'first_name', 'last_name']
+        fields = ['id', 'first_name', 'last_name', 'room', 'faculty_name']
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -248,7 +251,8 @@ class SyllabusDetailSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Syllabus
-        fields = ['id', 'name', 'status', 'main_sections']
+        fields = ['id', 'name', 'status', 'main_sections', 'start_date_edition',
+                  'end_date_edition']
 
     def update(self, instance, validated_data):
         validated_data.pop('main_sections', None)
@@ -818,6 +822,7 @@ class TeachingSessionSerializer(serializers.ModelSerializer):
 class MajorSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(required=False)
     faculty = FacultySerializer(required=True)
+
     class Meta:
         model = Major
         fields = ['id', 'name', 'code', 'faculty']
@@ -855,26 +860,36 @@ class MajorSerializer(serializers.ModelSerializer):
 
         return Major.objects.create(faculty=faculty_instance, **validated_data)
 
+
 class SyllabusSimpleSerializer(serializers.ModelSerializer):
     subject_name = serializers.CharField(source='subject.name', read_only=True)
+    lecturer_id = serializers.IntegerField()
     lecturer_name = serializers.SerializerMethodField()
 
     class Meta:
         model = Syllabus
-        fields = ['id', 'name', 'subject_name', 'lecturer_name', 'created_date']
+        fields = ['id', 'name', 'subject_name', 'lecturer_id', 'lecturer_name', 'created_date', 'start_date_edition',
+                  'end_date_edition',
+                  'edit_date']
 
     def get_lecturer_name(self, obj):
         if obj.lecturer and obj.lecturer.user:
             return f"{obj.lecturer.user.last_name} {obj.lecturer.user.first_name}"
         return "N/A"
 
+    def get_lecturer_id(self, obj):
+        if obj.lecturer and obj.lecturer.user:
+            return obj.lecturer.user.id
+        return "N/A"
+
+
 class TrainingProgramSerializer(serializers.ModelSerializer):
     major = MajorSerializer(required=True)
     inherit_from_id = serializers.IntegerField(write_only=True, required=False, allow_null=True)
+
     class Meta:
         model = TrainingProgram
         fields = ['id', 'name', 'academic_year', 'major', 'inherit_from_id']
-
 
     def update(self, instance, validated_data):
         major_data = validated_data.pop('major', None)

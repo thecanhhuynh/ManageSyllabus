@@ -19,7 +19,7 @@ const TrainingProgramManagement = () => {
 
   const [majors, setMajors] = useState([]);
 
-  const fetchMajors = async () => {
+  const loadMajors = async () => {
     try {
       const res = await authApis().get(endpoints["majors"]);
       setMajors(res.data.results);
@@ -28,7 +28,7 @@ const TrainingProgramManagement = () => {
     }
   };
 
-  const fetchPrograms = async () => {
+  const loadPrograms = async () => {
     setLoading(true);
     try {
       const res = await authApis().get(endpoints["training-programs"]);
@@ -40,8 +40,8 @@ const TrainingProgramManagement = () => {
   };
 
   useEffect(() => {
-    fetchPrograms();
-    fetchMajors();
+    loadPrograms();
+    loadMajors();
   }, []);
 
   const handleSave = async (values) => {
@@ -66,7 +66,7 @@ const TrainingProgramManagement = () => {
         message.success("Thêm mới thành công!");
       }
       setIsModalVisible(false);
-      fetchPrograms();
+      loadPrograms();
     } catch (err) {
       console.log(err);
       message.error("Có lỗi xảy ra!");
@@ -77,7 +77,7 @@ const TrainingProgramManagement = () => {
     try {
       await authApis().delete(endpoints["update-training-program"](id));
       message.success("Xóa thành công!");
-      fetchPrograms();
+      loadPrograms();
     } catch (err) {
       message.error("Lỗi xóa dữ liệu!");
     }

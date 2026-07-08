@@ -133,6 +133,7 @@ class Syllabus(BaseModel):
     template = models.ForeignKey(TemplateSyllabus, on_delete=models.CASCADE, related_name='syllabuses')
     start_date_edition = models.DateTimeField(default=timezone.now)
     end_date_edition = models.DateTimeField(default=timezone.now)
+    edit_date = models.CharField(max_length=100, null=True, blank=True)
     learning_materials_rel = models.ManyToManyField('LearningMaterial', through='SyllabusLearningMaterial',
                                                     related_name='syllabuses_rel')
 

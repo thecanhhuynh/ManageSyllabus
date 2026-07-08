@@ -10,6 +10,9 @@ class SyllabusPagination(PageNumberPagination):
 class FacultyPagination(PageNumberPagination):
     page_size = 10
 
+class LecturerPagination(PageNumberPagination):
+    page_size = 10
+
 class SubjectsPagination(PageNumberPagination):
     page_size = 10
 
@@ -20,4 +23,7 @@ class MajorPagination(PageNumberPagination):
     page_size = 10
 
 class TrainingPagination(PageNumberPagination):
+    page_size = 10
+
+class ProgrammeLearningOutcomePagination(PageNumberPagination):
     page_size = 10

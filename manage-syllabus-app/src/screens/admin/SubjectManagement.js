@@ -25,7 +25,7 @@ const SubjectManagement = () => {
   const [form] = Form.useForm();
   const nav = useNavigate();
 
-  const fetchFaculties = async () => {
+  const loadSubjects = async () => {
     setLoading(true);
     try {
       const res = await authApis().get(endpoints["subjects"]);
@@ -37,7 +37,7 @@ const SubjectManagement = () => {
   };
 
   useEffect(() => {
-    fetchFaculties();
+    loadSubjects();
   }, []);
 
   const handleSave = async (values) => {
@@ -50,7 +50,7 @@ const SubjectManagement = () => {
         message.success("Thêm mới thành công!");
       }
       setIsModalVisible(false);
-      fetchFaculties();
+      loadSubjects();
     } catch (err) {
       message.error("Có lỗi xảy ra!");
     }
@@ -60,7 +60,7 @@ const SubjectManagement = () => {
     try {
       await authApis().delete(endpoints["update-subject"](id));
       message.success("Xóa thành công!");
-      fetchFaculties();
+      loadSubjects();
     } catch (err) {
       message.error("Lỗi xóa dữ liệu!");
     }

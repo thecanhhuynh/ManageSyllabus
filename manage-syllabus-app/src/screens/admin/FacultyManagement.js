@@ -15,7 +15,7 @@ const FacultyManagement = () => {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [form] = Form.useForm();
   const nav = useNavigate();
-  const fetchFaculties = async () => {
+  const loadFaculties = async () => {
     setLoading(true);
     try {
       const res = await authApis().get(endpoints["faculties"]);
@@ -27,7 +27,7 @@ const FacultyManagement = () => {
   };
 
   useEffect(() => {
-    fetchFaculties();
+    loadFaculties();
   }, []);
 
   const handleSave = async (values) => {
@@ -40,7 +40,7 @@ const FacultyManagement = () => {
         message.success("Thêm mới thành công!");
       }
       setIsModalVisible(false);
-      fetchFaculties();
+      loadFaculties();
     } catch (err) {
       message.error("Có lỗi xảy ra!");
     }
@@ -50,7 +50,7 @@ const FacultyManagement = () => {
     try {
       await authApis().delete(endpoints["update-faculty"](id));
       message.success("Xóa thành công!");
-      fetchFaculties();
+      loadFaculties();
     } catch (err) {
       message.error("Lỗi xóa dữ liệu!");
     }

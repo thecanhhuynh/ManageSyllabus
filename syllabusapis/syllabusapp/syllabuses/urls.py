@@ -18,6 +18,7 @@ routes.register('type-learning-materials', views.TypeLearningMaterialsView)
 routes.register('schedule-groups', views.ScheduleView)
 routes.register('training-programs', views.TrainingProgramView)
 routes.register('majors', views.MajorView)
+routes.register('lecturers', views.LecturerView)
 
 urlpatterns = [
     path('', include(routes.urls)),

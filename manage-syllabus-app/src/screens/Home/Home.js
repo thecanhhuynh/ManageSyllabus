@@ -9,7 +9,7 @@ import {
   Tag,
   Tooltip,
 } from "antd";
-import {useEffect, useState} from "react";
+import {useContext, useEffect, useState} from "react";
 import {authApis, endpoints} from "../../config/Apis";
 import Text from "antd/es/typography/Text";
 import {
@@ -22,7 +22,9 @@ import {
 import MySpinner from "../../components/MySpinner";
 import {useNavigate} from "react-router-dom";
 import cookies from "react-cookies";
+import {MyUserContext} from "../../config/contexts/MyContext";
 const Home = () => {
+  const [user] = useContext(MyUserContext);
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
   const [syllabuses, setSyllabuses] = useState([]);
@@ -106,6 +108,11 @@ const Home = () => {
       setLoading(false);
     }
   };
+  useEffect(() => {
+    if (!user) {
+      nav("/login");
+    }
+  }, [user]);
 
   useEffect(() => {
     let timer = setTimeout(() => {
@@ -177,7 +184,7 @@ const Home = () => {
               if (
                 target.scrollTop + target.offsetHeight ===
                   target.scrollHeight &&
-                hasNextFaculties
+                hasNextSubjects
               ) {
                 setSubjectPage((prev) => prev + 1);
               }

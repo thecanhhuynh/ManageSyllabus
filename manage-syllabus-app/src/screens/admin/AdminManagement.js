@@ -7,7 +7,7 @@ import {
   ReadOutlined,
   ProfileOutlined,
   TeamOutlined,
-  UserOutlined,
+  AimOutlined,
 } from "@ant-design/icons";
 
 const AdminManagement = () => {
@@ -40,7 +40,8 @@ const AdminManagement = () => {
     },
     {
       title: "Chương trình đào tạo",
-      description: "Quản lý CTĐT theo từng năm học",
+      description:
+        "Quản lý CTĐT theo từng năm học và phân công giảng viên phụ trách đề cương môn học",
       icon: <ProfileOutlined className="text-4xl text-orange-500" />,
       path: "/admin/training-programs",
       bgColor: "bg-orange-50",
@@ -53,6 +54,14 @@ const AdminManagement = () => {
       path: "/admin/users",
       bgColor: "bg-rose-50",
       borderColor: "border-rose-200",
+    },
+    {
+      title: "Quản lý Chuẩn đầu ra (PLO)",
+      description: "Quản lý danh sách chuẩn đầu ra của môn học",
+      icon: <AimOutlined className="text-4xl text-indigo-500" />,
+      path: "/admin/programs-learning-outcomes",
+      bgColor: "bg-indigo-50",
+      borderColor: "border-indigo-200",
     },
   ];
 

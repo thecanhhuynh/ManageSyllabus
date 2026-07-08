@@ -15,7 +15,7 @@ const ObjectiveOutcomeReference = ({refPath}) => {
       const res = await authApis().get(
         endpoints["programme-learning-outcomes"],
       );
-      const data = res.data;
+      const data = res.data.results;
 
       setPloOptions(
         data.map((plo) => ({

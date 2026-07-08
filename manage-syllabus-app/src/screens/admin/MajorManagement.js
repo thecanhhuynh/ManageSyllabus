@@ -17,7 +17,7 @@ const MajorManagement = () => {
   const [form] = Form.useForm();
   const nav = useNavigate();
 
-  const fetchFaculties = async () => {
+  const loadFaculties = async () => {
     setLoading(true);
     try {
       const res = await authApis().get(endpoints["faculties"]);
@@ -28,7 +28,7 @@ const MajorManagement = () => {
     setLoading(false);
   };
 
-  const fetchMajors = async () => {
+  const loadMajors = async () => {
     setLoading(true);
     try {
       const res = await authApis().get(endpoints["majors"]);
@@ -40,8 +40,8 @@ const MajorManagement = () => {
   };
 
   useEffect(() => {
-    fetchMajors();
-    fetchFaculties();
+    loadMajors();
+    loadFaculties();
   }, []);
 
   const handleSave = async (values) => {
@@ -66,7 +66,7 @@ const MajorManagement = () => {
         message.success("Thêm mới thành công!");
       }
       setIsModalVisible(false);
-      fetchMajors();
+      loadMajors();
     } catch (err) {
       console.log(err);
       message.error("Có lỗi xảy ra!");
@@ -77,7 +77,7 @@ const MajorManagement = () => {
     try {
       await authApis().delete(endpoints["update-major"](id));
       message.success("Xóa thành công!");
-      fetchMajors();
+      loadMajors();
     } catch (err) {
       message.error("Lỗi xóa dữ liệu!");
     }
