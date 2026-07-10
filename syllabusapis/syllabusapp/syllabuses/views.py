@@ -1,3 +1,4 @@
+from django.db import transaction
 from django.utils import timezone
 
 from django.db.models.functions import Length
@@ -13,14 +14,15 @@ from syllabuses import perms
 from syllabuses.filters import SyllabusFilter, SubjectFilter, LearningMaterialsFilter, UserFilter, LecturerFilter
 from syllabuses.models import User, Syllabus, Faculty, Subject, AttributeGroup, TypeRequirement, \
     ProgrammeLearningOutcome, LearningMaterial, TypeLearningMaterial, TypeAssessment, CourseLearningOutcome, Assessment, \
-    ScheduleGroup, Major, TrainingProgram, Lecturer
+    ScheduleGroup, Major, TrainingProgram, Lecturer, TemplateSyllabus, TemplateSubSection, TemplateMainSection
 from syllabuses.paginators import UserPaginator, SyllabusPagination, FacultyPagination, SubjectsPagination, \
     LearningMaterialsPagination, MajorPagination, TrainingPagination, ProgrammeLearningOutcomePagination, \
-    LecturerPagination
+    LecturerPagination, TemplatePagination
 from syllabuses.serializer import UserSerializer, UserDetailSerializer, SyllabusSerializer, FacultySerializer, \
     SubjectSerializer, SyllabusDetailSerializer, AttributeGroupListSerializer, TypeRequirementSerializer, \
     ProgrammeLearningOutcomeSerializer, LearningMaterialSerializer, TypeAssessmentSerializer, ScheduleGroupSerializer, \
-    MajorSerializer, TrainingProgramSerializer, SyllabusSimpleSerializer, LecturerBasicSerializer
+    MajorSerializer, TrainingProgramSerializer, SyllabusSimpleSerializer, LecturerBasicSerializer, \
+    TemplateSyllabusSerializer
 
 
 class UserView(mixins.ListModelMixin,
@@ -152,6 +154,80 @@ class SyllabusView(viewsets.ModelViewSet):
             "name": learning_material.name
         }for learning_material in learning_materials]
         return Response(data)
+
+
+class TemplateSyllabusView(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateModelMixin, mixins.UpdateModelMixin,
+                           mixins.RetrieveModelMixin):
+    queryset = TemplateSyllabus.objects.prefetch_related('main_sections__sub_sections').all()
+    serializer_class = TemplateSyllabusSerializer
+    permission_classes = [perms.IsSpecialist]
+    pagination_class = TemplatePagination
+    @action(detail=True, methods=['post'], url_path='clone')
+    @transaction.atomic
+    def clone_template(self, request, pk=None):
+        """Nhân bản template hiện tại thành bản Draft với version mới"""
+        old_template = self.get_object()
+        new_name = request.data.get("new_name", old_template.name)
+        new_version = request.data.get(
+            "new_version",
+            f"{old_template.version}_copy"
+        )
+
+        if TemplateSyllabus.objects.filter(
+                name=new_name,
+                version=new_version
+        ).exists():
+            return Response(
+                {"err_msg": "Template với tên và phiên bản này đã tồn tại."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # 1. Clone Template
+        new_template = TemplateSyllabus.objects.create(
+            name=new_name,
+            version=new_version,
+            status="Draft",
+            is_active=False
+        )
+
+        # 2. Clone Main Sections & Sub Sections
+        for old_main in old_template.main_sections.all():
+            new_main = TemplateMainSection.objects.create(
+                name=old_main.name,
+                template=new_template,
+                code=old_main.code,
+                position=old_main.position
+            )
+            for old_sub in old_main.sub_sections.all():
+                TemplateSubSection.objects.create(
+                    name=old_sub.name,
+                    main_section=new_main,
+                    type=old_sub.type,
+                    code=old_sub.code,
+                    position=old_sub.position,
+                    display_mode=old_sub.display_mode,
+                    place_holder=old_sub.place_holder
+                )
+
+        serializer = self.get_serializer(new_template)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    @action(detail=True, methods=['patch'], url_path='publish')
+    @transaction.atomic
+    def publish_template(self, request, pk=None):
+        """Ban hành template: Tắt is_active của tất cả bản cũ và bật cho bản này"""
+        template = self.get_object()
+
+        # Tắt toàn bộ template đang active
+        TemplateSyllabus.objects.filter(is_active=True).update(is_active=False)
+
+        # Bật active cho template hiện tại
+        template.is_active = True
+        template.status = "Published"
+        template.save()
+
+        return Response({"message": f"Đã ban hành thành công template: {template.name} ({template.version})"})
+
 
 class FacultyView(mixins.ListModelMixin,
                mixins.CreateModelMixin,

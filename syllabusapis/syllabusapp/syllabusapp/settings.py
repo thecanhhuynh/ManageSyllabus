@@ -90,7 +90,7 @@ pymysql.install_as_MySQLdb()
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'managesyllabus',
+        'NAME': 'managesyllabusv2',
         'USER': 'root',
         'PASSWORD': '123456',
         'HOST': ''

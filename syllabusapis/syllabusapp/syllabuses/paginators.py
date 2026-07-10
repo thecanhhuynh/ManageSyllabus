@@ -7,6 +7,9 @@ class UserPaginator(PageNumberPagination):
 class SyllabusPagination(PageNumberPagination):
     page_size = 10
 
+class TemplatePagination(PageNumberPagination):
+    page_size = 10
+
 class FacultyPagination(PageNumberPagination):
     page_size = 10
 

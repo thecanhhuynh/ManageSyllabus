@@ -116,17 +116,50 @@ class CloPloAssociation(models.Model):
     plo = models.ForeignKey(ProgrammeLearningOutcome, on_delete=models.CASCADE, related_name='clo_association')
     rating = models.IntegerField()
 
-
+#=== TEMPLATE ===
 class TemplateSyllabus(BaseModel):
-    name = models.CharField(max_length=100, unique=True)
-    structure = models.JSONField()
+    name = models.CharField(max_length=100)
+    version = models.CharField(max_length=20, default="v1.0")
+    status = models.CharField(max_length=20, default="Draft")  # Draft, Published, Archived
+    is_active = models.BooleanField(default=False)
 
+    class Meta:
+        unique_together = ('name', 'version')
+
+    def __str__(self):
+        return f"{self.name} ({self.version})"
+
+
+class TemplateMainSection(BaseModel):
+    template = models.ForeignKey(TemplateSyllabus, on_delete=models.CASCADE, related_name='main_sections')
+    code = models.CharField(max_length=50)
+    position = models.IntegerField(default=1)
+
+    class Meta:
+        unique_together = ('template', 'code')
+        ordering = ['position']
+
+
+class TemplateSubSection(BaseModel):
+    main_section = models.ForeignKey(TemplateMainSection, on_delete=models.CASCADE, related_name='sub_sections')
+    type = models.CharField(max_length=50)  # text, selection, reference, table...
+    code = models.CharField(max_length=50)
+    position = models.IntegerField(default=1)
+
+    display_mode = models.CharField(max_length=50, default="input", null=True, blank=True)
+    place_holder = models.CharField(max_length=100, null=True, blank=True)
+
+    class Meta:
+        ordering = ['position']
+
+#================
 
 class Syllabus(BaseModel):
-    name = models.CharField(max_length=100, unique=True, null=True, blank=True)
+    name = models.CharField(max_length=100, null=True, blank=True)
+    version = models.CharField(max_length=20, default="v1.0")
+    parent = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='clones')
     status = models.CharField(max_length=100, null=True, blank=True)
     created_date = models.DateTimeField(default=timezone.now)
-    structure_file = models.CharField(max_length=100, default="syllabus_2025.json")
     subject = models.ForeignKey(Subject, on_delete=models.CASCADE, related_name='syllabuses')
     faculty = models.ForeignKey(Faculty, on_delete=models.CASCADE, related_name='syllabuses')
     lecturer = models.ForeignKey(Lecturer, on_delete=models.CASCADE, related_name='syllabuses')

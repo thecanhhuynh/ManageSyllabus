@@ -16,15 +16,19 @@ import cookies from "react-cookies";
 import User from "./screens/User/User";
 import SyllabusEdit from "./screens/syllabus/SyllabusEdit";
 import {authApis, endpoints} from "./config/Apis";
-import FacultyManagement from "./screens/admin/FacultyManagement";
-import AdminRoutes from "./screens/admin/AdminRoutes";
-import SubjectManagement from "./screens/admin/SubjectManagement";
+import FacultyManagement from "./screens/Admin/FacultyManagement";
+import AdminRoutes from "./screens/Admin/AdminRoutes";
+import SubjectManagement from "./screens/Admin/SubjectManagement";
 import MySpinner from "./components/MySpinner";
-import AdminManagement from "./screens/admin/AdminManagement";
-import MajorManagement from "./screens/admin/MajorManagement";
-import TrainingProgramManagement from "./screens/admin/TrainingProgramManagement";
-import SyllabusesProgram from "./screens/admin/SyllabusesProgram";
-import ProgrammeLearningOutcomeManagement from "./screens/admin/ProgrammeLearningOutcomeManagement";
+import AdminManagement from "./screens/Admin/AdminManagement";
+import MajorManagement from "./screens/Admin/MajorManagement";
+import TrainingProgramManagement from "./screens/Admin/TrainingProgramManagement";
+import SyllabusesProgram from "./screens/Admin/SyllabusesProgram";
+import ProgrammeLearningOutcomeManagement from "./screens/Admin/ProgrammeLearningOutcomeManagement";
+import SpecialistRoutes from "./screens/Specialist/SpecialistRoutes";
+import TemplateManagement from "./screens/Specialist/TemplateManagement";
+import SpecialistManagement from "./screens/Specialist/SpecialistManagement";
+import TemplateBuilder from "./screens/Specialist/TemplateBuilder";
 const App = () => {
   const [user, dispatch] = useReducer(MyUserReducer, null);
   const [selectionDictionary, setSelectionDictionary] = useState({});
@@ -134,6 +138,24 @@ const App = () => {
                       <Route
                         path="programs-learning-outcomes"
                         element={<ProgrammeLearningOutcomeManagement />}
+                      />
+                    </Route>
+                    <Route
+                      path="/specialist"
+                      element={
+                        <SpecialistRoutes>
+                          <Outlet />
+                        </SpecialistRoutes>
+                      }
+                    >
+                      <Route index element={<SpecialistManagement />} />
+                      <Route
+                        path="templates"
+                        element={<TemplateManagement />}
+                      />
+                      <Route
+                        path="templates/:id/builder"
+                        element={<TemplateBuilder />}
                       />
                     </Route>
                   </Routes>

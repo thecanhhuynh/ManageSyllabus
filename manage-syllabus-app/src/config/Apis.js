@@ -29,6 +29,9 @@ export const endpoints = {
   "syllabuses-programs": (programId) =>
     `/training-programs/${programId}/syllabuses/`,
   lecturers: "/lecturers/",
+  templates: "/templates/",
+  "clone-templates": (templateId) => `/templates/${templateId}/clone/`,
+  "publish-templates": (templateId) => `/templates/${templateId}/publish/`,
 };
 const CLIENT_ID = process.env.REACT_APP_CLIENT_ID;
 const CLIENT_SECRET = process.env.REACT_APP_CLIENT_SECRET;

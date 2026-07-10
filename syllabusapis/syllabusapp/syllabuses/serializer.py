@@ -5,7 +5,7 @@ from syllabuses.models import User, Lecturer, Faculty, Syllabus, Subject, SubSec
     SelectionSubSection, AttributeGroup, AttributeValue, ReferenceSubSection, Credit, RequirementSubject, \
     ProgrammeLearningOutcome, CourseObjective, CourseLearningOutcome, LearningMaterial, TypeRequirement, \
     TypeLearningMaterial, SyllabusLearningMaterial, CloPloAssociation, TypeAssessment, Assessment, Method, \
-    ScheduleGroup, TeachingSession, Major, TrainingProgram
+    ScheduleGroup, TeachingSession, Major, TrainingProgram, TemplateSubSection, TemplateSyllabus, TemplateMainSection
 
 
 class FacultySerializer(serializers.ModelSerializer):
@@ -935,3 +935,39 @@ class TrainingProgramSerializer(serializers.ModelSerializer):
                 pass
 
         return program
+
+
+class TemplateSubSectionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TemplateSubSection
+        fields = ['id', 'type', 'code', 'position', 'display_mode', 'place_holder']
+
+
+class TemplateMainSectionSerializer(serializers.ModelSerializer):
+    sub_sections = TemplateSubSectionSerializer(many=True)
+
+    class Meta:
+        model = TemplateMainSection
+        fields = ['id', 'code', 'position', 'sub_sections']
+
+
+class TemplateSyllabusSerializer(serializers.ModelSerializer):
+    main_sections = TemplateMainSectionSerializer(many=True)
+
+    class Meta:
+        model = TemplateSyllabus
+        fields = ['id', 'name', 'version', 'status', 'is_active', 'main_sections']
+
+    def create(self, validated_data):
+        main_sections_data = validated_data.pop('main_sections', [])
+
+        template = TemplateSyllabus.objects.create(**validated_data)
+
+        for main_data in main_sections_data:
+            sub_sections_data = main_data.pop('sub_sections', [])
+            main_section = TemplateMainSection.objects.create(template=template, **main_data)
+
+            for sub_data in sub_sections_data:
+                TemplateSubSection.objects.create(main_section=main_section, **sub_data)
+
+        return template

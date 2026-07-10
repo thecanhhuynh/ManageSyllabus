@@ -33,7 +33,8 @@ const CourseLearningOutcomeReference = ({refPath}) => {
   }, []);
 
   const parentPath = refPath.slice(0, -2);
-  const allSubSections = form.getFieldValue(parentPath) || [];
+  const rawSubSections = form.getFieldValue(parentPath);
+  const allSubSections = Array.isArray(rawSubSections) ? rawSubSections : [];
   const coIndex = allSubSections.findIndex(
     (sub) => sub.reference_code === "objectives_and_outcomes",
   );
