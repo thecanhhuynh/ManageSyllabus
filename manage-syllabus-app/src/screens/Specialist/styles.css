@@ -1,0 +1,28 @@
+.ag-theme-alpine .ag-cell {
+    border: 1px solid #000000 !important;
+}
+
+.ag-theme-alpine .ag-cell:first-child {
+    border-left: 1px solid #000000 !important;
+}
+
+.ag-theme-alpine .ag-cell:last-child {
+    border-right: 1px solid #000000 !important;
+}
+
+.ag-theme-alpine .ag-header-cell {
+    border-right: 1px solid #000000 !important;
+    border-bottom: 1px solid #000000 !important;
+}
+
+.ag-theme-alpine .ag-header-cell:first-child {
+    border-left: 1px solid #000000 !important;
+}
+
+.ag-theme-alpine .ag-header-cell:last-child {
+    border-right: 1px solid #000000 !important;
+}
+
+.ag-theme-alpine .ag-header-cell:first-child {
+    border-left: 1px solid #000000 !important;
+}

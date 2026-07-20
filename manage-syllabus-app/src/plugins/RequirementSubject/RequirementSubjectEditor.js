@@ -1,10 +1,11 @@
 import React, {useState, useEffect, useRef} from "react";
 import {Form, Input, Select, Button, message} from "antd";
 import {PlusOutlined, BookOutlined, CloseOutlined} from "@ant-design/icons";
-import {authApis, endpoints} from "../../config/Apis";
 import {AppServices} from "../../services/AppServices";
+const RequirementSubjectEditor = ({item, basePath}) => {
+  // Thêm dòng này: Tự động khởi tạo refPath
+  const refPath = [...basePath, "reference_data"];
 
-const RequirementSubjectReference = ({refPath}) => {
   const form = Form.useFormInstance();
   const [subjectsList, setSubjectsList] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -26,9 +27,7 @@ const RequirementSubjectReference = ({refPath}) => {
   const loadSubjects = async () => {
     try {
       setLoading(true);
-      let url = `${endpoints["subjects"]}?page=${page}`;
-      if (q) url += `&q=${q}`;
-      const res = await authApis().get(url);
+      const res = await AppServices.getSubjects(page, q);
       if (res.status === 200) {
         const newData = res.data.results;
         setHasNext(res.data.next != null);
@@ -260,4 +259,4 @@ const RequirementSubjectReference = ({refPath}) => {
   );
 };
 
-export default RequirementSubjectReference;
+export default RequirementSubjectEditor;

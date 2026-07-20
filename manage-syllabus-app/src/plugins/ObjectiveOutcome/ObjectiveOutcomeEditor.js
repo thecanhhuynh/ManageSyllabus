@@ -1,20 +1,20 @@
 import React, {useState, useEffect} from "react";
 import {Form, Input, Select, Button, Row, Col, Tooltip} from "antd";
 import {PlusOutlined, DeleteOutlined} from "@ant-design/icons";
-import Apis, {authApis, endpoints} from "../../config/Apis";
+import {authApis, endpoints} from "../../config/Apis";
+import TextArea from "antd/es/input/TextArea";
+import {AppServices} from "../../services/AppServices";
 
-const {TextArea} = Input;
+const ObjectiveOutcomeEditor = ({item, basePath}) => {
+  const refPath = [...basePath, "reference_data"];
 
-const ObjectiveOutcomeReference = ({refPath}) => {
   const [ploOptions, setPloOptions] = useState([]);
   const [isFetching, setIsFetching] = useState(false);
 
   const fetchPLOs = async () => {
     try {
       setIsFetching(true);
-      const res = await authApis().get(
-        endpoints["programme-learning-outcomes"],
-      );
+      const res = await AppServices.getPLOs();
       const data = res.data.results;
 
       setPloOptions(
@@ -141,4 +141,4 @@ const ObjectiveOutcomeReference = ({refPath}) => {
   );
 };
 
-export default ObjectiveOutcomeReference;
+export default ObjectiveOutcomeEditor;

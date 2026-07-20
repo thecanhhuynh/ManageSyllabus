@@ -1,24 +1,24 @@
-import React, {useState, useEffect} from "react";
-import {Form, Input, Button, Tabs, InputNumber, Table, Typography} from "antd";
+import React, {useState, useEffect, useMemo} from "react";
+import {Form, Input, Button, Tabs, InputNumber, Table} from "antd";
 import {
   PlusOutlined,
   DeleteOutlined,
   InfoCircleOutlined,
 } from "@ant-design/icons";
-import {authApis, endpoints} from "../../config/Apis";
+import {AppServices} from "../../services/AppServices";
 
 const {TextArea} = Input;
 
-const CourseLearningOutcomeReference = ({refPath}) => {
+const CourseLearningOutcomeEditor = ({item, basePath}) => {
+  const refPath = useMemo(() => [...basePath, "reference_data"], [basePath]);
+
   const form = Form.useFormInstance();
   const [ploOptions, setPloOptions] = useState([]);
 
   useEffect(() => {
     const fetchPLOs = async () => {
       try {
-        const res = await authApis().get(
-          endpoints["programme-learning-outcomes"],
-        );
+        const res = await AppServices.getPLOs();
         const dataArray = res.data.results || res.data || [];
         setPloOptions(
           dataArray.map((plo) => ({
@@ -33,14 +33,20 @@ const CourseLearningOutcomeReference = ({refPath}) => {
     fetchPLOs();
   }, []);
 
+  // 2. An toàn hóa việc tìm khối CO
   const parentPath = refPath.slice(0, -2);
   const rawSubSections = form.getFieldValue(parentPath);
   const allSubSections = Array.isArray(rawSubSections) ? rawSubSections : [];
+
   const coIndex = allSubSections.findIndex(
-    (sub) => sub.reference_code === "objectives_and_outcomes",
+    (sub) =>
+      sub.reference_code === "objectives_and_outcomes" ||
+      sub.code === "objectives_and_outcomes",
   );
   const coRefPath =
-    coIndex !== -1 ? [...parentPath, coIndex, "reference_data"] : [];
+    coIndex !== -1
+      ? [...parentPath, coIndex, "reference_data"]
+      : ["__missing_co__"];
   const coDataRaw = Form.useWatch(coRefPath, form);
   const coData = Array.isArray(coDataRaw) ? coDataRaw : [];
 
@@ -109,7 +115,6 @@ const CourseLearningOutcomeReference = ({refPath}) => {
                 <Form.Item {...restField} name={[name, "id"]} hidden>
                   <Input />
                 </Form.Item>
-
                 <div className="flex justify-between items-center mb-6">
                   <h4 className="m-0 font-bold text-gray-800 text-base">
                     Chuẩn đầu ra {coIdx + 1}
@@ -127,7 +132,6 @@ const CourseLearningOutcomeReference = ({refPath}) => {
                     )}
                   </Form.List>
                 </div>
-
                 <Form.List name={[name, "clos"]}>
                   {(cloFields, {remove}) => (
                     <div className="flex flex-col gap-3">
@@ -169,11 +173,9 @@ const CourseLearningOutcomeReference = ({refPath}) => {
                                 )}
                               </Form.List>
                             </div>
-
                             <div className="bg-blue-50 text-blue-600 font-bold px-3 py-1 rounded-md text-sm shrink-0 mt-1">
                               CLO{coIdx + 1}.{cloIdx + 1}
                             </div>
-
                             <Form.Item
                               {...restCloField}
                               name={[cloName, "content"]}
@@ -189,7 +191,6 @@ const CourseLearningOutcomeReference = ({refPath}) => {
                                 className="p-0 text-sm font-medium text-gray-700 bg-transparent resize-none focus:bg-white focus:p-2 focus:rounded-md transition-all"
                               />
                             </Form.Item>
-
                             <div className="flex flex-col items-center gap-2 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
                               <Button
                                 type="text"
@@ -209,7 +210,6 @@ const CourseLearningOutcomeReference = ({refPath}) => {
               </div>
             ),
           }));
-
           return coFields.length > 0 ? (
             <Tabs type="card" items={tabItems} className="saas-clo-tabs mb-8" />
           ) : (
@@ -222,13 +222,17 @@ const CourseLearningOutcomeReference = ({refPath}) => {
 
       <Form.Item shouldUpdate={true} noStyle>
         {() => {
-          const allSections = form.getFieldValue(parentPath) || [];
+          // 3. Quét khối CO chuẩn xác hơn
+          const rawSections = form.getFieldValue(parentPath);
+          const allSections = Array.isArray(rawSections) ? rawSections : [];
           const coSection = allSections.find(
-            (sub) => sub.reference_code === "objectives_and_outcomes",
+            (sub) =>
+              sub.reference_code === "objectives_and_outcomes" ||
+              sub.code === "objectives_and_outcomes",
           );
+
           const liveCoData = coSection?.reference_data || [];
           const currentData = form.getFieldValue(refPath) || [];
-
           const matrixData = [];
           const assignedPloIdsGlobal = new Set();
 
@@ -269,8 +273,17 @@ const CourseLearningOutcomeReference = ({refPath}) => {
             ),
           );
 
-          if (matrixData.length === 0 || displayPloOptions.length === 0)
-            return null;
+          if (matrixData.length === 0) return null;
+
+          // 4. Báo lỗi thân thiện nếu thiếu PLO
+          if (displayPloOptions.length === 0) {
+            return (
+              <div className="bg-orange-50 border border-orange-200 text-orange-600 rounded-xl p-6 mt-8 text-center font-medium">
+                🚧 Vui lòng ánh xạ Chuẩn đầu ra (PLO) cho các Mục tiêu học phần
+                (CO) ở phần trên để Ma trận hiển thị.
+              </div>
+            );
+          }
 
           const columns = [
             {
@@ -291,7 +304,7 @@ const CourseLearningOutcomeReference = ({refPath}) => {
                 </span>
               ),
             },
-            ...displayPloOptions.map((plo, idx) => ({
+            ...displayPloOptions.map((plo) => ({
               title: (
                 <div className="text-center text-xs text-gray-500">
                   PLO{plo.value}
@@ -367,4 +380,4 @@ const CourseLearningOutcomeReference = ({refPath}) => {
   );
 };
 
-export default CourseLearningOutcomeReference;
+export default CourseLearningOutcomeEditor;

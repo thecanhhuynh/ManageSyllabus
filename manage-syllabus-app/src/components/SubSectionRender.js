@@ -1,21 +1,22 @@
-import TextRenderer from "./renderers/TextRenderer";
-import SelectionRenderer from "./renderers/SelectionRenderer";
 import ReferenceRenderer from "./ReferenceRenderer";
 import {Alert, Space} from "antd";
 import Text from "antd/es/typography/Text";
+import {getPlugin} from "../plugins/Registry";
 
-const COMPONENT_MAP = {
-  text: TextRenderer,
-  selection: SelectionRenderer,
-  reference: ReferenceRenderer,
-};
 const SubSectionRenderer = ({item, basePath}) => {
-  const TargetComponent = COMPONENT_MAP[item.type];
+  // // --- BƯỚC ĐỆM BẢO VỆ REFERENCE ---
+  // // Vì chưa refactor xong reference, ta ép nó chạy theo đường cũ
+  // if (item.type === "reference") {
+  //   return <ReferenceRenderer item={item} basePath={basePath} />;
+  // }
+
+  const Plugin = getPlugin(item.type, item.code);
+  const TargetComponent = Plugin ? Plugin.Editor : null;
 
   if (!TargetComponent) {
     return (
       <Alert
-        message="Cấu hình không hợp lệ"
+        message="Cấu hình Component không hợp lệ"
         description={
           <Space direction="vertical" size={0}>
             <Text>
@@ -33,6 +34,7 @@ const SubSectionRenderer = ({item, basePath}) => {
     );
   }
 
+  // Render Component lấy từ Registry
   return <TargetComponent item={item} basePath={basePath} />;
 };
 

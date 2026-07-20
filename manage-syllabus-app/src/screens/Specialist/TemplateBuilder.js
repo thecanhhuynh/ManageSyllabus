@@ -5,24 +5,26 @@ import {
   message,
   Typography,
   Card,
-  Space,
   Divider,
   Tag,
   Spin,
   Popconfirm,
   Form,
+  Select,
+  Modal,
+  InputNumber,
 } from "antd";
 import {
   ArrowLeftOutlined,
   SaveOutlined,
   DeleteOutlined,
   LockOutlined,
+  PlusOutlined,
 } from "@ant-design/icons";
 import {useParams, useNavigate} from "react-router-dom";
 import {authApis, endpoints} from "../../config/Apis";
-import TextRenderer from "../../components/renderers/TextRenderer";
-import SelectionRenderer from "../../components/renderers/SelectionRenderer";
-import ReferenceRenderer from "../../components/ReferenceRenderer";
+import {getPlugin} from "../../plugins/Registry";
+import TableSchemaBuilder from "./TableSchemaBuilder";
 const {Title} = Typography;
 
 const TemplateBuilder = () => {
@@ -31,22 +33,62 @@ const TemplateBuilder = () => {
   const [loading, setLoading] = useState(false);
   const [templateMeta, setTemplateMeta] = useState({name: "", version: ""});
   const [sections, setSections] = useState([]);
-  const [previewForm] = Form.useForm();
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [activeSectionId, setActiveSectionId] = useState(null);
+  const [customForm] = Form.useForm();
+  const [attributeGroups, setAttributeGroups] = useState([]);
+  const selectedType = Form.useWatch("type", customForm);
+
+  const openAddModal = (sectionId) => {
+    setActiveSectionId(sectionId);
+    setIsAddModalOpen(true);
+    customForm.resetFields();
+  };
+
+  const loadAttrGroups = async () => {
+    try {
+      const res = await authApis().get(endpoints["attribute-groups"]);
+      setAttributeGroups(res.data.results || res.data || []);
+    } catch (error) {
+      console.error("Lỗi lấy danh mục", error);
+    }
+  };
+
+  const handleAddCustomSection = async () => {
+    try {
+      const values = await customForm.validateFields();
+      console.log(
+        "Dữ liệu sẽ thêm vào Section ID",
+        activeSectionId,
+        ":",
+        values,
+      );
+      // Ta sẽ viết logic sinh dữ liệu và lưu ở bước sau
+      setIsAddModalOpen(false);
+    } catch (error) {
+      console.log("Lỗi validate form:", error);
+    }
+  };
+
+  const loadTemplateData = async () => {
+    setLoading(true);
+    try {
+      const res = await authApis().get(`${endpoints["templates"]}${id}/`);
+      setTemplateMeta({name: res.data.name, version: res.data.version});
+      setSections(res.data.main_sections || []);
+    } catch (error) {
+      message.error("Lỗi khi tải dữ liệu Template!");
+    }
+    setLoading(false);
+  };
   // 1. GỌI API LOAD DỮ LIỆU TEMPLATE ĐÃ CLONE
   useEffect(() => {
-    const fetchTemplateData = async () => {
-      setLoading(true);
-      try {
-        const res = await authApis().get(`${endpoints["templates"]}${id}/`);
-        setTemplateMeta({name: res.data.name, version: res.data.version});
-        setSections(res.data.main_sections || []);
-      } catch (error) {
-        message.error("Lỗi khi tải dữ liệu Template!");
-      }
-      setLoading(false);
-    };
-    if (id) fetchTemplateData();
+    loadTemplateData();
   }, [id]);
+
+  useEffect(() => {
+    loadAttrGroups();
+  }, []);
 
   // 2. CÁC HÀM TINH CHỈNH (TWEAK)
   const removeMainSection = (sectionId) => {
@@ -154,66 +196,67 @@ const TemplateBuilder = () => {
           >
             <div className="space-y-4">
               {section.sub_sections.map((sub) => {
+                // 1. Lấy Plugin an toàn (kiểm tra null)
+                const Plugin = getPlugin(sub.type, sub.code);
+                const DynamicPreview = Plugin ? Plugin.Preview : null;
+
                 return (
                   <div
                     key={sub.id}
-                    className="p-4 bg-white border border-gray-200 rounded-lg flex flex-col gap-4"
+                    className="p-4 bg-white border border-gray-200 rounded-lg flex flex-col gap-4 hover:shadow-md transition"
                   >
-                    = {/* Cột Trái: Cấu hình */}
-                    <div className="flex-1 space-y-3">
-                      <div className="flex items-center gap-2">
-                        <Tag color="blue">{sub.type.toUpperCase()}</Tag>
-                        <Tag
-                          icon={<LockOutlined />}
-                          color="gold"
-                          title="Không thể sửa mã này để tránh lỗi hệ thống"
-                        >
-                          Code: {sub.code}
-                        </Tag>
+                    <div className="flex items-start gap-4">
+                      {/* Cột Trái: Cấu hình */}
+                      <div className="flex-1 space-y-3">
+                        <div className="flex items-center gap-2">
+                          <Tag color="blue">{sub.type.toUpperCase()}</Tag>
+                          <Tag
+                            icon={<LockOutlined />}
+                            color="gold"
+                            title="Không thể sửa mã này để tránh lỗi hệ thống"
+                          >
+                            Code: {sub.code}
+                          </Tag>
+                        </div>
+                        <div>
+                          <div className="text-xs text-gray-500 mb-1">
+                            Tiêu đề hiển thị (Label / Placeholder)
+                          </div>
+                          <Input
+                            value={sub.name}
+                            onChange={(e) =>
+                              updateSubSectionLabel(
+                                section.id,
+                                sub.id,
+                                e.target.value,
+                              )
+                            }
+                            className="font-medium"
+                          />
+                        </div>
                       </div>
 
-                      <div>
-                        <div className="text-xs text-gray-500 mb-1">
-                          Tiêu đề hiển thị (Label / Placeholder)
-                        </div>
-                        <Input
-                          value={sub.place_holder}
-                          onChange={(e) =>
-                            updateSubSectionLabel(
-                              section.id,
-                              sub.id,
-                              e.target.value,
-                            )
-                          }
-                          className="font-medium"
-                        />
-                      </div>
+                      {/* Cột Phải: Xóa */}
+                      <Popconfirm
+                        title="Ẩn/Xóa trường dữ liệu này?"
+                        onConfirm={() => removeSubSection(section.id, sub.id)}
+                      >
+                        <Button danger type="dashed" icon={<DeleteOutlined />}>
+                          Xóa
+                        </Button>
+                      </Popconfirm>
                     </div>
-                    {/* Cột Phải: Xóa */}
-                    <Popconfirm
-                      title="Ẩn/Xóa trường dữ liệu này?"
-                      onConfirm={() => removeSubSection(section.id, sub.id)}
-                    >
-                      <Button danger type="dashed" icon={<DeleteOutlined />}>
-                        Xóa
-                      </Button>
-                    </Popconfirm>
-                    {/* KHU VỰC PREVIEW COMPONENT */}
-                    <div className="p-3 bg-gray-50 border rounded-md pointer-events-none opacity-80 mt-3">
-                      <Form form={previewForm}>
-                        {sub.type === "text" && (
-                          <TextRenderer item={sub} basePath={[]} />
-                        )}
-                        {sub.type === "selection" && (
-                          <SelectionRenderer item={sub} basePath={[]} />
-                        )}
-                        {sub.type === "reference" && (
-                          <ReferenceRenderer
-                            item={{...sub, reference_code: sub.code}}
-                            basePath={[]}
-                          />
-                        )}
-                      </Form>
+
+                    {/* KHU VỰC PREVIEW COMPONENT ĐÃ ĐƯỢC BẢO VỆ */}
+                    <div className="p-3 bg-gray-50 border rounded-md pointer-events-none opacity-80 mt-1">
+                      {DynamicPreview ? (
+                        <DynamicPreview item={sub} />
+                      ) : (
+                        <div className="text-center text-gray-400 p-4 border border-dashed rounded bg-gray-100 font-medium">
+                          🚧 Đang chờ lắp Plugin tĩnh cho: {sub.type} -{" "}
+                          {sub.code}
+                        </div>
+                      )}
                     </div>
                   </div>
                 );
@@ -226,9 +269,73 @@ const TemplateBuilder = () => {
               (Chỉ cho phép xóa hoặc đổi tên nhãn từ mẫu gốc. Không hỗ trợ thêm
               Form tự do để đảm bảo đồng bộ hệ thống)
             </div>
+            <Button
+              type="dashed"
+              block
+              onClick={() => openAddModal(section.id)}
+              className="mt-4 border-blue-300 text-blue-500 hover:bg-blue-50"
+            >
+              + Thêm tiểu mục tùy chỉnh
+            </Button>
           </Card>
         ))}
       </div>
+      <Modal
+        title="Thêm tiểu mục tùy chỉnh"
+        open={isAddModalOpen}
+        onOk={handleAddCustomSection}
+        onCancel={() => setIsAddModalOpen(false)}
+        okText="Thêm mới"
+        cancelText="Hủy"
+        destroyOnClose
+        width={1000}
+      >
+        <Form form={customForm} layout="vertical" className="mt-4">
+          <Form.Item
+            name="place_holder"
+            label="Tên tiêu đề (Hiển thị cho Giảng viên)"
+            rules={[{required: true, message: "Vui lòng nhập tên!"}]}
+          >
+            <Input placeholder="VD: Ghi chú thêm, Tài liệu tham khảo ngoài..." />
+          </Form.Item>
+
+          <Form.Item
+            name="type"
+            label="Loại dữ liệu"
+            rules={[{required: true, message: "Vui lòng chọn loại!"}]}
+          >
+            <Select placeholder="Chọn loại...">
+              <Select.Option value="text">Văn bản (Nhập liệu)</Select.Option>
+              <Select.Option value="selection">
+                Lựa chọn (Dropdown)
+              </Select.Option>
+              <Select.Option value="table">Bảng (Grid)</Select.Option>
+            </Select>
+          </Form.Item>
+
+          {/* Vùng hiển thị cấu hình động sẽ code ở bước tiếp theo */}
+          {selectedType === "selection" && (
+            <Form.Item
+              name="attribute_group_id"
+              label="Nguồn dữ liệu (Attribute Group)"
+              rules={[{required: true, message: "Vui lòng chọn danh mục!"}]}
+            >
+              <Select placeholder="Chọn danh mục có sẵn của hệ thống...">
+                {attributeGroups.map((group) => (
+                  <Select.Option key={group.id} value={group.id}>
+                    {group.name}
+                  </Select.Option>
+                ))}
+              </Select>
+            </Form.Item>
+          )}
+          {selectedType === "table" && (
+            <Form.Item name="table_schema" className="mb-0">
+              <TableSchemaBuilder />
+            </Form.Item>
+          )}
+        </Form>
+      </Modal>
     </div>
   );
 };

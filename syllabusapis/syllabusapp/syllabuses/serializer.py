@@ -940,7 +940,7 @@ class TrainingProgramSerializer(serializers.ModelSerializer):
 class TemplateSubSectionSerializer(serializers.ModelSerializer):
     class Meta:
         model = TemplateSubSection
-        fields = ['id', 'type', 'code', 'position', 'display_mode', 'place_holder']
+        fields = ['id', 'name', 'type', 'code', 'position', 'display_mode', 'place_holder']
 
 
 class TemplateMainSectionSerializer(serializers.ModelSerializer):

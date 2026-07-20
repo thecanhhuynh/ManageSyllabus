@@ -17,8 +17,8 @@ import {
 } from "@ant-design/icons";
 import {authApis, endpoints} from "../../config/Apis";
 import {useParams} from "react-router-dom";
-
-const AssessmentReference = ({refPath}) => {
+const AssessmentEditor = ({item, basePath}) => {
+  const refPath = [...basePath, "reference_data"];
   const params = useParams();
   const syllabusId = params.syllabusId;
   const form = Form.useFormInstance();
@@ -293,4 +293,4 @@ const AssessmentReference = ({refPath}) => {
   );
 };
 
-export default AssessmentReference;
+export default AssessmentEditor;
