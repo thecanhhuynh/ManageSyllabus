@@ -20,7 +20,7 @@ import {
   BuildOutlined,
   CloseCircleOutlined,
 } from "@ant-design/icons";
-import {authApis, endpoints} from "../../config/Apis";
+import {authApis, endpoints, springApi} from "../../config/Apis";
 import {useNavigate} from "react-router-dom";
 
 const TemplateManagement = () => {
@@ -72,7 +72,6 @@ const TemplateManagement = () => {
       }
       setIsModalVisible(false);
       setPage(1);
-      if (page === 1) loadTemplates();
     } catch (err) {
       console.log(err);
       message.error("Có lỗi xảy ra, có thể do trùng Tên & Version!");
@@ -105,10 +104,9 @@ const TemplateManagement = () => {
   // Gọi API Publish Template
   const handlePublish = async (id) => {
     try {
-      await authApis().patch(`${endpoints["templates"]}${id}/publish/`);
-      message.success("Đã ban hành Template!");
+      const res = await springApi().post(endpoints["publish-template"], {});
+      if (res.status === 202) message.success("Đã ban hành Template!");
       setPage(1);
-      if (page === 1) loadTemplates();
     } catch (err) {
       message.error("Lỗi khi ban hành!");
     }

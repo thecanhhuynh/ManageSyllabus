@@ -20,12 +20,49 @@ import {
   DeleteOutlined,
   LockOutlined,
   PlusOutlined,
+  DragOutlined,
 } from "@ant-design/icons";
 import {useParams, useNavigate} from "react-router-dom";
 import {authApis, endpoints} from "../../config/Apis";
 import {getPlugin} from "../../plugins/Registry";
 import TableSchemaBuilder from "./TableSchemaBuilder";
+import {
+  arrayMove,
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import {CSS} from "@dnd-kit/utilities";
+import {closestCenter, DndContext} from "@dnd-kit/core";
+import TextPreview from "../../plugins/Text/TextPreview";
 const {Title} = Typography;
+
+const SortableSubSection = ({id, children}) => {
+  const {attributes, listeners, setNodeRef, transform, transition} =
+    useSortable({id});
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="flex items-center gap-2 group"
+    >
+      <div
+        {...attributes}
+        {...listeners}
+        className="cursor-grab p-2 text-gray-400 hover:text-blue-500 opacity-50 group-hover:opacity-100 transition-opacity"
+      >
+        <DragOutlined />
+      </div>
+      <div className="flex-1">{children}</div>
+    </div>
+  );
+};
 
 const TemplateBuilder = () => {
   const {id} = useParams(); // Lấy ID của template từ URL
@@ -57,14 +94,44 @@ const TemplateBuilder = () => {
   const handleAddCustomSection = async () => {
     try {
       const values = await customForm.validateFields();
-      console.log(
-        "Dữ liệu sẽ thêm vào Section ID",
-        activeSectionId,
-        ":",
-        values,
+      const timestamp = Date.now();
+
+      const typeMapping = {
+        text: "text",
+        selection: "selection",
+        table: "table",
+      };
+
+      setSections(
+        sections.map((sec) => {
+          if (sec.id === activeSectionId) {
+            const newPosition = sec.sub_sections.length + 1;
+
+            const newSubSection = {
+              id: `custom_sub_${timestamp}`,
+              code: `CUSTOM_${values.type.toUpperCase()}_${timestamp}`,
+              type: typeMapping[values.type] || values.type,
+              name: values.place_holder,
+              place_holder: values.place_holder,
+              position: newPosition,
+              ...(values.type === "selection" && {
+                attribute_group_id: values.attribute_group_id,
+              }),
+              ...(values.type === "table" && {
+                table_schema: values.table_schema,
+              }),
+            };
+
+            return {
+              ...sec,
+              sub_sections: [...sec.sub_sections, newSubSection],
+            };
+          }
+          return sec;
+        }),
       );
-      // Ta sẽ viết logic sinh dữ liệu và lưu ở bước sau
       setIsAddModalOpen(false);
+      message.success("Đã thêm tiểu mục tùy chỉnh!");
     } catch (error) {
       console.log("Lỗi validate form:", error);
     }
@@ -116,8 +183,29 @@ const TemplateBuilder = () => {
           return {
             ...sec,
             sub_sections: sec.sub_sections.map((sub) =>
-              sub.id === subId ? {...sub, place_holder: newLabel} : sub,
+              sub.id === subId
+                ? {...sub, name: newLabel, place_holder: newLabel}
+                : sub,
             ),
+          };
+        }
+        return sec;
+      }),
+    );
+  };
+
+  const updateSubSectionField = (sectionId, subId, field, value) => {
+    setSections(
+      sections.map((sec) => {
+        if (sec.id === sectionId) {
+          return {
+            ...sec,
+            sub_sections: sec.sub_sections.map((sub) => {
+              if (sub.id === subId) {
+                return {...sub, [field]: value};
+              }
+              return sub;
+            }),
           };
         }
         return sec;
@@ -134,11 +222,45 @@ const TemplateBuilder = () => {
         version: templateMeta.version,
         main_sections: sections,
       });
+      console.log("Dữ liệu sẽ lưu:", sections);
       message.success("Đã lưu cấu hình Template!");
-      nav("/admin/templates");
+      // nav("/admin/templates");
     } catch (error) {
       message.error("Lỗi khi lưu Template!");
     }
+  };
+
+  const handleDragEnd = (event, sectionId) => {
+    const {active, over} = event;
+    if (!over || active.id === over.id) return;
+
+    setSections((prev) =>
+      prev.map((sec) => {
+        if (sec.id === sectionId) {
+          const oldIndex = sec.sub_sections.findIndex(
+            (sub) => sub.id === active.id,
+          );
+          const newIndex = sec.sub_sections.findIndex(
+            (sub) => sub.id === over.id,
+          );
+
+          const newSubSections = arrayMove(
+            sec.sub_sections,
+            oldIndex,
+            newIndex,
+          );
+
+          return {
+            ...sec,
+            sub_sections: newSubSections.map((sub, idx) => ({
+              ...sub,
+              position: idx + 1,
+            })),
+          };
+        }
+        return sec;
+      }),
+    );
   };
 
   if (loading)
@@ -178,11 +300,8 @@ const TemplateBuilder = () => {
             title={
               <div className="flex justify-between items-center w-full">
                 <span className="font-bold text-lg">
-                  Mục {index + 1}: {section.code}
+                  Mục {index + 1}: {section.name}
                 </span>
-                <Tag icon={<LockOutlined />} color="default">
-                  Mã hệ thống: {section.code}
-                </Tag>
               </div>
             }
             extra={
@@ -194,76 +313,94 @@ const TemplateBuilder = () => {
               </Popconfirm>
             }
           >
-            <div className="space-y-4">
-              {section.sub_sections.map((sub) => {
-                // 1. Lấy Plugin an toàn (kiểm tra null)
-                const Plugin = getPlugin(sub.type, sub.code);
-                const DynamicPreview = Plugin ? Plugin.Preview : null;
+            <DndContext
+              collisionDetection={closestCenter}
+              onDragEnd={(e) => handleDragEnd(e, section.id)}
+            >
+              <SortableContext
+                items={section.sub_sections.map((s) => s.id)}
+                strategy={verticalListSortingStrategy}
+              >
+                <div className="space-y-4">
+                  {section.sub_sections.map((sub) => {
+                    const Plugin = getPlugin(sub.type, sub.code);
+                    const DynamicPreview = Plugin ? Plugin.Preview : null;
 
-                return (
-                  <div
-                    key={sub.id}
-                    className="p-4 bg-white border border-gray-200 rounded-lg flex flex-col gap-4 hover:shadow-md transition"
-                  >
-                    <div className="flex items-start gap-4">
-                      {/* Cột Trái: Cấu hình */}
-                      <div className="flex-1 space-y-3">
-                        <div className="flex items-center gap-2">
-                          <Tag color="blue">{sub.type.toUpperCase()}</Tag>
-                          <Tag
-                            icon={<LockOutlined />}
-                            color="gold"
-                            title="Không thể sửa mã này để tránh lỗi hệ thống"
-                          >
-                            Code: {sub.code}
-                          </Tag>
-                        </div>
-                        <div>
-                          <div className="text-xs text-gray-500 mb-1">
-                            Tiêu đề hiển thị (Label / Placeholder)
+                    return (
+                      <SortableSubSection key={sub.id} id={sub.id}>
+                        <div
+                          key={sub.id}
+                          className="p-4 bg-white border border-gray-200 rounded-lg flex flex-col gap-4 hover:shadow-md transition"
+                        >
+                          <div className="flex items-start gap-4">
+                            <div className="flex-1 space-y-3">
+                              <div>
+                                <div className="text-xs text-gray-500 mb-1">
+                                  Mục {sub.position} - Tiêu đề hiển thị (Label /
+                                  Placeholder)
+                                </div>
+                                <Input
+                                  value={sub.name}
+                                  onChange={(e) =>
+                                    updateSubSectionLabel(
+                                      section.id,
+                                      sub.id,
+                                      e.target.value,
+                                    )
+                                  }
+                                  className="font-medium"
+                                />
+                              </div>
+                            </div>
+
+                            <Popconfirm
+                              title="Ẩn/Xóa trường dữ liệu này?"
+                              onConfirm={() =>
+                                removeSubSection(section.id, sub.id)
+                              }
+                            >
+                              <Button
+                                danger
+                                type="dashed"
+                                icon={<DeleteOutlined />}
+                              >
+                                Xóa
+                              </Button>
+                            </Popconfirm>
                           </div>
-                          <Input
-                            value={sub.name}
-                            onChange={(e) =>
-                              updateSubSectionLabel(
-                                section.id,
-                                sub.id,
-                                e.target.value,
-                              )
-                            }
-                            className="font-medium"
-                          />
+
+                          <div
+                            className={`p-3 bg-gray-50 border rounded-md mt-1 ${sub.type !== "text" ? "pointer-events-none opacity-80" : ""}`}
+                          >
+                            {sub.type === "text" ? (
+                              <TextPreview
+                                item={sub}
+                                onUpdateField={(field, value) =>
+                                  updateSubSectionField(
+                                    section.id,
+                                    sub.id,
+                                    field,
+                                    value,
+                                  )
+                                }
+                              />
+                            ) : DynamicPreview ? (
+                              <DynamicPreview item={sub} />
+                            ) : (
+                              <div className="text-center text-gray-400 p-4 border border-dashed rounded bg-gray-100 font-medium">
+                                🚧 Đang chờ lắp Plugin tĩnh cho: {sub.type} -{" "}
+                                {sub.code}
+                              </div>
+                            )}
+                          </div>
                         </div>
-                      </div>
+                      </SortableSubSection>
+                    );
+                  })}
+                </div>
+              </SortableContext>
+            </DndContext>
 
-                      {/* Cột Phải: Xóa */}
-                      <Popconfirm
-                        title="Ẩn/Xóa trường dữ liệu này?"
-                        onConfirm={() => removeSubSection(section.id, sub.id)}
-                      >
-                        <Button danger type="dashed" icon={<DeleteOutlined />}>
-                          Xóa
-                        </Button>
-                      </Popconfirm>
-                    </div>
-
-                    {/* KHU VỰC PREVIEW COMPONENT ĐÃ ĐƯỢC BẢO VỆ */}
-                    <div className="p-3 bg-gray-50 border rounded-md pointer-events-none opacity-80 mt-1">
-                      {DynamicPreview ? (
-                        <DynamicPreview item={sub} />
-                      ) : (
-                        <div className="text-center text-gray-400 p-4 border border-dashed rounded bg-gray-100 font-medium">
-                          🚧 Đang chờ lắp Plugin tĩnh cho: {sub.type} -{" "}
-                          {sub.code}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* ĐÃ BỎ ĐI TOOLBOX THÊM MỚI PHỨC TẠP */}
             <Divider dashed />
             <div className="text-gray-400 text-sm text-center">
               (Chỉ cho phép xóa hoặc đổi tên nhãn từ mẫu gốc. Không hỗ trợ thêm

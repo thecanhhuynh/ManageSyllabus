@@ -18,6 +18,7 @@ import LearningMaterialEditor from "./LearningMaterial/LearningMaterialEditor";
 import LearningMaterialPreview from "./LearningMaterial/LearningMaterialPreview";
 import TeachingPlanEditor from "./TeachingPlan/TeachingPlanEditor";
 import TeachingPlanPreview from "./TeachingPlan/TeachingPlanPreview";
+import TablePreview from "./Table/TablePreview";
 export const TextPlugin = {
   type: "text",
   Editor: TextEditor,
@@ -28,6 +29,12 @@ export const SelectionPlugin = {
   type: "selection",
   Editor: SelectionEditor,
   Preview: SelectionPreview,
+};
+
+export const TablePlugin = {
+  type: "table",
+  Editor: null,
+  Preview: TablePreview,
 };
 
 export const CreditPlugin = {

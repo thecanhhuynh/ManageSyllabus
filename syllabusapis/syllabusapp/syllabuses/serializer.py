@@ -5,7 +5,8 @@ from syllabuses.models import User, Lecturer, Faculty, Syllabus, Subject, SubSec
     SelectionSubSection, AttributeGroup, AttributeValue, ReferenceSubSection, Credit, RequirementSubject, \
     ProgrammeLearningOutcome, CourseObjective, CourseLearningOutcome, LearningMaterial, TypeRequirement, \
     TypeLearningMaterial, SyllabusLearningMaterial, CloPloAssociation, TypeAssessment, Assessment, Method, \
-    ScheduleGroup, TeachingSession, Major, TrainingProgram, TemplateSubSection, TemplateSyllabus, TemplateMainSection
+    ScheduleGroup, TeachingSession, Major, TrainingProgram, TemplateSubSection, TemplateSyllabus, TemplateMainSection, \
+    TableSubSection, TemplateSelectionSubSection, TemplateTableSubSection, TemplateTextSubSection
 
 
 class FacultySerializer(serializers.ModelSerializer):
@@ -938,17 +939,46 @@ class TrainingProgramSerializer(serializers.ModelSerializer):
 
 
 class TemplateSubSectionSerializer(serializers.ModelSerializer):
+    id = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+    display_mode = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+    place_holder = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+    table_schema = serializers.JSONField(required=False, allow_null=True)
+    attribute_group_id = serializers.IntegerField(required=False, allow_null=True)
+
     class Meta:
         model = TemplateSubSection
-        fields = ['id', 'name', 'type', 'code', 'position', 'display_mode', 'place_holder']
+        fields = ['id', 'name', 'type', 'code', 'position', 'display_mode', 'place_holder', 'table_schema',
+                  'attribute_group_id']
+
+    def to_representation(self, instance):
+        ret = {
+            'id': instance.id,
+            'name': instance.name,
+            'type': instance.type,
+            'code': instance.code,
+            'position': instance.position,
+        }
+
+        if hasattr(instance, 'templatetextsubsection'):
+            ret['display_mode'] = instance.templatetextsubsection.display_mode
+            ret['place_holder'] = instance.templatetextsubsection.place_holder
+
+        elif hasattr(instance, 'templatetablesubsection'):
+            ret['table_schema'] = instance.templatetablesubsection.table_schema
+
+        elif hasattr(instance, 'templateselectionsubsection'):
+            ret['attribute_group_id'] = instance.templateselectionsubsection.attribute_group_id
+
+        return ret
 
 
 class TemplateMainSectionSerializer(serializers.ModelSerializer):
+    id = serializers.IntegerField(required=False)
     sub_sections = TemplateSubSectionSerializer(many=True)
 
     class Meta:
         model = TemplateMainSection
-        fields = ['id', 'code', 'position', 'sub_sections']
+        fields = ['id', 'name','code', 'position', 'sub_sections']
 
 
 class TemplateSyllabusSerializer(serializers.ModelSerializer):
@@ -971,3 +1001,78 @@ class TemplateSyllabusSerializer(serializers.ModelSerializer):
                 TemplateSubSection.objects.create(main_section=main_section, **sub_data)
 
         return template
+
+    def update(self, instance, validated_data):
+        print(validated_data)
+        main_sections_data = validated_data.pop('main_sections', None)
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+
+        if main_sections_data is not None:
+            existing_main_sections = {section.id: section for section in instance.main_sections.all()}
+            for section_data in main_sections_data:
+                section_id = section_data.pop('id', None)
+                sub_section_list = section_data.pop('sub_sections', [])
+                if section_id and section_id in existing_main_sections:
+                    main_section = existing_main_sections.pop(section_id)
+                    for attr, value in section_data.items():
+                        setattr(main_section, attr, value)
+                    main_section.save()
+                else:
+                    main_section = TemplateMainSection.objects.create(template=instance, **section_data)
+
+                existing_sub_sections = {section.id: section for section in main_section.sub_sections.all()}
+                for sub_section in sub_section_list:
+                    sub_section_id = sub_section.pop('id', None)
+                    sub_type = sub_section.get('type')
+
+                    display_mode = sub_section.pop('display_mode', None)
+                    place_holder = sub_section.pop('place_holder', None)
+                    table_schema = sub_section.pop('table_schema', None)
+                    attribute_group_id = sub_section.pop('attribute_group_id', None)
+
+                    if isinstance(sub_section_id, str):
+                        if sub_section_id.startswith('CUSTOM_'):
+                            sub_section_id = None
+                        elif sub_section_id.isdigit():
+                            sub_section_id = int(sub_section_id)
+
+                    if sub_section_id and sub_section_id in existing_sub_sections:
+                        sub_instance = existing_sub_sections.pop(sub_section_id)
+                        if hasattr(sub_instance, 'templatetextsubsection'):
+                            child_instance = sub_instance.templatetextsubsection
+                            child_instance.display_mode = display_mode
+                            child_instance.place_holder = place_holder
+                        elif hasattr(sub_instance, 'templatetablesubsection'):
+                            child_instance = sub_instance.templatetablesubsection
+                            child_instance.table_schema = table_schema
+                        elif hasattr(sub_instance, 'templateselectionsubsection'):
+                            child_instance = sub_instance.templateselectionsubsection
+                            child_instance.attribute_group_id = attribute_group_id
+                        else:
+                            child_instance = sub_instance
+
+                        for attr, value in sub_section.items():
+                            setattr(child_instance, attr, value)
+                        child_instance.save()
+                    else:
+                        if sub_type == 'text':
+                            TemplateTextSubSection.objects.create(main_section=main_section, display_mode=display_mode,
+                                                                  place_holder=place_holder, **sub_section)
+                        elif sub_type == 'table':
+                            TemplateTableSubSection.objects.create(main_section=main_section, table_schema=table_schema,
+                                                                   **sub_section)
+                        elif sub_type == 'selection':
+                            TemplateSelectionSubSection.objects.create(main_section=main_section,
+                                                                       attribute_group_id=attribute_group_id,
+                                                                       **sub_section)
+                        else:
+                            TemplateSubSection.objects.create(main_section=main_section, **sub_section)
+
+                for old_sub_section in existing_sub_sections.values():
+                    old_sub_section.delete()
+
+            for old_section in existing_main_sections.values():
+                old_section.delete()
+        return instance

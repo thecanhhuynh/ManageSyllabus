@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<persistence version="2.2" xmlns="http://xmlns.jcp.org/xml/ns/persistence" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/persistence           http://xmlns.jcp.org/xml/ns/persistence/persistence_2_2.xsd">
+  <persistence-unit name="com.htc_syllabusapp_jar_0.0.1-SNAPSHOTPU" transaction-type="RESOURCE_LOCAL">
+    <provider>org.eclipse.persistence.jpa.PersistenceProvider</provider>
+    <class>com.htc.pojo.SyllabusesLearningmaterial</class>
+    <class>com.htc.pojo.SyllabusesFaculty</class>
+    <class>com.htc.pojo.DjangoContentType</class>
+    <class>com.htc.pojo.AuthPermission</class>
+    <class>com.htc.pojo.SyllabusesTeachingsessionassessment</class>
+    <class>com.htc.pojo.SyllabusesSubject</class>
+    <class>com.htc.pojo.SyllabusesTeachingsession</class>
+    <class>com.htc.pojo.SyllabusesCredit</class>
+    <class>com.htc.pojo.SyllabusesTeachingsessioncourselearningoutcome</class>
+    <class>com.htc.pojo.SyllabusesMajor</class>
+    <class>com.htc.pojo.SyllabusesMainsection</class>
+    <class>com.htc.pojo.SyllabusesAttributegroup</class>
+    <class>com.htc.pojo.SyllabusesReferencesubsection</class>
+    <class>com.htc.pojo.SyllabusesTrainingprogram</class>
+    <class>com.htc.pojo.SyllabusesSchedulegroup</class>
+    <class>com.htc.pojo.SyllabusesSyllabuslearningmaterial</class>
+    <class>com.htc.pojo.AuthGroup</class>
+    <class>com.htc.pojo.SyllabusesCloploassociation</class>
+    <class>com.htc.pojo.SyllabusesUser</class>
+    <class>com.htc.pojo.SyllabusesTemplatetextsubsection</class>
+    <class>com.htc.pojo.SyllabusesAttributevalue</class>
+    <class>com.htc.pojo.SyllabusesProgrammelearningoutcome</class>
+    <class>com.htc.pojo.SyllabusesTypelearningmaterial</class>
+    <class>com.htc.pojo.SyllabusesSubsectionattributevalue</class>
+    <class>com.htc.pojo.SyllabusesUserUserPermissions</class>
+    <class>com.htc.pojo.SyllabusesTemplatesubsection</class>
+    <class>com.htc.pojo.SyllabusesTypeassessment</class>
+    <class>com.htc.pojo.SyllabusesTrainingprogramsyllabus</class>
+    <class>com.htc.pojo.SyllabusesTyperequirement</class>
+    <class>com.htc.pojo.SyllabusesAssessment</class>
+    <class>com.htc.pojo.SyllabusesTeachingsessionlearningmaterial</class>
+    <class>com.htc.pojo.SyllabusesSelectionsubsection</class>
+    <class>com.htc.pojo.SyllabusesLecturer</class>
+    <class>com.htc.pojo.SyllabusesSubsection</class>
+    <class>com.htc.pojo.SyllabusesRequirementsubject</class>
+    <class>com.htc.pojo.SyllabusesTextsubsection</class>
+    <class>com.htc.pojo.SyllabusesTemplatesyllabus</class>
+    <class>com.htc.pojo.SyllabusesCourseobjectiveprogrammelearningoutcome</class>
+    <class>com.htc.pojo.SyllabusesMethod</class>
+    <class>com.htc.pojo.SyllabusesTablesubsection</class>
+    <class>com.htc.pojo.SyllabusesTemplatetablesubsection</class>
+    <class>com.htc.pojo.SyllabusesTemplatemainsection</class>
+    <class>com.htc.pojo.SyllabusesCourseobjective</class>
+    <class>com.htc.pojo.SyllabusesSyllabus</class>
+    <class>com.htc.pojo.SyllabusesUserGroups</class>
+    <class>com.htc.pojo.SyllabusesMethodcourselearningoutcome</class>
+    <class>com.htc.pojo.SyllabusesCourselearningoutcome</class>
+    <class>com.htc.pojo.SyllabusesTemplateselectionsubsection</class>
+    <properties>
+      <property name="javax.persistence.jdbc.url" value="jdbc:mysql://localhost:3306/managesyllabusv2?zeroDateTimeBehavior=CONVERT_TO_NULL"/>
+      <property name="javax.persistence.jdbc.user" value="root"/>
+      <property name="javax.persistence.jdbc.driver" value="com.mysql.cj.jdbc.Driver"/>
+      <property name="javax.persistence.jdbc.password" value="123456"/>
+    </properties>
+  </persistence-unit>
+</persistence>

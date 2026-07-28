@@ -120,9 +120,8 @@ class CloPloAssociation(models.Model):
 class TemplateSyllabus(BaseModel):
     name = models.CharField(max_length=100)
     version = models.CharField(max_length=20, default="v1.0")
-    status = models.CharField(max_length=20, default="Draft")  # Draft, Published, Archived
     is_active = models.BooleanField(default=False)
-
+    parent = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True)
     class Meta:
         unique_together = ('name', 'version')
 
@@ -146,11 +145,18 @@ class TemplateSubSection(BaseModel):
     code = models.CharField(max_length=50)
     position = models.IntegerField(default=1)
 
+    class Meta:
+        ordering = ['position']
+
+class TemplateTextSubSection(TemplateSubSection):
     display_mode = models.CharField(max_length=50, default="input", null=True, blank=True)
     place_holder = models.CharField(max_length=100, null=True, blank=True)
 
-    class Meta:
-        ordering = ['position']
+class TemplateTableSubSection(TemplateSubSection):
+    table_schema = models.JSONField(null=True, blank=True)
+
+class TemplateSelectionSubSection(TemplateSubSection):
+    attribute_group_id = models.IntegerField(null=True, blank=True)
 
 #================
 

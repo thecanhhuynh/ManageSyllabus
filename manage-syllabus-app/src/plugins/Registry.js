@@ -11,6 +11,7 @@ import {
   AssessmentPlugin,
   LearningMaterialPlugin,
   TeachingPlanPlugin,
+  TablePlugin,
 } from ".";
 
 // Map các plugin lại với nhau
@@ -25,6 +26,7 @@ const plugins = [
   AssessmentPlugin,
   LearningMaterialPlugin,
   TeachingPlanPlugin,
+  TablePlugin,
 ];
 
 export const getPlugin = (type, code) => {

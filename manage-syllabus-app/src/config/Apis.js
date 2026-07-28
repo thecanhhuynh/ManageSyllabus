@@ -31,7 +31,8 @@ export const endpoints = {
   lecturers: "/lecturers/",
   templates: "/templates/",
   "clone-templates": (templateId) => `/templates/${templateId}/clone/`,
-  "publish-templates": (templateId) => `/templates/${templateId}/publish/`,
+  // "publish-templates": (templateId) => `/templates/${templateId}/publish/`,
+  "publish-template": "/publish-template",
 };
 const CLIENT_ID = process.env.REACT_APP_CLIENT_ID;
 const CLIENT_SECRET = process.env.REACT_APP_CLIENT_SECRET;
@@ -92,3 +93,24 @@ export const authApis = () => {
   return instance;
 };
 export {CLIENT_ID, CLIENT_SECRET};
+
+export const springApi = () => {
+  const instance = axios.create({
+    baseURL: process.env.REACT_APP_SPRING_API_URL,
+  });
+
+  instance.interceptors.request.use(
+    (config) => {
+      const token = cookies.load("token");
+
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+
+      return config;
+    },
+    (error) => Promise.reject(error),
+  );
+
+  return instance;
+};

@@ -1,0 +1,31 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: syllabusapp
+    
+  datasource:
+    url: jdbc:mysql://localhost:3306/managesyllabusv2
+    username: root
+    password: 123456
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: true
+    properties:
+      hibernate:
+        # Cấu hình Batch Insert
+        jdbc:
+          batch_size: 50
+          order_inserts: true
+          
+  security:
+    oauth2:
+      resourceserver:
+        opaque-token:
+          introspection-uri: http://127.0.0.1:8000/o/introspect/
+          client-id: "ivb9uKsLIPFr5u9kRFSZYAG9xadcbKD9woDUXn3O"
+          client-secret: "e3V5YCrisUHseVSgS5qkEjoGev7VDq3xGI2uVnQHENjWXAhthk7pTUdEYl8iUJLtghJRExGnnr9IxIzueo2yh6rm4opZ2BHVdPpOgiwhiNckBL7YWyLFHhKwOwUN9TUm"
