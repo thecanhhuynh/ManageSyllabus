@@ -43,6 +43,8 @@ public class DjangoContentType implements Serializable {
     @Basic(optional = false)
     @Column(name = "model")
     private String model;
+    @OneToMany(mappedBy = "contentTypeId")
+    private Set<DjangoAdminLog> djangoAdminLogSet;
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "contentTypeId")
     private Set<AuthPermission> authPermissionSet;
 
@@ -81,6 +83,14 @@ public class DjangoContentType implements Serializable {
 
     public void setModel(String model) {
         this.model = model;
+    }
+
+    public Set<DjangoAdminLog> getDjangoAdminLogSet() {
+        return djangoAdminLogSet;
+    }
+
+    public void setDjangoAdminLogSet(Set<DjangoAdminLog> djangoAdminLogSet) {
+        this.djangoAdminLogSet = djangoAdminLogSet;
     }
 
     public Set<AuthPermission> getAuthPermissionSet() {

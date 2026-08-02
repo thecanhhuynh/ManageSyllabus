@@ -5,6 +5,7 @@
 package com.htc.repository;
 
 import com.htc.pojo.SyllabusesSyllabus;
+import com.htc.pojo.SyllabusesTemplatesyllabus;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -15,5 +16,5 @@ import org.springframework.stereotype.Repository;
  */
 @Repository
 public interface SyllabusRepository extends JpaRepository<SyllabusesSyllabus, Long>{
-    List<SyllabusesSyllabus> findByTemplateId(Long id);
+    List<SyllabusesSyllabus> findByTemplateId(SyllabusesTemplatesyllabus id);
 }

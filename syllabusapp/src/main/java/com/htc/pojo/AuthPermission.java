@@ -45,6 +45,8 @@ public class AuthPermission implements Serializable {
     @Basic(optional = false)
     @Column(name = "codename")
     private String codename;
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "permissionId")
+    private Set<AuthGroupPermissions> authGroupPermissionsSet;
     @JoinColumn(name = "content_type_id", referencedColumnName = "id")
     @ManyToOne(optional = false)
     private DjangoContentType contentTypeId;
@@ -86,6 +88,14 @@ public class AuthPermission implements Serializable {
 
     public void setCodename(String codename) {
         this.codename = codename;
+    }
+
+    public Set<AuthGroupPermissions> getAuthGroupPermissionsSet() {
+        return authGroupPermissionsSet;
+    }
+
+    public void setAuthGroupPermissionsSet(Set<AuthGroupPermissions> authGroupPermissionsSet) {
+        this.authGroupPermissionsSet = authGroupPermissionsSet;
     }
 
     public DjangoContentType getContentTypeId() {

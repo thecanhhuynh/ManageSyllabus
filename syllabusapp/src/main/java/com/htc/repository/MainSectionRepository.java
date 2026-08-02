@@ -5,6 +5,7 @@
 package com.htc.repository;
 
 import com.htc.pojo.SyllabusesMainsection;
+import com.htc.pojo.SyllabusesSyllabus;
 import java.util.List;
 import org.springframework.stereotype.Repository;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -14,5 +15,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
  */
 @Repository
 public interface MainSectionRepository extends JpaRepository<SyllabusesMainsection, Long>{
-    List<SyllabusesMainsection> findBySyllabusId(Long syllabusId);
+    List<SyllabusesMainsection> findBySyllabusId(SyllabusesSyllabus syllabusId);
 }

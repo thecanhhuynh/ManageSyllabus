@@ -156,8 +156,7 @@ class SyllabusView(viewsets.ModelViewSet):
         return Response(data)
 
 
-class TemplateSyllabusView(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateModelMixin, mixins.UpdateModelMixin,
-                           mixins.RetrieveModelMixin):
+class TemplateSyllabusView(viewsets.ModelViewSet):
     queryset = TemplateSyllabus.objects.prefetch_related('main_sections__sub_sections').all()
     serializer_class = TemplateSyllabusSerializer
     permission_classes = [perms.IsSpecialist]
@@ -186,8 +185,8 @@ class TemplateSyllabusView(viewsets.GenericViewSet, mixins.ListModelMixin, mixin
         new_template = TemplateSyllabus.objects.create(
             name=new_name,
             version=new_version,
-            status="Draft",
-            is_active=False
+            is_active=False,
+            parent_id=old_template.id
         )
 
         # 2. Clone Main Sections & Sub Sections
@@ -205,8 +204,6 @@ class TemplateSyllabusView(viewsets.GenericViewSet, mixins.ListModelMixin, mixin
                     type=old_sub.type,
                     code=old_sub.code,
                     position=old_sub.position,
-                    display_mode=old_sub.display_mode,
-                    place_holder=old_sub.place_holder
                 )
 
         serializer = self.get_serializer(new_template)

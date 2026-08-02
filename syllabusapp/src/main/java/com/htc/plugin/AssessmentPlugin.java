@@ -51,7 +51,7 @@ public class AssessmentPlugin implements ReferencePlugin{
             newAss.setTypeAssessmentId(oldAss.getTypeAssessmentId());
             newAss = assessmentRepo.save(newAss);
 
-            // QUAN TRỌNG: Lưu ánh xạ Assessment cũ -> mới vào Context
+            // Lưu ánh xạ Assessment cũ -> mới vào Context
             context.addAssessmentMapping(oldAss, newAss);
 
             // Clone Methods và mapping CLO

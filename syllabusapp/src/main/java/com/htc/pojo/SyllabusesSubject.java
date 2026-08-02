@@ -49,8 +49,6 @@ public class SyllabusesSubject implements Serializable {
     private Set<SyllabusesRequirementsubject> syllabusesRequirementsubjectSet;
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "subjectId")
     private Set<SyllabusesRequirementsubject> syllabusesRequirementsubjectSet1;
-    @OneToMany(cascade = CascadeType.ALL, mappedBy = "subjectId")
-    private Set<SyllabusesCourseobjective> syllabusesCourseobjectiveSet;
     @JoinColumn(name = "credit_id", referencedColumnName = "id")
     @OneToOne(optional = false)
     private SyllabusesCredit creditId;
@@ -108,14 +106,6 @@ public class SyllabusesSubject implements Serializable {
 
     public void setSyllabusesRequirementsubjectSet1(Set<SyllabusesRequirementsubject> syllabusesRequirementsubjectSet1) {
         this.syllabusesRequirementsubjectSet1 = syllabusesRequirementsubjectSet1;
-    }
-
-    public Set<SyllabusesCourseobjective> getSyllabusesCourseobjectiveSet() {
-        return syllabusesCourseobjectiveSet;
-    }
-
-    public void setSyllabusesCourseobjectiveSet(Set<SyllabusesCourseobjective> syllabusesCourseobjectiveSet) {
-        this.syllabusesCourseobjectiveSet = syllabusesCourseobjectiveSet;
     }
 
     public SyllabusesCredit getCreditId() {

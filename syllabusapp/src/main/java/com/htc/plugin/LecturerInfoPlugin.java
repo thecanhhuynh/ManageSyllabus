@@ -4,7 +4,8 @@
  */
 package com.htc.plugin;
 
-import com.htc.pojo.SyllabusesSubsection;
+import com.htc.context.SyllabusCloneContext;
+import com.htc.pojo.SyllabusesSyllabus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -14,17 +15,14 @@ import org.springframework.stereotype.Component;
  */
 @Component
 @RequiredArgsConstructor
-public class LecturerInfoPlugin implements SubSectionPlugin{
+public class LecturerInfoPlugin implements ReferencePlugin{
     @Override
-    public String getPluginCode() {
-        return "LECTURER_INFO";
+    public String getReferenceCode() {
+        return "lecturer_info";
     }
 
     @Override
-    public SyllabusesSubsection cloneData(SyllabusesSubsection oldSub) {
-        SyllabusesSubsection newSub = new SyllabusesSubsection();
-        newSub.setCode(getPluginCode());
-        // TODO: Logic query DB cũ và map sang data mới...
-        return newSub;
+    public void processSpecificData(SyllabusesSyllabus oldSyllabus, SyllabusesSyllabus newSyllabus, SyllabusCloneContext context) {
     }
+
 }

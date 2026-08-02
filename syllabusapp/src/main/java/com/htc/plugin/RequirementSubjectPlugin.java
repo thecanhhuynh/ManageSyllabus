@@ -6,7 +6,6 @@ package com.htc.plugin;
 
 import com.htc.context.SyllabusCloneContext;
 import com.htc.pojo.SyllabusesSyllabus;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 /**

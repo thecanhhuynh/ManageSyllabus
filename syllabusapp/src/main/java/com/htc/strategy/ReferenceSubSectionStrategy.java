@@ -14,8 +14,10 @@ import org.springframework.stereotype.Component;
  *
  * @author Admin
  */
+
 @Component
 public class ReferenceSubSectionStrategy implements CustomSubSectionStrategy{
+    
     @Autowired
     private ReferenceSubSectionRepository refRepo;
     
@@ -25,7 +27,12 @@ public class ReferenceSubSectionStrategy implements CustomSubSectionStrategy{
     }
 
     @Override
-    public void cloneData(Long oldSubId, SyllabusesSubsection savedNewSub, Long oldSyllabusId, Long newSyllabusId) {
+    public void cloneData(Long oldSubId, SyllabusesSubsection savedNewSub) {
+    }
+
+    @Override
+    public void initNewData(Long templateSubId, SyllabusesSubsection newSub) {
+        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
     }
     
 }

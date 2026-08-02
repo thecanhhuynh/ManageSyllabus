@@ -52,10 +52,10 @@ public class SyllabusesProgrammelearningoutcome implements Serializable {
     @Lob
     @Column(name = "description")
     private String description;
-    @OneToMany(cascade = CascadeType.ALL, mappedBy = "ploId")
-    private Set<SyllabusesCloploassociation> syllabusesCloploassociationSet;
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "programmeLearningOutcomeId")
     private Set<SyllabusesCourseobjectiveprogrammelearningoutcome> syllabusesCourseobjectiveprogrammelearningoutcomeSet;
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "ploId")
+    private Set<SyllabusesCloploassociation> syllabusesCloploassociationSet;
 
     public SyllabusesProgrammelearningoutcome() {
     }
@@ -103,20 +103,20 @@ public class SyllabusesProgrammelearningoutcome implements Serializable {
         this.description = description;
     }
 
-    public Set<SyllabusesCloploassociation> getSyllabusesCloploassociationSet() {
-        return syllabusesCloploassociationSet;
-    }
-
-    public void setSyllabusesCloploassociationSet(Set<SyllabusesCloploassociation> syllabusesCloploassociationSet) {
-        this.syllabusesCloploassociationSet = syllabusesCloploassociationSet;
-    }
-
     public Set<SyllabusesCourseobjectiveprogrammelearningoutcome> getSyllabusesCourseobjectiveprogrammelearningoutcomeSet() {
         return syllabusesCourseobjectiveprogrammelearningoutcomeSet;
     }
 
     public void setSyllabusesCourseobjectiveprogrammelearningoutcomeSet(Set<SyllabusesCourseobjectiveprogrammelearningoutcome> syllabusesCourseobjectiveprogrammelearningoutcomeSet) {
         this.syllabusesCourseobjectiveprogrammelearningoutcomeSet = syllabusesCourseobjectiveprogrammelearningoutcomeSet;
+    }
+
+    public Set<SyllabusesCloploassociation> getSyllabusesCloploassociationSet() {
+        return syllabusesCloploassociationSet;
+    }
+
+    public void setSyllabusesCloploassociationSet(Set<SyllabusesCloploassociation> syllabusesCloploassociationSet) {
+        this.syllabusesCloploassociationSet = syllabusesCloploassociationSet;
     }
 
     @Override

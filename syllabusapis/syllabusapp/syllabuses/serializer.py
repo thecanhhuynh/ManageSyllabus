@@ -194,11 +194,13 @@ class ReferenceSubSectionSerializer(serializers.ModelSerializer):
         code = obj.code
 
         strategy_map = {
-            'credit': (CreditSerializer, syllabus.subject.credit, False),
-            'lecturer_info': (LecturerInfoSerializer, syllabus.lecturer, False),
+            'credit': (CreditSerializer, getattr(syllabus.subject, 'credit', None), False),
+            'lecturer_info': (LecturerInfoSerializer, getattr(syllabus, 'lecturer', None), False),
             'requirement_subject': (RequirementSubjectSerializer, syllabus.subject.required_by_relation.all(), True),
-            'objective_outcomes': (CourseObjectiveSerializer, syllabus.subject.course_objectives.all(), True),
-            'course_learning_outcomes': (COwithCLOSerializer, syllabus.subject.course_objectives.all(), True),
+
+            'objective_outcomes': (CourseObjectiveSerializer, syllabus.course_objectives.all(), True),
+            'course_learning_outcomes': (COwithCLOSerializer, syllabus.course_objectives.all(), True),
+
             'learning_material': (SyllabusLearningMaterialSerializer, syllabus.syllabuslearningmaterial_set.all(),
                                   True),
             'assessment_method': (AssessmentSerializer, syllabus.assessments.all(), True),
@@ -209,9 +211,16 @@ class ReferenceSubSectionSerializer(serializers.ModelSerializer):
         if strategy:
             serializer_class, data_source, is_many = strategy
             if data_source is not None:
-                return serializer_class(data_source, many=is_many).data
+                return serializer_class(data_source, many=is_many, context=self.context).data
 
         return None
+
+class TableSubSectionSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = TableSubSection
+        fields = ['id', 'name', 'position', 'type', 'code', 'data']
+
 
 
 class SubSectionSerializer(serializers.ModelSerializer):
@@ -224,6 +233,7 @@ class SubSectionSerializer(serializers.ModelSerializer):
             'text': (TextSubSectionSerializer, 'textsubsection'),
             'selection': (SelectionSubSectionSerializer, 'selectionsubsection'),
             'reference': (ReferenceSubSectionSerializer, 'referencesubsection'),
+            'table': (TableSubSectionSerializer, 'tablesubsection'),
         }
 
         strategy = strategy_map.get(instance.type)
@@ -231,8 +241,11 @@ class SubSectionSerializer(serializers.ModelSerializer):
             serializer_class, child_relation_name = strategy
             try:
                 child_instance = getattr(instance, child_relation_name)
+                print(f" [SUB SERIALIZER - SUCCESS] SubID={instance.id} (type='{instance.type}') -> Gọi {serializer_class.__name__}")
+
                 return serializer_class(child_instance).data
-            except AttributeError:
+            except AttributeError as e:
+                print(f" [SUB SERIALIZER - FAILED] SubID={instance.id} có type='{instance.type}' nhưng không có quan hệ '{child_relation_name}'! Lỗi: {e}")
                 pass
 
         return super().to_representation(instance)
@@ -986,7 +999,7 @@ class TemplateSyllabusSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = TemplateSyllabus
-        fields = ['id', 'name', 'version', 'status', 'is_active', 'main_sections']
+        fields = ['id', 'name', 'version', 'is_active', 'main_sections']
 
     def create(self, validated_data):
         main_sections_data = validated_data.pop('main_sections', [])

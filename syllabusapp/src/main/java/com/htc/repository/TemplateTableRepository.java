@@ -3,17 +3,16 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
 package com.htc.repository;
-import com.htc.pojo.SyllabusesMainsection;
-import com.htc.pojo.SyllabusesTemplatemainsection;
-import com.htc.pojo.SyllabusesTemplatesubsection;
-import java.util.List;
+
+import com.htc.pojo.SyllabusesTemplatetablesubsection;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
+
 /**
  *
  * @author Admin
  */
 @Repository
-public interface TemplateSubSectionRepository extends JpaRepository<SyllabusesTemplatesubsection, Long>{
-    List<SyllabusesTemplatesubsection> findByMainSectionId(SyllabusesTemplatemainsection mainSectionId);
+public interface TemplateTableRepository extends JpaRepository<SyllabusesTemplatetablesubsection, Long>{
+    
 }

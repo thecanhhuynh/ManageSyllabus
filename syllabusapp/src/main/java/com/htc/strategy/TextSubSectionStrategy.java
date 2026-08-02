@@ -5,9 +5,11 @@
 package com.htc.strategy;
 
 import com.htc.pojo.SyllabusesSubsection;
+import com.htc.pojo.SyllabusesTemplatetextsubsection;
 import com.htc.pojo.SyllabusesTextsubsection;
 import com.htc.repository.TextSubSectionRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 /**
@@ -15,9 +17,9 @@ import org.springframework.stereotype.Component;
  * @author Admin
  */
 @Component
-@RequiredArgsConstructor
 public class TextSubSectionStrategy implements CustomSubSectionStrategy {
 
+    @Autowired
     private TextSubSectionRepository textSubSectionRepo;
 
     @Override
@@ -39,6 +41,19 @@ public class TextSubSectionStrategy implements CustomSubSectionStrategy {
         newText.setPlaceHolder(oldText.getPlaceHolder());
 
         this.textSubSectionRepo.save(newText);
+    }
+
+    @Override
+    public void initNewData(Long subId, SyllabusesSubsection newSub) {
+        SyllabusesTextsubsection subText = this.textSubSectionRepo.findById(subId).orElse(null);
+        if (subText != null) {
+            SyllabusesTextsubsection textSub = new SyllabusesTextsubsection();
+            textSub.setSubsectionPtrId(newSub.getId()); // Dùng chung ID (cơ chế kế thừa)
+            textSub.setContent(""); // Dữ liệu rỗng
+            textSub.setDisplayMode(subText.getDisplayMode());
+            textSub.setPlaceHolder(subText.getPlaceHolder());
+            this.textSubSectionRepo.save(textSub);
+        }
     }
 
 }

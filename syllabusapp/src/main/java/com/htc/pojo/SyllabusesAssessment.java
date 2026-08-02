@@ -37,14 +37,14 @@ public class SyllabusesAssessment implements Serializable {
     @Basic(optional = false)
     @Column(name = "id")
     private Long id;
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "assessmentId")
+    private Set<SyllabusesMethod> syllabusesMethodSet;
     @JoinColumn(name = "syllabus_id", referencedColumnName = "id")
     @ManyToOne(optional = false)
     private SyllabusesSyllabus syllabusId;
     @JoinColumn(name = "type_assessment_id", referencedColumnName = "id")
     @ManyToOne(optional = false)
     private SyllabusesTypeassessment typeAssessmentId;
-    @OneToMany(cascade = CascadeType.ALL, mappedBy = "assessmentId")
-    private Set<SyllabusesMethod> syllabusesMethodSet;
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "assessmentId")
     private Set<SyllabusesTeachingsessionassessment> syllabusesTeachingsessionassessmentSet;
 
@@ -63,6 +63,14 @@ public class SyllabusesAssessment implements Serializable {
         this.id = id;
     }
 
+    public Set<SyllabusesMethod> getSyllabusesMethodSet() {
+        return syllabusesMethodSet;
+    }
+
+    public void setSyllabusesMethodSet(Set<SyllabusesMethod> syllabusesMethodSet) {
+        this.syllabusesMethodSet = syllabusesMethodSet;
+    }
+
     public SyllabusesSyllabus getSyllabusId() {
         return syllabusId;
     }
@@ -77,14 +85,6 @@ public class SyllabusesAssessment implements Serializable {
 
     public void setTypeAssessmentId(SyllabusesTypeassessment typeAssessmentId) {
         this.typeAssessmentId = typeAssessmentId;
-    }
-
-    public Set<SyllabusesMethod> getSyllabusesMethodSet() {
-        return syllabusesMethodSet;
-    }
-
-    public void setSyllabusesMethodSet(Set<SyllabusesMethod> syllabusesMethodSet) {
-        this.syllabusesMethodSet = syllabusesMethodSet;
     }
 
     public Set<SyllabusesTeachingsessionassessment> getSyllabusesTeachingsessionassessmentSet() {

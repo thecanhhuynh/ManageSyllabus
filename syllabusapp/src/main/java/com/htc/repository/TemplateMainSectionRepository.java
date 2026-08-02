@@ -5,6 +5,7 @@
 package com.htc.repository;
 
 import com.htc.pojo.SyllabusesTemplatemainsection;
+import com.htc.pojo.SyllabusesTemplatesyllabus;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -15,5 +16,5 @@ import org.springframework.stereotype.Repository;
  */
 @Repository
 public interface TemplateMainSectionRepository extends JpaRepository<SyllabusesTemplatemainsection, Long>{
-    List<SyllabusesTemplatemainsection> findByTemplateIdOrderByPositionAsc(Long templateId);
+    List<SyllabusesTemplatemainsection> findByTemplateIdOrderByPositionAsc(SyllabusesTemplatesyllabus templateId);
 }

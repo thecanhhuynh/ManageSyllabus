@@ -46,13 +46,13 @@ public class SyllabusesCourseobjective implements Serializable {
     @Basic(optional = false)
     @Column(name = "position")
     private int position;
-    @OneToMany(cascade = CascadeType.ALL, mappedBy = "courseObjectiveId")
-    private Set<SyllabusesCourselearningoutcome> syllabusesCourselearningoutcomeSet;
-    @JoinColumn(name = "subject_id", referencedColumnName = "id")
+    @JoinColumn(name = "syllabus_id", referencedColumnName = "id")
     @ManyToOne(optional = false)
-    private SyllabusesSubject subjectId;
+    private SyllabusesSyllabus syllabusId;
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "courseObjectiveId")
     private Set<SyllabusesCourseobjectiveprogrammelearningoutcome> syllabusesCourseobjectiveprogrammelearningoutcomeSet;
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "courseObjectiveId")
+    private Set<SyllabusesCourselearningoutcome> syllabusesCourselearningoutcomeSet;
 
     public SyllabusesCourseobjective() {
     }
@@ -91,20 +91,12 @@ public class SyllabusesCourseobjective implements Serializable {
         this.position = position;
     }
 
-    public Set<SyllabusesCourselearningoutcome> getSyllabusesCourselearningoutcomeSet() {
-        return syllabusesCourselearningoutcomeSet;
+    public SyllabusesSyllabus getSyllabusId() {
+        return syllabusId;
     }
 
-    public void setSyllabusesCourselearningoutcomeSet(Set<SyllabusesCourselearningoutcome> syllabusesCourselearningoutcomeSet) {
-        this.syllabusesCourselearningoutcomeSet = syllabusesCourselearningoutcomeSet;
-    }
-
-    public SyllabusesSubject getSubjectId() {
-        return subjectId;
-    }
-
-    public void setSubjectId(SyllabusesSubject subjectId) {
-        this.subjectId = subjectId;
+    public void setSyllabusId(SyllabusesSyllabus syllabusId) {
+        this.syllabusId = syllabusId;
     }
 
     public Set<SyllabusesCourseobjectiveprogrammelearningoutcome> getSyllabusesCourseobjectiveprogrammelearningoutcomeSet() {
@@ -113,6 +105,14 @@ public class SyllabusesCourseobjective implements Serializable {
 
     public void setSyllabusesCourseobjectiveprogrammelearningoutcomeSet(Set<SyllabusesCourseobjectiveprogrammelearningoutcome> syllabusesCourseobjectiveprogrammelearningoutcomeSet) {
         this.syllabusesCourseobjectiveprogrammelearningoutcomeSet = syllabusesCourseobjectiveprogrammelearningoutcomeSet;
+    }
+
+    public Set<SyllabusesCourselearningoutcome> getSyllabusesCourselearningoutcomeSet() {
+        return syllabusesCourselearningoutcomeSet;
+    }
+
+    public void setSyllabusesCourselearningoutcomeSet(Set<SyllabusesCourselearningoutcome> syllabusesCourselearningoutcomeSet) {
+        this.syllabusesCourselearningoutcomeSet = syllabusesCourselearningoutcomeSet;
     }
 
     @Override

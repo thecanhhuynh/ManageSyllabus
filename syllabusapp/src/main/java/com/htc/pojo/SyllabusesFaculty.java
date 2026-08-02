@@ -47,12 +47,12 @@ public class SyllabusesFaculty implements Serializable {
     @Basic(optional = false)
     @Column(name = "name")
     private String name;
-    @OneToMany(mappedBy = "facultyId")
-    private Set<SyllabusesLecturer> syllabusesLecturerSet;
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "facultyId")
     private Set<SyllabusesMajor> syllabusesMajorSet;
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "facultyId")
     private Set<SyllabusesSyllabus> syllabusesSyllabusSet;
+    @OneToMany(mappedBy = "facultyId")
+    private Set<SyllabusesLecturer> syllabusesLecturerSet;
 
     public SyllabusesFaculty() {
     }
@@ -91,14 +91,6 @@ public class SyllabusesFaculty implements Serializable {
         this.name = name;
     }
 
-    public Set<SyllabusesLecturer> getSyllabusesLecturerSet() {
-        return syllabusesLecturerSet;
-    }
-
-    public void setSyllabusesLecturerSet(Set<SyllabusesLecturer> syllabusesLecturerSet) {
-        this.syllabusesLecturerSet = syllabusesLecturerSet;
-    }
-
     public Set<SyllabusesMajor> getSyllabusesMajorSet() {
         return syllabusesMajorSet;
     }
@@ -113,6 +105,14 @@ public class SyllabusesFaculty implements Serializable {
 
     public void setSyllabusesSyllabusSet(Set<SyllabusesSyllabus> syllabusesSyllabusSet) {
         this.syllabusesSyllabusSet = syllabusesSyllabusSet;
+    }
+
+    public Set<SyllabusesLecturer> getSyllabusesLecturerSet() {
+        return syllabusesLecturerSet;
+    }
+
+    public void setSyllabusesLecturerSet(Set<SyllabusesLecturer> syllabusesLecturerSet) {
+        this.syllabusesLecturerSet = syllabusesLecturerSet;
     }
 
     @Override

@@ -40,6 +40,8 @@ public class AuthGroup implements Serializable {
     @Column(name = "name")
     private String name;
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "groupId")
+    private Set<AuthGroupPermissions> authGroupPermissionsSet;
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "groupId")
     private Set<SyllabusesUserGroups> syllabusesUserGroupsSet;
 
     public AuthGroup() {
@@ -68,6 +70,14 @@ public class AuthGroup implements Serializable {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public Set<AuthGroupPermissions> getAuthGroupPermissionsSet() {
+        return authGroupPermissionsSet;
+    }
+
+    public void setAuthGroupPermissionsSet(Set<AuthGroupPermissions> authGroupPermissionsSet) {
+        this.authGroupPermissionsSet = authGroupPermissionsSet;
     }
 
     public Set<SyllabusesUserGroups> getSyllabusesUserGroupsSet() {

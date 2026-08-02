@@ -4,13 +4,16 @@
  */
 package com.htc.plugin;
 
+import com.htc.context.SyllabusCloneContext;
 import com.htc.pojo.SyllabusesSubsection;
+import com.htc.pojo.SyllabusesSyllabus;
 
 /**
  *
  * @author Admin
  */
-public interface SubSectionPlugin {
-    String getPluginCode();
-    SyllabusesSubsection cloneData(SyllabusesSubsection oldSub);
+public interface ReferencePlugin {
+    String getReferenceCode();
+    public void processSpecificData(SyllabusesSyllabus oldSyllabus, SyllabusesSyllabus newSyllabus, 
+                             SyllabusCloneContext context);
 }

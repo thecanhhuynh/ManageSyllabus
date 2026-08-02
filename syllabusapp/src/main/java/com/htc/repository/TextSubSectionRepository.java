@@ -4,8 +4,11 @@
  */
 package com.htc.repository;
 
+import com.htc.pojo.SyllabusesSyllabus;
 import com.htc.pojo.SyllabusesTextsubsection;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 /**
@@ -14,5 +17,6 @@ import org.springframework.stereotype.Repository;
  */
 @Repository
 public interface TextSubSectionRepository extends JpaRepository<SyllabusesTextsubsection , Long>{
-    
+    @Query("SELECT COUNT(t) FROM SyllabusesTextsubsection t WHERE t.syllabusesSubsection.mainSectionId.syllabusId = :syllabus")
+    long countBySyllabus(@Param("syllabus") SyllabusesSyllabus syllabus);
 }

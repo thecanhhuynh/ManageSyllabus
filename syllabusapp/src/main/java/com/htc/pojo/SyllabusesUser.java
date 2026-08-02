@@ -96,12 +96,24 @@ public class SyllabusesUser implements Serializable {
     @Basic(optional = false)
     @Column(name = "user_role")
     private String userRole;
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "userId")
+    private Set<Oauth2ProviderGrant> oauth2ProviderGrantSet;
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "userId")
+    private Set<DjangoAdminLog> djangoAdminLogSet;
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "userId")
+    private Set<SyllabusesUserGroups> syllabusesUserGroupsSet;
+    @OneToMany(mappedBy = "userId")
+    private Set<Oauth2ProviderIdtoken> oauth2ProviderIdtokenSet;
+    @OneToMany(mappedBy = "userId")
+    private Set<Oauth2ProviderApplication> oauth2ProviderApplicationSet;
     @OneToOne(cascade = CascadeType.ALL, mappedBy = "userId")
     private SyllabusesLecturer syllabusesLecturer;
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "userId")
-    private Set<SyllabusesUserGroups> syllabusesUserGroupsSet;
+    private Set<Oauth2ProviderRefreshtoken> oauth2ProviderRefreshtokenSet;
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "userId")
     private Set<SyllabusesUserUserPermissions> syllabusesUserUserPermissionsSet;
+    @OneToMany(mappedBy = "userId")
+    private Set<Oauth2ProviderAccesstoken> oauth2ProviderAccesstokenSet;
 
     public SyllabusesUser() {
     }
@@ -246,12 +258,20 @@ public class SyllabusesUser implements Serializable {
         this.userRole = userRole;
     }
 
-    public SyllabusesLecturer getSyllabusesLecturer() {
-        return syllabusesLecturer;
+    public Set<Oauth2ProviderGrant> getOauth2ProviderGrantSet() {
+        return oauth2ProviderGrantSet;
     }
 
-    public void setSyllabusesLecturer(SyllabusesLecturer syllabusesLecturer) {
-        this.syllabusesLecturer = syllabusesLecturer;
+    public void setOauth2ProviderGrantSet(Set<Oauth2ProviderGrant> oauth2ProviderGrantSet) {
+        this.oauth2ProviderGrantSet = oauth2ProviderGrantSet;
+    }
+
+    public Set<DjangoAdminLog> getDjangoAdminLogSet() {
+        return djangoAdminLogSet;
+    }
+
+    public void setDjangoAdminLogSet(Set<DjangoAdminLog> djangoAdminLogSet) {
+        this.djangoAdminLogSet = djangoAdminLogSet;
     }
 
     public Set<SyllabusesUserGroups> getSyllabusesUserGroupsSet() {
@@ -262,12 +282,52 @@ public class SyllabusesUser implements Serializable {
         this.syllabusesUserGroupsSet = syllabusesUserGroupsSet;
     }
 
+    public Set<Oauth2ProviderIdtoken> getOauth2ProviderIdtokenSet() {
+        return oauth2ProviderIdtokenSet;
+    }
+
+    public void setOauth2ProviderIdtokenSet(Set<Oauth2ProviderIdtoken> oauth2ProviderIdtokenSet) {
+        this.oauth2ProviderIdtokenSet = oauth2ProviderIdtokenSet;
+    }
+
+    public Set<Oauth2ProviderApplication> getOauth2ProviderApplicationSet() {
+        return oauth2ProviderApplicationSet;
+    }
+
+    public void setOauth2ProviderApplicationSet(Set<Oauth2ProviderApplication> oauth2ProviderApplicationSet) {
+        this.oauth2ProviderApplicationSet = oauth2ProviderApplicationSet;
+    }
+
+    public SyllabusesLecturer getSyllabusesLecturer() {
+        return syllabusesLecturer;
+    }
+
+    public void setSyllabusesLecturer(SyllabusesLecturer syllabusesLecturer) {
+        this.syllabusesLecturer = syllabusesLecturer;
+    }
+
+    public Set<Oauth2ProviderRefreshtoken> getOauth2ProviderRefreshtokenSet() {
+        return oauth2ProviderRefreshtokenSet;
+    }
+
+    public void setOauth2ProviderRefreshtokenSet(Set<Oauth2ProviderRefreshtoken> oauth2ProviderRefreshtokenSet) {
+        this.oauth2ProviderRefreshtokenSet = oauth2ProviderRefreshtokenSet;
+    }
+
     public Set<SyllabusesUserUserPermissions> getSyllabusesUserUserPermissionsSet() {
         return syllabusesUserUserPermissionsSet;
     }
 
     public void setSyllabusesUserUserPermissionsSet(Set<SyllabusesUserUserPermissions> syllabusesUserUserPermissionsSet) {
         this.syllabusesUserUserPermissionsSet = syllabusesUserUserPermissionsSet;
+    }
+
+    public Set<Oauth2ProviderAccesstoken> getOauth2ProviderAccesstokenSet() {
+        return oauth2ProviderAccesstokenSet;
+    }
+
+    public void setOauth2ProviderAccesstokenSet(Set<Oauth2ProviderAccesstoken> oauth2ProviderAccesstokenSet) {
+        this.oauth2ProviderAccesstokenSet = oauth2ProviderAccesstokenSet;
     }
 
     @Override

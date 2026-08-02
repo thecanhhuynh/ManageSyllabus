@@ -69,15 +69,9 @@ public class SyllabusesSyllabus implements Serializable {
     @Column(name = "version")
     private String version;
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "syllabusId")
-    private Set<SyllabusesAssessment> syllabusesAssessmentSet;
-    @OneToMany(cascade = CascadeType.ALL, mappedBy = "syllabusId")
-    private Set<SyllabusesTeachingsession> syllabusesTeachingsessionSet;
-    @OneToMany(cascade = CascadeType.ALL, mappedBy = "syllabusId")
-    private Set<SyllabusesMainsection> syllabusesMainsectionSet;
+    private Set<SyllabusesCourseobjective> syllabusesCourseobjectiveSet;
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "syllabusId")
     private Set<SyllabusesSyllabuslearningmaterial> syllabusesSyllabuslearningmaterialSet;
-    @OneToMany(cascade = CascadeType.ALL, mappedBy = "syllabusId")
-    private Set<SyllabusesTrainingprogramsyllabus> syllabusesTrainingprogramsyllabusSet;
     @JoinColumn(name = "faculty_id", referencedColumnName = "id")
     @ManyToOne(optional = false)
     private SyllabusesFaculty facultyId;
@@ -95,6 +89,14 @@ public class SyllabusesSyllabus implements Serializable {
     @JoinColumn(name = "template_id", referencedColumnName = "id")
     @ManyToOne(optional = false)
     private SyllabusesTemplatesyllabus templateId;
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "syllabusId")
+    private Set<SyllabusesAssessment> syllabusesAssessmentSet;
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "syllabusId")
+    private Set<SyllabusesTeachingsession> syllabusesTeachingsessionSet;
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "syllabusId")
+    private Set<SyllabusesMainsection> syllabusesMainsectionSet;
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "syllabusId")
+    private Set<SyllabusesTrainingprogramsyllabus> syllabusesTrainingprogramsyllabusSet;
 
     public SyllabusesSyllabus() {
     }
@@ -175,28 +177,12 @@ public class SyllabusesSyllabus implements Serializable {
         this.version = version;
     }
 
-    public Set<SyllabusesAssessment> getSyllabusesAssessmentSet() {
-        return syllabusesAssessmentSet;
+    public Set<SyllabusesCourseobjective> getSyllabusesCourseobjectiveSet() {
+        return syllabusesCourseobjectiveSet;
     }
 
-    public void setSyllabusesAssessmentSet(Set<SyllabusesAssessment> syllabusesAssessmentSet) {
-        this.syllabusesAssessmentSet = syllabusesAssessmentSet;
-    }
-
-    public Set<SyllabusesTeachingsession> getSyllabusesTeachingsessionSet() {
-        return syllabusesTeachingsessionSet;
-    }
-
-    public void setSyllabusesTeachingsessionSet(Set<SyllabusesTeachingsession> syllabusesTeachingsessionSet) {
-        this.syllabusesTeachingsessionSet = syllabusesTeachingsessionSet;
-    }
-
-    public Set<SyllabusesMainsection> getSyllabusesMainsectionSet() {
-        return syllabusesMainsectionSet;
-    }
-
-    public void setSyllabusesMainsectionSet(Set<SyllabusesMainsection> syllabusesMainsectionSet) {
-        this.syllabusesMainsectionSet = syllabusesMainsectionSet;
+    public void setSyllabusesCourseobjectiveSet(Set<SyllabusesCourseobjective> syllabusesCourseobjectiveSet) {
+        this.syllabusesCourseobjectiveSet = syllabusesCourseobjectiveSet;
     }
 
     public Set<SyllabusesSyllabuslearningmaterial> getSyllabusesSyllabuslearningmaterialSet() {
@@ -205,14 +191,6 @@ public class SyllabusesSyllabus implements Serializable {
 
     public void setSyllabusesSyllabuslearningmaterialSet(Set<SyllabusesSyllabuslearningmaterial> syllabusesSyllabuslearningmaterialSet) {
         this.syllabusesSyllabuslearningmaterialSet = syllabusesSyllabuslearningmaterialSet;
-    }
-
-    public Set<SyllabusesTrainingprogramsyllabus> getSyllabusesTrainingprogramsyllabusSet() {
-        return syllabusesTrainingprogramsyllabusSet;
-    }
-
-    public void setSyllabusesTrainingprogramsyllabusSet(Set<SyllabusesTrainingprogramsyllabus> syllabusesTrainingprogramsyllabusSet) {
-        this.syllabusesTrainingprogramsyllabusSet = syllabusesTrainingprogramsyllabusSet;
     }
 
     public SyllabusesFaculty getFacultyId() {
@@ -261,6 +239,38 @@ public class SyllabusesSyllabus implements Serializable {
 
     public void setTemplateId(SyllabusesTemplatesyllabus templateId) {
         this.templateId = templateId;
+    }
+
+    public Set<SyllabusesAssessment> getSyllabusesAssessmentSet() {
+        return syllabusesAssessmentSet;
+    }
+
+    public void setSyllabusesAssessmentSet(Set<SyllabusesAssessment> syllabusesAssessmentSet) {
+        this.syllabusesAssessmentSet = syllabusesAssessmentSet;
+    }
+
+    public Set<SyllabusesTeachingsession> getSyllabusesTeachingsessionSet() {
+        return syllabusesTeachingsessionSet;
+    }
+
+    public void setSyllabusesTeachingsessionSet(Set<SyllabusesTeachingsession> syllabusesTeachingsessionSet) {
+        this.syllabusesTeachingsessionSet = syllabusesTeachingsessionSet;
+    }
+
+    public Set<SyllabusesMainsection> getSyllabusesMainsectionSet() {
+        return syllabusesMainsectionSet;
+    }
+
+    public void setSyllabusesMainsectionSet(Set<SyllabusesMainsection> syllabusesMainsectionSet) {
+        this.syllabusesMainsectionSet = syllabusesMainsectionSet;
+    }
+
+    public Set<SyllabusesTrainingprogramsyllabus> getSyllabusesTrainingprogramsyllabusSet() {
+        return syllabusesTrainingprogramsyllabusSet;
+    }
+
+    public void setSyllabusesTrainingprogramsyllabusSet(Set<SyllabusesTrainingprogramsyllabus> syllabusesTrainingprogramsyllabusSet) {
+        this.syllabusesTrainingprogramsyllabusSet = syllabusesTrainingprogramsyllabusSet;
     }
 
     @Override

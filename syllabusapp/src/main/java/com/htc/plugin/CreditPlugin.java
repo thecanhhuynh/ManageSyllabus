@@ -5,11 +5,7 @@
 package com.htc.plugin;
 
 import com.htc.context.SyllabusCloneContext;
-import com.htc.pojo.SyllabusesCredit;
 import com.htc.pojo.SyllabusesSyllabus;
-import com.htc.repository.SyllabusRepository;
-import jakarta.persistence.EntityNotFoundException;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 /**

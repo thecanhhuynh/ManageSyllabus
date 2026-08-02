@@ -4,17 +4,23 @@
  */
 package com.htc.controller;
 
+import com.htc.service.TemplateCloneService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.Map;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 
 @RestController
 @RequestMapping("/api")
 public class PublishController {
 
-    @PostMapping("/publish-template")
-    public ResponseEntity<String> receivePublishRequest(@RequestBody Map<String, Object> payload) {
-        System.out.println("Nhận được tín hiệu ban hành: " + payload);
-        return ResponseEntity.accepted().body("Đang xử lý ban hành đề cương...");
+    @Autowired
+    private TemplateCloneService cloneService;
+
+    @PostMapping("/publish-template/{id}")
+    public ResponseEntity<String> receivePublishRequest(@PathVariable(value = "id") Long id) {
+        this.cloneService.cloneOutlinesToNewTemplate(id);
+        return new ResponseEntity<>("Nhân bản đề cương thành công", HttpStatus.OK);
     }
 }

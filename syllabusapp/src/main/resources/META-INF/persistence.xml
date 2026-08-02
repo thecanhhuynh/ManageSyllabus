@@ -50,6 +50,15 @@
     <class>com.htc.pojo.SyllabusesMethodcourselearningoutcome</class>
     <class>com.htc.pojo.SyllabusesCourselearningoutcome</class>
     <class>com.htc.pojo.SyllabusesTemplateselectionsubsection</class>
+    <class>com.htc.pojo.DjangoMigrations</class>
+    <class>com.htc.pojo.AuthGroupPermissions</class>
+    <class>com.htc.pojo.DjangoSession</class>
+    <class>com.htc.pojo.Oauth2ProviderApplication</class>
+    <class>com.htc.pojo.Oauth2ProviderAccesstoken</class>
+    <class>com.htc.pojo.Oauth2ProviderGrant</class>
+    <class>com.htc.pojo.Oauth2ProviderIdtoken</class>
+    <class>com.htc.pojo.Oauth2ProviderRefreshtoken</class>
+    <class>com.htc.pojo.DjangoAdminLog</class>
     <properties>
       <property name="javax.persistence.jdbc.url" value="jdbc:mysql://localhost:3306/managesyllabusv2?zeroDateTimeBehavior=CONVERT_TO_NULL"/>
       <property name="javax.persistence.jdbc.user" value="root"/>

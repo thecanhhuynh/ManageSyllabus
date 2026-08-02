@@ -14,14 +14,14 @@ import org.springframework.stereotype.Component;
  * @author Admin
  */
 @Component
-public class PluginRegistry {
-    private final Map<String, SubSectionPlugin> plugins;
+public class ReferencePluginRegistry {
+    private final Map<String, ReferencePlugin> plugins;
 
-    public PluginRegistry(List<SubSectionPlugin> pluginList) {
-        this.plugins = pluginList.stream().collect(Collectors.toMap(SubSectionPlugin::getPluginCode, p->p));
+    public ReferencePluginRegistry(List<ReferencePlugin> pluginList) {
+        this.plugins = pluginList.stream().collect(Collectors.toMap(ReferencePlugin::getReferenceCode, p->p));
     }
     
-    public SubSectionPlugin get(String pluginCode) {
+    public ReferencePlugin get(String pluginCode) {
         return plugins.get(pluginCode);
     }
 }

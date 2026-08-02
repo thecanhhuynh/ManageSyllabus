@@ -94,7 +94,7 @@ class ProgrammeLearningOutcome(BaseModel):
 class CourseObjective(models.Model):
     content = models.TextField()
     position = models.IntegerField()
-    subject = models.ForeignKey(Subject, on_delete=models.CASCADE, related_name='course_objectives')
+    syllabus = models.ForeignKey('Syllabus', on_delete=models.CASCADE, related_name='course_objectives')
     programme_learning_outcomes = models.ManyToManyField(ProgrammeLearningOutcome,
                                                          through='CourseObjectiveProgrammeLearningOutcome',
                                                          related_name='course_objectives')

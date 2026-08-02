@@ -49,14 +49,14 @@ public class SyllabusesLecturer implements Serializable {
     private Date createdDate;
     @Column(name = "room")
     private String room;
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "lecturerId")
+    private Set<SyllabusesSyllabus> syllabusesSyllabusSet;
     @JoinColumn(name = "faculty_id", referencedColumnName = "id")
     @ManyToOne
     private SyllabusesFaculty facultyId;
     @JoinColumn(name = "user_id", referencedColumnName = "id")
     @OneToOne(optional = false)
     private SyllabusesUser userId;
-    @OneToMany(cascade = CascadeType.ALL, mappedBy = "lecturerId")
-    private Set<SyllabusesSyllabus> syllabusesSyllabusSet;
 
     public SyllabusesLecturer() {
     }
@@ -94,6 +94,14 @@ public class SyllabusesLecturer implements Serializable {
         this.room = room;
     }
 
+    public Set<SyllabusesSyllabus> getSyllabusesSyllabusSet() {
+        return syllabusesSyllabusSet;
+    }
+
+    public void setSyllabusesSyllabusSet(Set<SyllabusesSyllabus> syllabusesSyllabusSet) {
+        this.syllabusesSyllabusSet = syllabusesSyllabusSet;
+    }
+
     public SyllabusesFaculty getFacultyId() {
         return facultyId;
     }
@@ -108,14 +116,6 @@ public class SyllabusesLecturer implements Serializable {
 
     public void setUserId(SyllabusesUser userId) {
         this.userId = userId;
-    }
-
-    public Set<SyllabusesSyllabus> getSyllabusesSyllabusSet() {
-        return syllabusesSyllabusSet;
-    }
-
-    public void setSyllabusesSyllabusSet(Set<SyllabusesSyllabus> syllabusesSyllabusSet) {
-        this.syllabusesSyllabusSet = syllabusesSyllabusSet;
     }
 
     @Override

@@ -11,6 +11,8 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.NamedQueries;
 import jakarta.persistence.NamedQuery;
 import jakarta.persistence.OneToMany;
@@ -33,8 +35,7 @@ import java.util.Set;
     @NamedQuery(name = "SyllabusesTemplatesyllabus.findByCreatedDate", query = "SELECT s FROM SyllabusesTemplatesyllabus s WHERE s.createdDate = :createdDate"),
     @NamedQuery(name = "SyllabusesTemplatesyllabus.findByName", query = "SELECT s FROM SyllabusesTemplatesyllabus s WHERE s.name = :name"),
     @NamedQuery(name = "SyllabusesTemplatesyllabus.findByVersion", query = "SELECT s FROM SyllabusesTemplatesyllabus s WHERE s.version = :version"),
-    @NamedQuery(name = "SyllabusesTemplatesyllabus.findByIsActive", query = "SELECT s FROM SyllabusesTemplatesyllabus s WHERE s.isActive = :isActive"),
-    @NamedQuery(name = "SyllabusesTemplatesyllabus.findByStatus", query = "SELECT s FROM SyllabusesTemplatesyllabus s WHERE s.status = :status")})
+    @NamedQuery(name = "SyllabusesTemplatesyllabus.findByIsActive", query = "SELECT s FROM SyllabusesTemplatesyllabus s WHERE s.isActive = :isActive")})
 public class SyllabusesTemplatesyllabus implements Serializable {
 
     private static final long serialVersionUID = 1L;
@@ -56,13 +57,15 @@ public class SyllabusesTemplatesyllabus implements Serializable {
     @Basic(optional = false)
     @Column(name = "is_active")
     private boolean isActive;
-    @Basic(optional = false)
-    @Column(name = "status")
-    private String status;
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "templateId")
     private Set<SyllabusesTemplatemainsection> syllabusesTemplatemainsectionSet;
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "templateId")
     private Set<SyllabusesSyllabus> syllabusesSyllabusSet;
+    @OneToMany(mappedBy = "parentId")
+    private Set<SyllabusesTemplatesyllabus> syllabusesTemplatesyllabusSet;
+    @JoinColumn(name = "parent_id", referencedColumnName = "id")
+    @ManyToOne
+    private SyllabusesTemplatesyllabus parentId;
 
     public SyllabusesTemplatesyllabus() {
     }
@@ -71,13 +74,12 @@ public class SyllabusesTemplatesyllabus implements Serializable {
         this.id = id;
     }
 
-    public SyllabusesTemplatesyllabus(Long id, Date createdDate, String name, String version, boolean isActive, String status) {
+    public SyllabusesTemplatesyllabus(Long id, Date createdDate, String name, String version, boolean isActive) {
         this.id = id;
         this.createdDate = createdDate;
         this.name = name;
         this.version = version;
         this.isActive = isActive;
-        this.status = status;
     }
 
     public Long getId() {
@@ -120,14 +122,6 @@ public class SyllabusesTemplatesyllabus implements Serializable {
         this.isActive = isActive;
     }
 
-    public String getStatus() {
-        return status;
-    }
-
-    public void setStatus(String status) {
-        this.status = status;
-    }
-
     public Set<SyllabusesTemplatemainsection> getSyllabusesTemplatemainsectionSet() {
         return syllabusesTemplatemainsectionSet;
     }
@@ -142,6 +136,22 @@ public class SyllabusesTemplatesyllabus implements Serializable {
 
     public void setSyllabusesSyllabusSet(Set<SyllabusesSyllabus> syllabusesSyllabusSet) {
         this.syllabusesSyllabusSet = syllabusesSyllabusSet;
+    }
+
+    public Set<SyllabusesTemplatesyllabus> getSyllabusesTemplatesyllabusSet() {
+        return syllabusesTemplatesyllabusSet;
+    }
+
+    public void setSyllabusesTemplatesyllabusSet(Set<SyllabusesTemplatesyllabus> syllabusesTemplatesyllabusSet) {
+        this.syllabusesTemplatesyllabusSet = syllabusesTemplatesyllabusSet;
+    }
+
+    public SyllabusesTemplatesyllabus getParentId() {
+        return parentId;
+    }
+
+    public void setParentId(SyllabusesTemplatesyllabus parentId) {
+        this.parentId = parentId;
     }
 
     @Override

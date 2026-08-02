@@ -13,4 +13,5 @@ import com.htc.pojo.SyllabusesSubsection;
 public interface CustomSubSectionStrategy {
     String getType(); // "text", "selection", "table"
     void cloneData(Long oldSubId, SyllabusesSubsection savedNewSub);
+    void initNewData(Long subId, SyllabusesSubsection newSub);
 }

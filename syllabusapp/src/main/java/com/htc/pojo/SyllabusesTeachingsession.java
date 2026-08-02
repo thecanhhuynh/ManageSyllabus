@@ -68,6 +68,8 @@ public class SyllabusesTeachingsession implements Serializable {
     @Column(name = "self_study_hours")
     private double selfStudyHours;
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "teachingSessionId")
+    private Set<SyllabusesTeachingsessionlearningmaterial> syllabusesTeachingsessionlearningmaterialSet;
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "teachingSessionId")
     private Set<SyllabusesTeachingsessioncourselearningoutcome> syllabusesTeachingsessioncourselearningoutcomeSet;
     @JoinColumn(name = "schedule_group_id", referencedColumnName = "id")
     @ManyToOne(optional = false)
@@ -75,8 +77,6 @@ public class SyllabusesTeachingsession implements Serializable {
     @JoinColumn(name = "syllabus_id", referencedColumnName = "id")
     @ManyToOne(optional = false)
     private SyllabusesSyllabus syllabusId;
-    @OneToMany(cascade = CascadeType.ALL, mappedBy = "teachingSessionId")
-    private Set<SyllabusesTeachingsessionlearningmaterial> syllabusesTeachingsessionlearningmaterialSet;
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "teachingSessionId")
     private Set<SyllabusesTeachingsessionassessment> syllabusesTeachingsessionassessmentSet;
 
@@ -168,6 +168,14 @@ public class SyllabusesTeachingsession implements Serializable {
         this.selfStudyHours = selfStudyHours;
     }
 
+    public Set<SyllabusesTeachingsessionlearningmaterial> getSyllabusesTeachingsessionlearningmaterialSet() {
+        return syllabusesTeachingsessionlearningmaterialSet;
+    }
+
+    public void setSyllabusesTeachingsessionlearningmaterialSet(Set<SyllabusesTeachingsessionlearningmaterial> syllabusesTeachingsessionlearningmaterialSet) {
+        this.syllabusesTeachingsessionlearningmaterialSet = syllabusesTeachingsessionlearningmaterialSet;
+    }
+
     public Set<SyllabusesTeachingsessioncourselearningoutcome> getSyllabusesTeachingsessioncourselearningoutcomeSet() {
         return syllabusesTeachingsessioncourselearningoutcomeSet;
     }
@@ -190,14 +198,6 @@ public class SyllabusesTeachingsession implements Serializable {
 
     public void setSyllabusId(SyllabusesSyllabus syllabusId) {
         this.syllabusId = syllabusId;
-    }
-
-    public Set<SyllabusesTeachingsessionlearningmaterial> getSyllabusesTeachingsessionlearningmaterialSet() {
-        return syllabusesTeachingsessionlearningmaterialSet;
-    }
-
-    public void setSyllabusesTeachingsessionlearningmaterialSet(Set<SyllabusesTeachingsessionlearningmaterial> syllabusesTeachingsessionlearningmaterialSet) {
-        this.syllabusesTeachingsessionlearningmaterialSet = syllabusesTeachingsessionlearningmaterialSet;
     }
 
     public Set<SyllabusesTeachingsessionassessment> getSyllabusesTeachingsessionassessmentSet() {

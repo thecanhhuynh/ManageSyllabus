@@ -82,8 +82,10 @@ const TemplateManagement = () => {
     try {
       await authApis().delete(`${endpoints["templates"]}${id}/`);
       message.success("Xóa thành công!");
-      setPage(1);
-      if (page === 1) loadTemplates();
+      setTemplates((prev) => prev.filter((item) => item.id !== id));
+      if (templates.length === 1 && page > 1) {
+        setPage(page - 1);
+      }
     } catch (err) {
       message.error("Lỗi xóa dữ liệu!");
     }
