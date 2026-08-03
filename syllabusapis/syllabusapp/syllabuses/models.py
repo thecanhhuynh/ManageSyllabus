@@ -347,7 +347,7 @@ class User(AbstractUser):
 # SIGNAL
 @receiver(post_delete, sender=CourseObjective)
 def reorder_objectives_on_delete(sender, instance, **kwargs):
-    remaining_objectives = CourseObjective.objects.filter(subject=instance.subject).order_by('position')
+    remaining_objectives = CourseObjective.objects.filter(syllabus=instance.syllabus).order_by('position')
     for index, obj in enumerate(remaining_objectives, start=1):
         if obj.position != index:
             obj.position = index

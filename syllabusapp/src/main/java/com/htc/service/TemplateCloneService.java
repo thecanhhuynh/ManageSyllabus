@@ -64,7 +64,6 @@ public class TemplateCloneService {
     private TableSubSectionRepository tableSubSectionRepo;
     @Autowired
     private ReferenceSubSectionRepository referenceSubSectionRepo;
-    
 
     @Transactional
     public void cloneOutlinesToNewTemplate(long templateId) {
@@ -98,6 +97,10 @@ public class TemplateCloneService {
                 oldSecMap.put(oldSec.getCode(), oldSec);
             }
 
+            System.out.println("--> Số lượng oldSecMap query được: " + oldSecMap.size());
+            // In trực tiếp danh sách các key ra để xem có bị lệch case (chữ hoa/thường) không
+            System.out.println("--> Keys trong oldSecMap: " + oldSecMap.keySet());
+
             // --- BƯỚC 1: KHỞI TẠO BỘ ĐẾM KỲ VỌNG TỪ TEMPLATE MỚI ---
             Map<String, Integer> expectedTypeCounts = new HashMap<>();
             expectedTypeCounts.put("text", 0);
@@ -107,6 +110,7 @@ public class TemplateCloneService {
             int totalExpectedSubSections = 0;
 
             for (SyllabusesTemplatemainsection newTplSec : newTemplateSections) {
+                System.out.println("Main section Id: " + newTplSec.getCode());
                 SyllabusesMainsection newSec = new SyllabusesMainsection();
                 newSec.setName(newTplSec.getName());
                 newSec.setCreatedDate(new Date());
@@ -115,11 +119,19 @@ public class TemplateCloneService {
                 newSec.setSyllabusId(newSyllabus);
                 newSec = mainSectionRepo.save(newSec);
 
+                String targetSecCode = newTplSec.getCode() != null ? newTplSec.getCode().trim() : "";
                 Map<String, SyllabusesSubsection> oldSubMap = new HashMap<>();
-                if (oldSecMap.containsKey(newTplSec.getCode())) {
-                    List<SyllabusesSubsection> oldSubs = this.subSectionRepo.findByMainSectionId(oldSecMap.get(newTplSec.getCode()));
+                System.out.println("TargetSecCode: " + targetSecCode);
+
+                if (oldSecMap.containsKey(targetSecCode)) {
+                    SyllabusesMainsection oldMainSec = oldSecMap.get(targetSecCode);
+                    System.out.println("--> ID của oldMainSec: " + oldMainSec.getId() + " | Code: " + oldMainSec.getCode());
+                    List<SyllabusesSubsection> oldSubs = this.subSectionRepo.findByMainSectionId(oldMainSec);
+                    System.out.println("--> Số lượng oldSubs query được: " + oldSubs.size());
                     for (SyllabusesSubsection oldSub : oldSubs) {
-                        oldSubMap.put(oldSub.getCode(), oldSub);
+                        if (oldSub.getCode() != null) {
+                            oldSubMap.put(oldSub.getCode().trim(), oldSub);
+                        }
                     }
                 }
 
@@ -141,6 +153,8 @@ public class TemplateCloneService {
                     newSub = subSectionRepo.save(newSub);
 
                     boolean isCustom = List.of("text", "selection", "table").contains(newTplSub.getType());
+                    System.out.println("--> Đang kiểm tra Code: [" + newTplSub.getCode() + "] | Có trong bản cũ không? " + oldSubMap.containsKey(newTplSub.getCode()));
+                    System.out.println("--> Danh sách các Code cũ đang có trong Map: " + oldSubMap.keySet());
                     if (oldSubMap.containsKey(newTplSub.getCode())) {
                         SyllabusesSubsection oldSub = oldSubMap.get(newTplSub.getCode());
                         if (isCustom) {
@@ -153,13 +167,15 @@ public class TemplateCloneService {
                             if (plugin != null) {
                                 plugin.processSpecificData(oldSyllabus, newSyllabus, context);
                             }
+                            CustomSubSectionStrategy refStrategy = customSubRegistry.get("reference");
+                            if (refStrategy != null) {
+                                refStrategy.cloneData(oldSub.getId(), newSub);
+                            }
                         }
                     } else {
-                        if (isCustom) {
-                            CustomSubSectionStrategy strategy = customSubRegistry.get(newTplSub.getType());
-                            if (strategy != null) {
-                                strategy.initNewData(newTplSub.getId(), newSub);
-                            }
+                        CustomSubSectionStrategy strategy = customSubRegistry.get(newTplSub.getType());
+                        if (strategy != null) {
+                            strategy.initNewData(newTplSub.getId(), newSub);
                         }
                     }
                 }

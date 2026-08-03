@@ -1,15 +1,8 @@
-import ReferenceRenderer from "./ReferenceRenderer";
 import {Alert, Space} from "antd";
 import Text from "antd/es/typography/Text";
 import {getPlugin} from "../plugins/Registry";
 
 const SubSectionRenderer = ({item, basePath}) => {
-  // // --- BƯỚC ĐỆM BẢO VỆ REFERENCE ---
-  // // Vì chưa refactor xong reference, ta ép nó chạy theo đường cũ
-  // if (item.type === "reference") {
-  //   return <ReferenceRenderer item={item} basePath={basePath} />;
-  // }
-
   const Plugin = getPlugin(item.type, item.code);
   const TargetComponent = Plugin ? Plugin.Editor : null;
 

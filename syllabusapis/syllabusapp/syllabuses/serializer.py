@@ -176,10 +176,10 @@ class TextSubSectionSerializer(serializers.ModelSerializer):
 
 class SelectionSubSectionSerializer(serializers.ModelSerializer):
     selected_values = AttributeValueSerializer(many=True, read_only=True)
-
+    attribute_group_id = serializers.IntegerField(source='attribute_group.id', read_only=True)
     class Meta:
         model = SelectionSubSection
-        fields = ['id', 'name', 'position', 'type', 'code', 'selected_values']
+        fields = ['id', 'name', 'position', 'type', 'code', 'attribute_group_id','selected_values']
 
 
 class ReferenceSubSectionSerializer(serializers.ModelSerializer):
@@ -216,10 +216,10 @@ class ReferenceSubSectionSerializer(serializers.ModelSerializer):
         return None
 
 class TableSubSectionSerializer(serializers.ModelSerializer):
-
+    table_schema = serializers.JSONField(source='data')
     class Meta:
         model = TableSubSection
-        fields = ['id', 'name', 'position', 'type', 'code', 'data']
+        fields = ['id', 'name', 'position', 'type', 'code', 'table_schema']
 
 
 
@@ -1011,7 +1011,38 @@ class TemplateSyllabusSerializer(serializers.ModelSerializer):
             main_section = TemplateMainSection.objects.create(template=template, **main_data)
 
             for sub_data in sub_sections_data:
-                TemplateSubSection.objects.create(main_section=main_section, **sub_data)
+                sub_type = sub_data.get('type')
+
+                display_mode = sub_data.pop('display_mode', None)
+                place_holder = sub_data.pop('place_holder', None)
+                table_schema = sub_data.pop('table_schema', None)
+                attribute_group_id = sub_data.pop('attribute_group_id', None)
+
+                if sub_type == 'text':
+                    TemplateTextSubSection.objects.create(
+                        main_section=main_section,
+                        display_mode=display_mode,
+                        place_holder=place_holder,
+                        **sub_data
+                    )
+                elif sub_type == 'table':
+                    TemplateTableSubSection.objects.create(
+                        main_section=main_section,
+                        table_schema=table_schema,
+                        **sub_data
+                    )
+                elif sub_type == 'selection':
+                    if not attribute_group_id:
+                        raise serializers.ValidationError({
+                            "err_msg": f"Mục '{sub_data.get('name')}' là dạng lựa chọn (selection) nên bắt buộc phải chọn Nhóm Thuộc Tính."
+                        })
+                    TemplateSelectionSubSection.objects.create(
+                        main_section=main_section,
+                        attribute_group_id=attribute_group_id,
+                        **sub_data
+                    )
+                else:
+                    TemplateSubSection.objects.create(main_section=main_section, **sub_data)
 
         return template
 
@@ -1077,6 +1108,10 @@ class TemplateSyllabusSerializer(serializers.ModelSerializer):
                             TemplateTableSubSection.objects.create(main_section=main_section, table_schema=table_schema,
                                                                    **sub_section)
                         elif sub_type == 'selection':
+                            if not attribute_group_id:
+                                raise serializers.ValidationError({
+                                    "err_msg": f"Mục '{sub_section.get('name')}' bắt buộc phải chọn Nhóm Thuộc Tính."
+                                })
                             TemplateSelectionSubSection.objects.create(main_section=main_section,
                                                                        attribute_group_id=attribute_group_id,
                                                                        **sub_section)

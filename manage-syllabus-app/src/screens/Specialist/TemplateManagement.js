@@ -62,7 +62,6 @@ const TemplateManagement = () => {
         );
         message.success("Cập nhật thành công!");
       } else {
-        // TẠO MỚI (Nhân bản từ Base Template)
         const sourceId = values.source_template_id;
         await authApis().post(`${endpoints["templates"]}${sourceId}/clone/`, {
           new_name: values.name,

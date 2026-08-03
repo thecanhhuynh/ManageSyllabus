@@ -70,14 +70,8 @@ const MainSectionForm = ({syllabusId, mainSection}) => {
       >
         <Row gutter={[24, 24]}>
           {mainSection.sub_sections?.map((subSection, subIndex) => {
-            const colSpan =
-              subSection.display_mode === "textarea" ||
-              subSection.type === "reference"
-                ? 24
-                : 12;
-
             return (
-              <Col span={colSpan} key={subSection.id}>
+              <Col span={24} key={subSection.id}>
                 <Form.Item name={["sub_sections", subIndex, "id"]} hidden>
                   <Input />
                 </Form.Item>

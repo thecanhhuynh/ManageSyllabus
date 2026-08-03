@@ -59,7 +59,7 @@ const App = () => {
       const res = await authApis().get(endpoints["attribute-groups"]);
       const rawApiData = res.data;
       const dictionary = rawApiData.reduce((acc, group) => {
-        acc[group.name] = group.attribute_values.map((val) => ({
+        acc[group.id] = group.attribute_values.map((val) => ({
           label: val.name_value,
           value: val.id,
         }));

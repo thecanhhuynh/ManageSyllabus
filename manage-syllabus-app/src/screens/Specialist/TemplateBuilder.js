@@ -216,7 +216,7 @@ const TemplateBuilder = () => {
   // 3. LƯU LẠI CẤU TRÚC ĐÃ TINH CHỈNH
   const handleSaveTweak = async () => {
     try {
-      // Gửi toàn bộ cây dữ liệu đã sửa lên API (Cần chắc chắn serializer BE hỗ trợ update nested)
+      // Gửi toàn bộ cây dữ liệu đã sửa lên API (serializer BE hỗ trợ update nested)
       await authApis().put(`${endpoints["templates"]}${id}/`, {
         name: templateMeta.name,
         version: templateMeta.version,
@@ -352,6 +352,45 @@ const TemplateBuilder = () => {
                                 />
                               </div>
                             </div>
+                            {sub.type === "selection" && (
+                              <div className="mt-3">
+                                <div className="text-xs text-gray-500 mb-1">
+                                  Nguồn dữ liệu trắc nghiệm (Attribute Group){" "}
+                                  <span className="text-red-500">*</span>
+                                </div>
+                                <Select
+                                  value={sub.attribute_group_id || null}
+                                  placeholder="Chọn bộ dữ liệu (Bắt buộc)"
+                                  style={{width: "100%"}}
+                                  onChange={(val) =>
+                                    updateSubSectionField(
+                                      section.id,
+                                      sub.id,
+                                      "attribute_group_id",
+                                      val,
+                                    )
+                                  }
+                                  status={
+                                    !sub.attribute_group_id ? "error" : ""
+                                  }
+                                >
+                                  {attributeGroups.map((group) => (
+                                    <Select.Option
+                                      key={group.id}
+                                      value={group.id}
+                                    >
+                                      {group.name}
+                                    </Select.Option>
+                                  ))}
+                                </Select>
+                                {!sub.attribute_group_id && (
+                                  <div className="text-xs text-red-500 mt-1">
+                                    ⚠️ Bạn chưa chọn nguồn dữ liệu cho khối này.
+                                    Sẽ gây lỗi khi lưu!
+                                  </div>
+                                )}
+                              </div>
+                            )}
 
                             <Popconfirm
                               title="Ẩn/Xóa trường dữ liệu này?"

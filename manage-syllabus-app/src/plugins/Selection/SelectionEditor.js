@@ -6,7 +6,8 @@ const SelectionEditor = ({item, basePath}) => {
   const {selectionDictionary, isDictLoading} = useContext(
     MySelectionDataContext,
   );
-  const optionsForThisSelect = selectionDictionary[item.name] || [];
+  const optionsForThisSelect =
+    selectionDictionary[item.attribute_group_id] || [];
 
   return (
     <Form.Item

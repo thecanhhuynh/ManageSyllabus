@@ -19,6 +19,7 @@ import LearningMaterialPreview from "./LearningMaterial/LearningMaterialPreview"
 import TeachingPlanEditor from "./TeachingPlan/TeachingPlanEditor";
 import TeachingPlanPreview from "./TeachingPlan/TeachingPlanPreview";
 import TablePreview from "./Table/TablePreview";
+import TableEditor from "./Table/TableEditor";
 export const TextPlugin = {
   type: "text",
   Editor: TextEditor,
@@ -33,7 +34,7 @@ export const SelectionPlugin = {
 
 export const TablePlugin = {
   type: "table",
-  Editor: null,
+  Editor: TableEditor,
   Preview: TablePreview,
 };
 

@@ -73,13 +73,12 @@ public class SelectionSubSectionStrategy implements CustomSubSectionStrategy {
         if (tplSelection != null) {
             SyllabusesSelectionsubsection selectionSub = new SyllabusesSelectionsubsection();
             selectionSub.setSubsectionPtrId(newSub.getId());
-            
+
             if (tplSelection.getAttributeGroupId() != null) {
-            Long groupIdLong = tplSelection.getAttributeGroupId().longValue();
-            SyllabusesAttributegroup attributeGroup = this.attributeGroupRepo.findById(groupIdLong).orElse(null);
-            selectionSub.setAttributeGroupId(attributeGroup);
-        }
-            // Không copy SelectedValue vì đây là mục mới, để trống cho UI chọn
+                Long groupIdLong = tplSelection.getAttributeGroupId().longValue();
+                SyllabusesAttributegroup attributeGroup = this.attributeGroupRepo.findById(groupIdLong).orElse(null);
+                selectionSub.setAttributeGroupId(attributeGroup);
+            }
             this.selectionSubSectionRepo.save(selectionSub);
         }
     }

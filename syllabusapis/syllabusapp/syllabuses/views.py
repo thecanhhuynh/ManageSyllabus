@@ -14,7 +14,8 @@ from syllabuses import perms
 from syllabuses.filters import SyllabusFilter, SubjectFilter, LearningMaterialsFilter, UserFilter, LecturerFilter
 from syllabuses.models import User, Syllabus, Faculty, Subject, AttributeGroup, TypeRequirement, \
     ProgrammeLearningOutcome, LearningMaterial, TypeLearningMaterial, TypeAssessment, CourseLearningOutcome, Assessment, \
-    ScheduleGroup, Major, TrainingProgram, Lecturer, TemplateSyllabus, TemplateSubSection, TemplateMainSection
+    ScheduleGroup, Major, TrainingProgram, Lecturer, TemplateSyllabus, TemplateSubSection, TemplateMainSection, \
+    TemplateTableSubSection, TemplateSelectionSubSection, TemplateTextSubSection
 from syllabuses.paginators import UserPaginator, SyllabusPagination, FacultyPagination, SubjectsPagination, \
     LearningMaterialsPagination, MajorPagination, TrainingPagination, ProgrammeLearningOutcomePagination, \
     LecturerPagination, TemplatePagination
@@ -123,7 +124,7 @@ class SyllabusView(viewsets.ModelViewSet):
     @action(detail=True, methods=['get'], url_path='clos')
     def get_clos(self, request, pk=None):
         syllabus = self.get_object()
-        clos = CourseLearningOutcome.objects.filter(course_objective__subject=syllabus.subject)
+        clos = CourseLearningOutcome.objects.filter(course_objective__syllabus=syllabus)
 
         data = [{
             "id": clo.id,
@@ -198,32 +199,45 @@ class TemplateSyllabusView(viewsets.ModelViewSet):
                 position=old_main.position
             )
             for old_sub in old_main.sub_sections.all():
-                TemplateSubSection.objects.create(
-                    name=old_sub.name,
-                    main_section=new_main,
-                    type=old_sub.type,
-                    code=old_sub.code,
-                    position=old_sub.position,
-                )
+                if old_sub.type == 'text' and hasattr(old_sub, 'templatetextsubsection'):
+                    TemplateTextSubSection.objects.create(
+                        name=old_sub.name,
+                        main_section=new_main,
+                        type=old_sub.type,
+                        code=old_sub.code,
+                        position=old_sub.position,
+                        display_mode=old_sub.templatetextsubsection.display_mode,
+                        place_holder=old_sub.templatetextsubsection.place_holder
+                    )
+                elif old_sub.type == 'selection' and hasattr(old_sub, 'templateselectionsubsection'):
+                    TemplateSelectionSubSection.objects.create(
+                        name=old_sub.name,
+                        main_section=new_main,
+                        type=old_sub.type,
+                        code=old_sub.code,
+                        position=old_sub.position,
+                        attribute_group_id=old_sub.templateselectionsubsection.attribute_group_id
+                    )
+                elif old_sub.type == 'table' and hasattr(old_sub, 'templatetablesubsection'):
+                    TemplateTableSubSection.objects.create(
+                        name=old_sub.name,
+                        main_section=new_main,
+                        type=old_sub.type,
+                        code=old_sub.code,
+                        position=old_sub.position,
+                        table_schema=old_sub.templatetablesubsection.table_schema
+                    )
+                else:
+                    TemplateSubSection.objects.create(
+                        name=old_sub.name,
+                        main_section=new_main,
+                        type=old_sub.type,
+                        code=old_sub.code,
+                        position=old_sub.position,
+                    )
 
         serializer = self.get_serializer(new_template)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-    @action(detail=True, methods=['patch'], url_path='publish')
-    @transaction.atomic
-    def publish_template(self, request, pk=None):
-        """Ban hành template: Tắt is_active của tất cả bản cũ và bật cho bản này"""
-        template = self.get_object()
-
-        # Tắt toàn bộ template đang active
-        TemplateSyllabus.objects.filter(is_active=True).update(is_active=False)
-
-        # Bật active cho template hiện tại
-        template.is_active = True
-        template.status = "Published"
-        template.save()
-
-        return Response({"message": f"Đã ban hành thành công template: {template.name} ({template.version})"})
 
 
 class FacultyView(mixins.ListModelMixin,
