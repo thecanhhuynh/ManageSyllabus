@@ -24,6 +24,7 @@ from syllabuses.serializer import UserSerializer, UserDetailSerializer, Syllabus
     ProgrammeLearningOutcomeSerializer, LearningMaterialSerializer, TypeAssessmentSerializer, ScheduleGroupSerializer, \
     MajorSerializer, TrainingProgramSerializer, SyllabusSimpleSerializer, LecturerBasicSerializer, \
     TemplateSyllabusSerializer
+from syllabuses.strategies import SUB_SECTION_STRATEGIES, DefaultStrategy
 
 
 class UserView(mixins.ListModelMixin,
@@ -199,43 +200,8 @@ class TemplateSyllabusView(viewsets.ModelViewSet):
                 position=old_main.position
             )
             for old_sub in old_main.sub_sections.all():
-                if old_sub.type == 'text' and hasattr(old_sub, 'templatetextsubsection'):
-                    TemplateTextSubSection.objects.create(
-                        name=old_sub.name,
-                        main_section=new_main,
-                        type=old_sub.type,
-                        code=old_sub.code,
-                        position=old_sub.position,
-                        display_mode=old_sub.templatetextsubsection.display_mode,
-                        place_holder=old_sub.templatetextsubsection.place_holder
-                    )
-                elif old_sub.type == 'selection' and hasattr(old_sub, 'templateselectionsubsection'):
-                    TemplateSelectionSubSection.objects.create(
-                        name=old_sub.name,
-                        main_section=new_main,
-                        type=old_sub.type,
-                        code=old_sub.code,
-                        position=old_sub.position,
-                        attribute_group_id=old_sub.templateselectionsubsection.attribute_group_id
-                    )
-                elif old_sub.type == 'table' and hasattr(old_sub, 'templatetablesubsection'):
-                    TemplateTableSubSection.objects.create(
-                        name=old_sub.name,
-                        main_section=new_main,
-                        type=old_sub.type,
-                        code=old_sub.code,
-                        position=old_sub.position,
-                        table_schema=old_sub.templatetablesubsection.table_schema
-                    )
-                else:
-                    TemplateSubSection.objects.create(
-                        name=old_sub.name,
-                        main_section=new_main,
-                        type=old_sub.type,
-                        code=old_sub.code,
-                        position=old_sub.position,
-                    )
-
+                strategy = SUB_SECTION_STRATEGIES.get(old_sub.type, DefaultStrategy())
+                strategy.clone(old_sub, new_main)
         serializer = self.get_serializer(new_template)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 

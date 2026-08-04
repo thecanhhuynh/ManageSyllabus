@@ -70,6 +70,7 @@ public class TemplateCloneService {
         SyllabusCloneContext context = new SyllabusCloneContext();
         SyllabusesTemplatesyllabus currentTemplate = this.templateRepo.findById(templateId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy Template hiện tại"));
+        currentTemplate.setIsActive(true);
         SyllabusesTemplatesyllabus oldTemplate = this.templateRepo.findById(currentTemplate.getParentId().getId())
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy Template cũ"));
 

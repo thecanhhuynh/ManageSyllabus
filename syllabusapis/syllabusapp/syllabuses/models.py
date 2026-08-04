@@ -362,3 +362,14 @@ def reorder_clos_on_delete(sender, instance, **kwargs):
         if obj.position != index:
             obj.position = index
             obj.save(update_fields=['position'])
+
+@receiver(post_save, sender=TemplateSyllabus)
+def on_template_activated(sender, instance, created, **kwargs):
+    """
+    Observer lắng nghe sự kiện: Kích hoạt đồng bộ khi Template được lưu
+    và cờ is_active = True.
+    """
+    if instance.is_active:
+
+        from syllabuses.services import TemplateSyncService
+        TemplateSyncService.sync(instance)

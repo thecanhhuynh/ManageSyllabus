@@ -1,3 +1,4 @@
+from django.db import transaction
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
@@ -7,6 +8,7 @@ from syllabuses.models import User, Lecturer, Faculty, Syllabus, Subject, SubSec
     TypeLearningMaterial, SyllabusLearningMaterial, CloPloAssociation, TypeAssessment, Assessment, Method, \
     ScheduleGroup, TeachingSession, Major, TrainingProgram, TemplateSubSection, TemplateSyllabus, TemplateMainSection, \
     TableSubSection, TemplateSelectionSubSection, TemplateTableSubSection, TemplateTextSubSection
+from syllabuses.strategies import SUB_SECTION_STRATEGIES, DefaultStrategy
 
 
 class FacultySerializer(serializers.ModelSerializer):
@@ -1001,126 +1003,61 @@ class TemplateSyllabusSerializer(serializers.ModelSerializer):
         model = TemplateSyllabus
         fields = ['id', 'name', 'version', 'is_active', 'main_sections']
 
+    def _clean_id(self, item_id):
+        if isinstance(item_id, str) and not item_id.isdigit():
+            return None
+        return int(item_id) if item_id else None
+
+    def _upsert_sub_section(self, main_sec, sub_data, existing_subs):
+        sub_id = self._clean_id(sub_data.pop('id', None))
+        sub_type = sub_data.get('type')
+        strategy = SUB_SECTION_STRATEGIES.get(sub_type, DefaultStrategy())
+        return strategy.upsert_template(main_sec, sub_data, existing_subs, sub_id)
+
+    @transaction.atomic
     def create(self, validated_data):
         main_sections_data = validated_data.pop('main_sections', [])
-
         template = TemplateSyllabus.objects.create(**validated_data)
 
         for main_data in main_sections_data:
             sub_sections_data = main_data.pop('sub_sections', [])
-            main_section = TemplateMainSection.objects.create(template=template, **main_data)
-
+            main_sec = TemplateMainSection.objects.create(template=template, **main_data)
             for sub_data in sub_sections_data:
-                sub_type = sub_data.get('type')
-
-                display_mode = sub_data.pop('display_mode', None)
-                place_holder = sub_data.pop('place_holder', None)
-                table_schema = sub_data.pop('table_schema', None)
-                attribute_group_id = sub_data.pop('attribute_group_id', None)
-
-                if sub_type == 'text':
-                    TemplateTextSubSection.objects.create(
-                        main_section=main_section,
-                        display_mode=display_mode,
-                        place_holder=place_holder,
-                        **sub_data
-                    )
-                elif sub_type == 'table':
-                    TemplateTableSubSection.objects.create(
-                        main_section=main_section,
-                        table_schema=table_schema,
-                        **sub_data
-                    )
-                elif sub_type == 'selection':
-                    if not attribute_group_id:
-                        raise serializers.ValidationError({
-                            "err_msg": f"Mục '{sub_data.get('name')}' là dạng lựa chọn (selection) nên bắt buộc phải chọn Nhóm Thuộc Tính."
-                        })
-                    TemplateSelectionSubSection.objects.create(
-                        main_section=main_section,
-                        attribute_group_id=attribute_group_id,
-                        **sub_data
-                    )
-                else:
-                    TemplateSubSection.objects.create(main_section=main_section, **sub_data)
+                self._upsert_sub_section(main_sec, sub_data, {})
 
         return template
 
+    @transaction.atomic
     def update(self, instance, validated_data):
-        print(validated_data)
         main_sections_data = validated_data.pop('main_sections', None)
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
-        instance.save()
+        instance.save() # signal sync template
 
         if main_sections_data is not None:
-            existing_main_sections = {section.id: section for section in instance.main_sections.all()}
-            for section_data in main_sections_data:
-                section_id = section_data.pop('id', None)
-                sub_section_list = section_data.pop('sub_sections', [])
-                if section_id and section_id in existing_main_sections:
-                    main_section = existing_main_sections.pop(section_id)
-                    for attr, value in section_data.items():
-                        setattr(main_section, attr, value)
-                    main_section.save()
+            existing_mains = {m.id: m for m in instance.main_sections.all()}
+            incoming_main_ids = []
+
+            for main_data in main_sections_data:
+                main_id = self._clean_id(main_data.pop('id', None))
+                sub_sections_data = main_data.pop('sub_sections', [])
+
+                if main_id and main_id in existing_mains:
+                    main_sec = existing_mains[main_id]
+                    for attr, value in main_data.items():
+                        setattr(main_sec, attr, value)
+                    main_sec.save()
                 else:
-                    main_section = TemplateMainSection.objects.create(template=instance, **section_data)
+                    main_sec = TemplateMainSection.objects.create(template=instance, **main_data)
 
-                existing_sub_sections = {section.id: section for section in main_section.sub_sections.all()}
-                for sub_section in sub_section_list:
-                    sub_section_id = sub_section.pop('id', None)
-                    sub_type = sub_section.get('type')
+                incoming_main_ids.append(main_sec.id)
+                existing_subs = {s.id: s for s in main_sec.sub_sections.all()}
 
-                    display_mode = sub_section.pop('display_mode', None)
-                    place_holder = sub_section.pop('place_holder', None)
-                    table_schema = sub_section.pop('table_schema', None)
-                    attribute_group_id = sub_section.pop('attribute_group_id', None)
+                incoming_sub_ids = [self._upsert_sub_section(main_sec, sub, existing_subs).id for sub in
+                                    sub_sections_data]
+                TemplateSubSection.objects.filter(main_section=main_sec).exclude(id__in=incoming_sub_ids).delete()
 
-                    if isinstance(sub_section_id, str):
-                        if sub_section_id.startswith('CUSTOM_'):
-                            sub_section_id = None
-                        elif sub_section_id.isdigit():
-                            sub_section_id = int(sub_section_id)
+            TemplateMainSection.objects.filter(template=instance).exclude(id__in=incoming_main_ids).delete()
 
-                    if sub_section_id and sub_section_id in existing_sub_sections:
-                        sub_instance = existing_sub_sections.pop(sub_section_id)
-                        if hasattr(sub_instance, 'templatetextsubsection'):
-                            child_instance = sub_instance.templatetextsubsection
-                            child_instance.display_mode = display_mode
-                            child_instance.place_holder = place_holder
-                        elif hasattr(sub_instance, 'templatetablesubsection'):
-                            child_instance = sub_instance.templatetablesubsection
-                            child_instance.table_schema = table_schema
-                        elif hasattr(sub_instance, 'templateselectionsubsection'):
-                            child_instance = sub_instance.templateselectionsubsection
-                            child_instance.attribute_group_id = attribute_group_id
-                        else:
-                            child_instance = sub_instance
-
-                        for attr, value in sub_section.items():
-                            setattr(child_instance, attr, value)
-                        child_instance.save()
-                    else:
-                        if sub_type == 'text':
-                            TemplateTextSubSection.objects.create(main_section=main_section, display_mode=display_mode,
-                                                                  place_holder=place_holder, **sub_section)
-                        elif sub_type == 'table':
-                            TemplateTableSubSection.objects.create(main_section=main_section, table_schema=table_schema,
-                                                                   **sub_section)
-                        elif sub_type == 'selection':
-                            if not attribute_group_id:
-                                raise serializers.ValidationError({
-                                    "err_msg": f"Mục '{sub_section.get('name')}' bắt buộc phải chọn Nhóm Thuộc Tính."
-                                })
-                            TemplateSelectionSubSection.objects.create(main_section=main_section,
-                                                                       attribute_group_id=attribute_group_id,
-                                                                       **sub_section)
-                        else:
-                            TemplateSubSection.objects.create(main_section=main_section, **sub_section)
-
-                for old_sub_section in existing_sub_sections.values():
-                    old_sub_section.delete()
-
-            for old_section in existing_main_sections.values():
-                old_section.delete()
         return instance
+
