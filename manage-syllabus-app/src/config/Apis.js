@@ -32,7 +32,7 @@ export const endpoints = {
   templates: "/templates/",
   "clone-templates": (templateId) => `/templates/${templateId}/clone/`,
   // "publish-templates": (templateId) => `/templates/${templateId}/publish/`,
-  "publish-template": "/publish-template",
+  "publish-template": (templateId) => `/publish-template/${templateId}`,
 };
 const CLIENT_ID = process.env.REACT_APP_CLIENT_ID;
 const CLIENT_SECRET = process.env.REACT_APP_CLIENT_SECRET;

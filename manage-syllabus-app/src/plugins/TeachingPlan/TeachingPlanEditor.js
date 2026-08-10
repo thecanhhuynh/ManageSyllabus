@@ -212,7 +212,7 @@ const TeachingPlanEditor = ({item, basePath}) => {
                                         className="mb-0"
                                       >
                                         <TextArea
-                                          autoSize={{minRows: 1, maxRows: 4}}
+                                          autoSize={{minRows: 4, maxRows: 20}}
                                           placeholder="Nhập nội dung bài giảng..."
                                           className="rounded-md text-sm"
                                         />

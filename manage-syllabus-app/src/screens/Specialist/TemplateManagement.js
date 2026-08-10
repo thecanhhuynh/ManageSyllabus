@@ -105,10 +105,11 @@ const TemplateManagement = () => {
   // Gọi API Publish Template
   const handlePublish = async (id) => {
     try {
-      const res = await springApi().post(endpoints["publish-template"], {});
-      if (res.status === 202) message.success("Đã ban hành Template!");
+      const res = await springApi().post(endpoints["publish-template"](id));
+      if (res.status === 200) message.success("Đã ban hành Template!");
       setPage(1);
     } catch (err) {
+      console.log(err);
       message.error("Lỗi khi ban hành!");
     }
   };
@@ -183,7 +184,7 @@ const TemplateManagement = () => {
             title="Nhân bản"
             onClick={() => handleClone(record.id)}
           />
-          {record.status === "Draft" && (
+          {record.is_active === false && (
             <Button
               type="text"
               className="text-green-600"

@@ -7,7 +7,8 @@ from syllabuses.models import User, Lecturer, Faculty, Syllabus, Subject, SubSec
     ProgrammeLearningOutcome, CourseObjective, CourseLearningOutcome, LearningMaterial, TypeRequirement, \
     TypeLearningMaterial, SyllabusLearningMaterial, CloPloAssociation, TypeAssessment, Assessment, Method, \
     ScheduleGroup, TeachingSession, Major, TrainingProgram, TemplateSubSection, TemplateSyllabus, TemplateMainSection, \
-    TableSubSection, TemplateSelectionSubSection, TemplateTableSubSection, TemplateTextSubSection
+    TableSubSection, TemplateSelectionSubSection, TemplateTableSubSection, TemplateTextSubSection, \
+    TrainingProgramSyllabus
 from syllabuses.strategies import SUB_SECTION_STRATEGIES, DefaultStrategy
 
 
@@ -137,9 +138,58 @@ class SyllabusSerializer(serializers.ModelSerializer):
     subject = SubjectSerializer(read_only=True)
     lecturer = LecturerBasicSerializer(read_only=True)
 
+    subject_obj = serializers.PrimaryKeyRelatedField(
+        queryset=Subject.objects.all(), write_only=True, source="subject",
+    )
+    template_obj = serializers.PrimaryKeyRelatedField(
+        queryset=TemplateSyllabus.objects.all(), write_only=True, source="template",
+    )
+    faculty_obj = serializers.PrimaryKeyRelatedField(
+        queryset=Faculty.objects.all(), write_only=True, source="faculty",
+    )
+    lecturer_obj = serializers.SlugRelatedField(
+        queryset=Lecturer.objects.all(),
+        slug_field='user_id',
+        write_only=True,
+        source="lecturer"
+    )
+    training_program_obj = serializers.PrimaryKeyRelatedField(
+        queryset=TrainingProgram.objects.all(), write_only=True,
+    )
+
     class Meta:
         model = Syllabus
-        fields = ['id', 'name', 'status', 'subject', 'lecturer', 'created_date']
+        fields = [
+            'id', 'name', 'status', 'created_date',
+            'subject', 'lecturer',
+            'subject_obj', 'template_obj', 'faculty_obj', 'lecturer_obj', 'training_program_obj'
+        ]
+
+    @transaction.atomic
+    def create(self, validated_data):
+        training_program = validated_data.pop('training_program_obj', None)
+
+        syllabus = Syllabus.objects.create(status="Draft", **validated_data)
+
+        TrainingProgramSyllabus.objects.create(
+            training_program=training_program,
+            syllabus=syllabus
+        )
+
+        template_obj = validated_data['template']
+        main_sections_qs = template_obj.main_sections.prefetch_related('sub_sections').all()
+
+        for tpl_main in main_sections_qs:
+            main_sec = MainSection.objects.create(
+                syllabus=syllabus, code=tpl_main.code,
+                name=tpl_main.name, position=tpl_main.position
+            )
+
+            for tpl_sub in tpl_main.sub_sections.all():
+                strategy = SUB_SECTION_STRATEGIES.get(tpl_sub.type, DefaultStrategy())
+                strategy.init_syllabus_sub_section(tpl_sub, main_sec)
+
+        return syllabus
 
 
 class AttributeGroupSerializer(serializers.ModelSerializer):
@@ -290,39 +340,13 @@ class SyllabusDetailSerializer(serializers.ModelSerializer):
                 sub_instance = SubSection.objects.filter(id=sub_id, main_section=main_instance).first()
                 if not sub_instance: continue
 
-                if sub_instance.type == 'text' and hasattr(sub_instance, 'textsubsection'):
-                    if 'content' in sub_data:
-                        sub_instance.textsubsection.content = sub_data['content']
-                        sub_instance.textsubsection.save()
-
-                elif sub_instance.type == 'selection' and hasattr(sub_instance, 'selectionsubsection'):
-                    if 'selected_values' in sub_data:
-                        val_ids = [item['id'] if isinstance(item, dict) else item for item in
-                                   sub_data['selected_values']]
-                        sub_instance.selectionsubsection.selected_values.set(val_ids)
-
-                elif sub_instance.type == 'reference' and hasattr(sub_instance, 'referencesubsection'):
-                    ref_data = sub_data.get('reference_data')
-                    if ref_data is not None:
-                        ref_code = sub_instance.referencesubsection.reference_code
-                        print(f"--- DEBUG: ref_code là '{ref_code}' ---")
-
-                        strategy_map = {
-                            'credit': self._update_credit,
-                            'requirement_subject': self._update_requirement_subjects,
-                            'objectives_and_outcomes': self._update_objective_outcomes,
-                            'course_learning_outcomes': self._update_course_learning_outcomes,
-                            'learning_material': self._update_learning_material,
-                            'assessment_method': self._update_assessment,
-                            'teaching_schedule': self._update_teaching_schedule
-                        }
-
-                        update_func = strategy_map.get(ref_code)
-                        if update_func:
-                            print("--- DEBUG: Đã gọi được hàm update ---")
-                            update_func(instance, ref_data)
-                        else:
-                            print("--- DEBUG: KHÔNG TÌM THẤY HÀM MATCH VỚI ref_code ---")
+                strategy = SUB_SECTION_STRATEGIES.get(sub_instance.type, DefaultStrategy())
+                strategy.update_syllabus(
+                    sub_instance=sub_instance,
+                    sub_data=sub_data,
+                    syllabus_instance=instance,
+                    serializer_instance=self
+                )
 
         return instance
 
@@ -389,12 +413,12 @@ class SyllabusDetailSerializer(serializers.ModelSerializer):
             )
 
     def _update_objective_outcomes(self, instance, ref_data):
-        subject = instance.subject
-        if not subject:
+        syllabus = instance
+        if not syllabus:
             return
 
         incoming_ids = [item.get('id') for item in ref_data if item.get('id')]
-        subject.course_objectives.exclude(id__in=incoming_ids).delete()
+        syllabus.course_objectives.exclude(id__in=incoming_ids).delete()
 
         for index, item in enumerate(ref_data, start=1):
             item_id = item.get('id')
@@ -409,14 +433,14 @@ class SyllabusDetailSerializer(serializers.ModelSerializer):
                     "err_msg": "Không được bỏ trống PLO."
                 })
             if item_id:
-                co_obj = subject.course_objectives.filter(id=item_id).first()
+                co_obj = syllabus.course_objectives.filter(id=item_id).first()
                 if not co_obj:
                     raise ValidationError({"err_msg": f"Không tìm thấy Mục tiêu (ID: {item_id})."})
                 co_obj.content = content
                 co_obj.position = index
                 co_obj.save()
             else:
-                co_obj = subject.course_objectives.create(content=content, position=index)
+                co_obj = syllabus.course_objectives.create(content=content, position=index)
 
             plo_ids = []
             for plo in plos:
@@ -995,6 +1019,10 @@ class TemplateMainSectionSerializer(serializers.ModelSerializer):
         model = TemplateMainSection
         fields = ['id', 'name','code', 'position', 'sub_sections']
 
+class TemplateSyllabusBasicSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TemplateSyllabus
+        fields = ['id', 'name', 'version', 'is_active']
 
 class TemplateSyllabusSerializer(serializers.ModelSerializer):
     main_sections = TemplateMainSectionSerializer(many=True)
@@ -1032,7 +1060,6 @@ class TemplateSyllabusSerializer(serializers.ModelSerializer):
         main_sections_data = validated_data.pop('main_sections', None)
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
-        instance.save() # signal sync template
 
         if main_sections_data is not None:
             existing_mains = {m.id: m for m in instance.main_sections.all()}
@@ -1058,6 +1085,6 @@ class TemplateSyllabusSerializer(serializers.ModelSerializer):
                 TemplateSubSection.objects.filter(main_section=main_sec).exclude(id__in=incoming_sub_ids).delete()
 
             TemplateMainSection.objects.filter(template=instance).exclude(id__in=incoming_main_ids).delete()
-
+        instance.save()  # signal sync template
         return instance
 

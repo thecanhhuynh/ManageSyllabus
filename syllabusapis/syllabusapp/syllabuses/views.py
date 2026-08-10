@@ -23,7 +23,7 @@ from syllabuses.serializer import UserSerializer, UserDetailSerializer, Syllabus
     SubjectSerializer, SyllabusDetailSerializer, AttributeGroupListSerializer, TypeRequirementSerializer, \
     ProgrammeLearningOutcomeSerializer, LearningMaterialSerializer, TypeAssessmentSerializer, ScheduleGroupSerializer, \
     MajorSerializer, TrainingProgramSerializer, SyllabusSimpleSerializer, LecturerBasicSerializer, \
-    TemplateSyllabusSerializer
+    TemplateSyllabusSerializer, TemplateSyllabusBasicSerializer
 from syllabuses.strategies import SUB_SECTION_STRATEGIES, DefaultStrategy
 
 
@@ -84,7 +84,7 @@ class SyllabusView(viewsets.ModelViewSet):
 
     def get_permissions(self):
         if self.action == 'create':
-            return [perms.IsSpecialist()]
+            return [perms.IsAdmin()]
         return [permissions.IsAuthenticated()]
 
     def get_queryset(self):
@@ -160,9 +160,14 @@ class SyllabusView(viewsets.ModelViewSet):
 
 class TemplateSyllabusView(viewsets.ModelViewSet):
     queryset = TemplateSyllabus.objects.prefetch_related('main_sections__sub_sections').all()
-    serializer_class = TemplateSyllabusSerializer
-    permission_classes = [perms.IsSpecialist]
+    permission_classes = [perms.IsSpecialist | perms.IsAdmin]
     pagination_class = TemplatePagination
+
+    def get_serializer_class(self):
+        if self.action in ['retrieve', 'update', 'partial_update']:
+            return TemplateSyllabusSerializer
+        return TemplateSyllabusBasicSerializer
+
     @action(detail=True, methods=['post'], url_path='clone')
     @transaction.atomic
     def clone_template(self, request, pk=None):

@@ -12,9 +12,12 @@ import {
   Modal,
   Space,
   Checkbox,
+  Form,
+  Select,
 } from "antd";
-import {ArrowLeftOutlined, SaveOutlined} from "@ant-design/icons";
+import {ArrowLeftOutlined, PlusOutlined, SaveOutlined} from "@ant-design/icons";
 import dayjs from "dayjs";
+import {Option} from "antd/es/mentions";
 
 const {RangePicker} = DatePicker;
 const {Title} = Typography;
@@ -44,6 +47,29 @@ const SyllabusesProgram = () => {
   const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
   const [bulkDates, setBulkDates] = useState(null);
   const [overwrite, setOverwrite] = useState(false);
+
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [form] = Form.useForm();
+
+  const [subjects, setSubjects] = useState([]);
+  const [templates, setTemplates] = useState([]);
+  const [faculties, setFaculties] = useState([]);
+
+  const loadReferenceData = async () => {
+    try {
+      const [subRes, tplRes, facRes] = await Promise.all([
+        authApis().get(endpoints["subjects"]),
+        authApis().get(endpoints["templates"]),
+        authApis().get(endpoints["faculties"]),
+      ]);
+      setSubjects(subRes.data.results || subRes.data);
+      setTemplates(tplRes.data.results || tplRes.data);
+      setFaculties(facRes.data.results || facRes.data);
+    } catch (error) {
+      message.error("Lỗi khi tải dữ liệu tham chiếu (Môn học, Mẫu, Khoa)");
+    }
+  };
 
   const loadLecturers = async () => {
     try {
@@ -156,6 +182,39 @@ const SyllabusesProgram = () => {
       if (page === 1) loadSyllabuses();
     } catch (error) {
       message.error("Lỗi khi lưu phân công");
+    }
+  };
+
+  const openCreateModal = () => {
+    loadReferenceData();
+    setIsCreateModalOpen(true);
+  };
+
+  const handleCreateSyllabus = async (values) => {
+    setCreating(true);
+    try {
+      const payload = {
+        name: values.name,
+        subject_obj: values.subject_obj,
+        template_obj: values.template_obj,
+        faculty_obj: values.faculty_obj,
+        lecturer_obj: values.lecturer_obj,
+        training_program_obj: parseInt(programId),
+      };
+
+      await authApis().post(endpoints["syllabuses"], payload);
+      message.success("Tạo đề cương mới thành công!");
+
+      setIsCreateModalOpen(false);
+      form.resetFields();
+
+      setPage(1);
+      if (page === 1) loadSyllabuses();
+    } catch (error) {
+      message.error(error.response?.data?.err_msg || "Lỗi khi tạo đề cương");
+      console.error(error);
+    } finally {
+      setCreating(false);
     }
   };
 
@@ -358,6 +417,13 @@ const SyllabusesProgram = () => {
           onChange={(e) => setQ(e.target.value)}
           style={{width: 300}}
         />
+        <Button
+          type="primary"
+          icon={<PlusOutlined />}
+          onClick={openCreateModal}
+        >
+          Thêm đề cương
+        </Button>
       </div>
 
       {selectedRowKeys.length > 0 && (
@@ -366,10 +432,6 @@ const SyllabusesProgram = () => {
             Đã chọn: {selectedRowKeys.length} đề cương
           </span>
           <Space>
-            {/* Các nút mở rộng sau này */}
-            {/* <Button size="small">Phân công GV</Button> */}
-            {/* <Button size="small">Đổi trạng thái</Button> */}
-
             <Button
               type="primary"
               size="small"
@@ -399,6 +461,107 @@ const SyllabusesProgram = () => {
           </Button>
         </div>
       )}
+      <Modal
+        title="Tạo đề cương mới"
+        open={isCreateModalOpen}
+        onCancel={() => {
+          setIsCreateModalOpen(false);
+          form.resetFields();
+        }}
+        footer={null}
+        destroyOnClose
+      >
+        <Form layout="vertical" form={form} onFinish={handleCreateSyllabus}>
+          <Form.Item
+            label="Tên đề cương"
+            name="name"
+            rules={[{required: true, message: "Vui lòng nhập tên đề cương!"}]}
+          >
+            <Input placeholder="Nhập tên đề cương..." />
+          </Form.Item>
+
+          <Form.Item
+            label="Môn học"
+            name="subject_obj"
+            rules={[{required: true, message: "Vui lòng chọn môn học!"}]}
+          >
+            <Select
+              showSearch
+              placeholder="Chọn môn học"
+              filterOption={(input, option) =>
+                (option?.children ?? "")
+                  .toLowerCase()
+                  .includes(input.toLowerCase())
+              }
+            >
+              {subjects.map((sub) => (
+                <Option key={sub.id} value={sub.id}>
+                  {sub.name} - {sub.code}
+                </Option>
+              ))}
+            </Select>
+          </Form.Item>
+
+          <Form.Item
+            label="Mẫu đề cương"
+            name="template_obj"
+            rules={[{required: true, message: "Vui lòng chọn mẫu đề cương!"}]}
+          >
+            <Select placeholder="Chọn mẫu đề cương">
+              {templates.map((tpl) => (
+                <Option key={tpl.id} value={tpl.id}>
+                  {tpl.name} (v{tpl.version})
+                </Option>
+              ))}
+            </Select>
+          </Form.Item>
+
+          <Form.Item
+            label="Khoa phụ trách"
+            name="faculty_obj"
+            rules={[{required: true, message: "Vui lòng chọn khoa!"}]}
+          >
+            <Select placeholder="Chọn khoa">
+              {faculties.map((fac) => (
+                <Option key={fac.id} value={fac.id}>
+                  {fac.name}
+                </Option>
+              ))}
+            </Select>
+          </Form.Item>
+
+          <Form.Item
+            label="Giảng viên phụ trách"
+            name="lecturer_obj"
+            rules={[{required: true, message: "Vui lòng chọn giảng viên!"}]}
+          >
+            <Select
+              showSearch
+              placeholder="Chọn giảng viên"
+              filterOption={(input, option) =>
+                (option?.children ?? "")
+                  .toLowerCase()
+                  .includes(input.toLowerCase())
+              }
+            >
+              {lecturers.map((lec) => (
+                <Option key={lec.id} value={lec.id}>
+                  {lec.last_name} {lec.first_name}
+                </Option>
+              ))}
+            </Select>
+          </Form.Item>
+
+          <Form.Item className="text-right mb-0">
+            <Space>
+              <Button onClick={() => setIsCreateModalOpen(false)}>Hủy</Button>
+              <Button type="primary" htmlType="submit" loading={creating}>
+                Xác nhận tạo
+              </Button>
+            </Space>
+          </Form.Item>
+        </Form>
+      </Modal>
       <Modal
         title="Đặt deadline hàng loạt"
         open={isBulkModalOpen}

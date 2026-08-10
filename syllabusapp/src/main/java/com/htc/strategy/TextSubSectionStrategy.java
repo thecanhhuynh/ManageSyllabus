@@ -41,8 +41,8 @@ public class TextSubSectionStrategy implements CustomSubSectionStrategy {
         SyllabusesTextsubsection newText = new SyllabusesTextsubsection();
         newText.setSubsectionPtrId(savedNewSub.getId());
         newText.setContent(oldText.getContent());
-        newText.setDisplayMode(oldText.getDisplayMode());
-        newText.setPlaceHolder(oldText.getPlaceHolder());
+        newText.setDisplayMode(oldText.getDisplayMode() != null ? oldText.getDisplayMode() : "");
+        newText.setPlaceHolder(oldText.getPlaceHolder() != null ? oldText.getDisplayMode() : "");
 
         this.textSubSectionRepo.save(newText);
     }
@@ -54,8 +54,8 @@ public class TextSubSectionStrategy implements CustomSubSectionStrategy {
             SyllabusesTextsubsection textSub = new SyllabusesTextsubsection();
             textSub.setSubsectionPtrId(newSub.getId()); // Dùng chung ID (cơ chế kế thừa)
             textSub.setContent(""); // Dữ liệu rỗng
-            textSub.setDisplayMode(subText.getDisplayMode());
-            textSub.setPlaceHolder(subText.getPlaceHolder());
+            textSub.setDisplayMode(subText.getDisplayMode() != null ? subText.getDisplayMode() : "");
+            textSub.setPlaceHolder(subText.getPlaceHolder() != null ? subText.getPlaceHolder() : "");
             this.textSubSectionRepo.save(textSub);
         }
     }
