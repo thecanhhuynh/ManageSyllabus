@@ -13,6 +13,7 @@ import com.htc.pojo.SyllabusesSyllabus;
 import com.htc.pojo.SyllabusesTemplatemainsection;
 import com.htc.pojo.SyllabusesTemplatesubsection;
 import com.htc.pojo.SyllabusesTemplatesyllabus;
+import com.htc.pojo.SyllabusesTrainingprogramsyllabus;
 import com.htc.repository.MainSectionRepository;
 import com.htc.repository.ReferenceSubSectionRepository;
 import com.htc.repository.SelectionSubSectionRepository;
@@ -27,8 +28,10 @@ import com.htc.strategy.CustomSubRegistry;
 import com.htc.strategy.CustomSubSectionStrategy;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -79,7 +82,7 @@ public class TemplateCloneService {
 
         for (SyllabusesSyllabus oldSyllabus : syllabuses) {
             SyllabusesSyllabus newSyllabus = new SyllabusesSyllabus();
-            newSyllabus.setName(oldSyllabus.getName() + " - " + currentTemplate.getVersion());
+            newSyllabus.setName(oldSyllabus.getName() + " (Mẫu " + currentTemplate.getName()+ ")");
             newSyllabus.setCreatedDate(new Date());
             newSyllabus.setStartDateEdition(new Date());
             newSyllabus.setEndDateEdition(new Date());
@@ -89,8 +92,25 @@ public class TemplateCloneService {
             newSyllabus.setSubjectId(oldSyllabus.getSubjectId());
             newSyllabus.setLecturerId(oldSyllabus.getLecturerId());
             newSyllabus.setFacultyId(oldSyllabus.getFacultyId());
-            newSyllabus.setVersion(oldSyllabus.getVersion() + "_new");
+            newSyllabus.setVersion(currentTemplate.getVersion());
             newSyllabus = this.syllabusRepo.save(newSyllabus);
+
+            if (oldSyllabus.getSyllabusesTrainingprogramsyllabusSet() != null) {
+                Set<SyllabusesTrainingprogramsyllabus> newLinks = new HashSet<>();
+
+                for (SyllabusesTrainingprogramsyllabus oldLink : oldSyllabus.getSyllabusesTrainingprogramsyllabusSet()) {
+                    SyllabusesTrainingprogramsyllabus newLink = new SyllabusesTrainingprogramsyllabus();
+
+                    newLink.setTrainingProgramId(oldLink.getTrainingProgramId());
+                    newLink.setSyllabusId(newSyllabus);
+
+                    newLinks.add(newLink);
+                }
+
+                newSyllabus.setSyllabusesTrainingprogramsyllabusSet(newLinks);
+
+                this.syllabusRepo.save(newSyllabus);
+            }
 
             List<SyllabusesMainsection> oldSections = this.mainSectionRepo.findBySyllabusId(oldSyllabus);
             Map<String, SyllabusesMainsection> oldSecMap = new HashMap<>();
@@ -99,10 +119,8 @@ public class TemplateCloneService {
             }
 
             System.out.println("--> Số lượng oldSecMap query được: " + oldSecMap.size());
-            // In trực tiếp danh sách các key ra để xem có bị lệch case (chữ hoa/thường) không
             System.out.println("--> Keys trong oldSecMap: " + oldSecMap.keySet());
 
-            // --- BƯỚC 1: KHỞI TẠO BỘ ĐẾM KỲ VỌNG TỪ TEMPLATE MỚI ---
             Map<String, Integer> expectedTypeCounts = new HashMap<>();
             expectedTypeCounts.put("text", 0);
             expectedTypeCounts.put("selection", 0);
@@ -139,7 +157,6 @@ public class TemplateCloneService {
                 List<SyllabusesTemplatesubsection> newTplSubs = this.templateSubRepo.findByMainSectionId(newTplSec);
 
                 for (SyllabusesTemplatesubsection newTplSub : newTplSubs) {
-                    // Tăng bộ đếm kỳ vọng theo loại
                     String type = newTplSub.getType().toLowerCase();
                     expectedTypeCounts.put(type, expectedTypeCounts.getOrDefault(type, 0) + 1);
                     totalExpectedSubSections++;
@@ -151,6 +168,7 @@ public class TemplateCloneService {
                     newSub.setPosition(newTplSub.getPosition());
                     newSub.setMainSectionId(newSec);
                     newSub.setCreatedDate(new Date());
+                    newSub.setRequiresUpdate(Boolean.FALSE);
                     newSub = subSectionRepo.save(newSub);
 
                     boolean isCustom = List.of("text", "selection", "table").contains(newTplSub.getType());
@@ -182,19 +200,13 @@ public class TemplateCloneService {
                 }
             }
 
-            // --- BƯỚC 2: KIỂM TRA ĐỐI CHIẾU SỐ LƯỢNG SAU KHI INSERT ---
             validateInsertedSubSections(newSyllabus, totalExpectedSubSections, expectedTypeCounts);
         }
     }
 
-    /**
-     * Hàm kiểm tra số lượng bản ghi thực tế trong DB so với kỳ vọng từ
-     * Template. Ném RuntimeException để kích hoạt Rollback nếu không khớp.
-     */
     private void validateInsertedSubSections(SyllabusesSyllabus newSyllabus,
             int totalExpected,
             Map<String, Integer> expectedCounts) {
-        // 1. Kiểm tra tổng số lượng ở bảng cha (syllabuses_subsection)
         long actualTotal = this.subSectionRepo.countBySyllabus(newSyllabus);
         if (actualTotal != totalExpected) {
             throw new RuntimeException(String.format(
@@ -202,7 +214,6 @@ public class TemplateCloneService {
                     totalExpected, actualTotal));
         }
 
-        // 2. Kiểm tra chi tiết từng bảng con theo Type
         long actualText = this.textSubSectionRepo.countBySyllabus(newSyllabus);
         long actualSelection = this.selectionSubSectionRepo.countBySyllabus(newSyllabus);
         long actualTable = this.tableSubSectionRepo.countBySyllabus(newSyllabus);

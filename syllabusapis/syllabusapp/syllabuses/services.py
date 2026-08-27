@@ -14,7 +14,7 @@ class SubSectionSyncStrategy:
     def create(self, main_sec, tpl_sub):
         return SubSection.objects.create(
             main_section=main_sec, code=tpl_sub.code, type=tpl_sub.type,
-            name=tpl_sub.name, position=tpl_sub.position
+            name=tpl_sub.name, position=tpl_sub.position, requires_update=True
         )
 
     def update(self, sub_sec, tpl_sub):
@@ -30,7 +30,7 @@ class TextSyncStrategy(SubSectionSyncStrategy):
         return TextSubSection.objects.create(
             main_section=main_sec, code=tpl_sub.code, type=tpl_sub.type,
             name=tpl_sub.name, position=tpl_sub.position,
-            display_mode=display_mode, place_holder=place_holder
+            display_mode=display_mode, place_holder=place_holder, requires_update=True
         )
 
 class SelectionSyncStrategy(SubSectionSyncStrategy):
@@ -38,7 +38,7 @@ class SelectionSyncStrategy(SubSectionSyncStrategy):
         attr_group_id = tpl_sub.templateselectionsubsection.attribute_group_id if hasattr(tpl_sub, 'templateselectionsubsection') else None
         return SelectionSubSection.objects.create(
             main_section=main_sec, code=tpl_sub.code, type=tpl_sub.type,
-            name=tpl_sub.name, position=tpl_sub.position, attribute_group_id=attr_group_id
+            name=tpl_sub.name, position=tpl_sub.position, attribute_group_id=attr_group_id, requires_update=True
         )
 
     def update(self, sub_sec, tpl_sub):
@@ -57,7 +57,7 @@ class TableSyncStrategy(SubSectionSyncStrategy):
         return TableSubSection.objects.create(
             main_section=main_sec, code=tpl_sub.code, type=tpl_sub.type,
             name=tpl_sub.name, position=tpl_sub.position,
-            data={"columns": table_cols, "rows": []}
+            data={"columns": table_cols, "rows": []}, requires_update=True
         )
 
 SYNC_STRATEGIES = {

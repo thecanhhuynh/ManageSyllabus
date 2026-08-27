@@ -4,6 +4,7 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 
 from syllabuses import views
+from syllabuses.views import ExportSyllabusDocxView
 
 routes = DefaultRouter()
 routes.register('users', views.UserView )
@@ -23,4 +24,5 @@ routes.register('templates', views.TemplateSyllabusView)
 
 urlpatterns = [
     path('', include(routes.urls)),
+    path('export-syllabus/<int:syllabus_id>/', ExportSyllabusDocxView.as_view(), name='export-syllabus-docx')
 ]

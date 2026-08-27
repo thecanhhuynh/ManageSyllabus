@@ -72,6 +72,7 @@ class TextStrategy(SubSectionStrategy):
     def update_syllabus(self, sub_instance, sub_data, syllabus_instance, serializer_instance):
         if hasattr(sub_instance, 'textsubsection') and 'content' in sub_data:
             sub_instance.textsubsection.content = sub_data['content']
+            sub_instance.textsubsection.requires_update = False
             sub_instance.textsubsection.save()
 
     def clone(self, old_sub, new_main):
@@ -119,6 +120,7 @@ class TableStrategy(SubSectionStrategy):
     def update_syllabus(self, sub_instance, sub_data, syllabus_instance, serializer_instance):
         if hasattr(sub_instance, 'tablesubsection') and 'table_schema' in sub_data:
             sub_instance.tablesubsection.data = sub_data['table_schema']
+            sub_instance.tablesubsection.requires_update = False
             sub_instance.tablesubsection.save()
 
     def clone(self, old_sub, new_main):
@@ -180,7 +182,9 @@ class SelectionStrategy(SubSectionStrategy):
     def update_syllabus(self, sub_instance, sub_data, syllabus_instance, serializer_instance):
         if hasattr(sub_instance, 'selectionsubsection') and 'selected_values' in sub_data:
             val_ids = [item['id'] if isinstance(item, dict) else item for item in sub_data['selected_values']]
+            sub_instance.selectionsubsection.requires_update = False
             sub_instance.selectionsubsection.selected_values.set(val_ids)
+            sub_instance.selectionsubsection.save()
 
     def init_syllabus_sub_section(self, tpl_sub, main_sec):
         attr_group_id = tpl_sub.templateselectionsubsection.attribute_group_id if hasattr(tpl_sub,

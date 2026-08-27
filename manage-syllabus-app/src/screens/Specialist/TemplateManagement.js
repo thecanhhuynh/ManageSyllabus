@@ -71,6 +71,7 @@ const TemplateManagement = () => {
       }
       setIsModalVisible(false);
       setPage(1);
+      if (page === 1) loadTemplates();
     } catch (err) {
       console.log(err);
       message.error("Có lỗi xảy ra, có thể do trùng Tên & Version!");
@@ -90,7 +91,6 @@ const TemplateManagement = () => {
     }
   };
 
-  // Gọi API Clone Template
   const handleClone = async (id) => {
     try {
       await authApis().post(`${endpoints["templates"]}${id}/clone/`);
@@ -102,7 +102,6 @@ const TemplateManagement = () => {
     }
   };
 
-  // Gọi API Publish Template
   const handlePublish = async (id) => {
     try {
       const res = await springApi().post(endpoints["publish-template"](id));

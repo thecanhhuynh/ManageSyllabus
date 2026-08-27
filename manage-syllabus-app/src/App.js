@@ -73,7 +73,12 @@ const App = () => {
     }
   };
   useEffect(() => {
-    fetchMasterData();
+    if (user) {
+      fetchMasterData();
+    }
+  }, [user]);
+
+  useEffect(() => {
     autoLogin();
   }, []);
 

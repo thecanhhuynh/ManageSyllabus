@@ -60,6 +60,8 @@ public class SyllabusesSubsection implements Serializable {
     @Basic(optional = false)
     @Column(name = "code")
     private String code;
+    @Column(name = "requires_update")
+    private Boolean requiresUpdate = false;
     @JoinColumn(name = "main_section_id", referencedColumnName = "id")
     @ManyToOne(optional = false)
     private SyllabusesMainsection mainSectionId;
@@ -71,6 +73,7 @@ public class SyllabusesSubsection implements Serializable {
     private SyllabusesTablesubsection syllabusesTablesubsection;
     @OneToOne(cascade = CascadeType.ALL, mappedBy = "syllabusesSubsection")
     private SyllabusesTextsubsection syllabusesTextsubsection;
+    
 
     public SyllabusesSubsection() {
     }
@@ -199,6 +202,20 @@ public class SyllabusesSubsection implements Serializable {
     @Override
     public String toString() {
         return "com.htc.pojo.SyllabusesSubsection[ id=" + id + " ]";
+    }
+
+    /**
+     * @return the requiresUpdate
+     */
+    public Boolean getRequiresUpdate() {
+        return requiresUpdate;
+    }
+
+    /**
+     * @param requiresUpdate the requiresUpdate to set
+     */
+    public void setRequiresUpdate(Boolean requiresUpdate) {
+        this.requiresUpdate = requiresUpdate;
     }
     
 }

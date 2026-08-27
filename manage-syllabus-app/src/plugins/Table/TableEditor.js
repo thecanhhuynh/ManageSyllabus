@@ -4,6 +4,7 @@ import {PlusOutlined, DeleteOutlined} from "@ant-design/icons";
 import {AgGridReact} from "ag-grid-react";
 import "ag-grid-community/styles/ag-grid.css";
 import "ag-grid-community/styles/ag-theme-alpine.css";
+import UpdateRequireWrapper from "../../components/wrapper/UpdateRequireWrapper";
 
 // 1. Dùng lại CustomCell từ TableSchemaBuilder để nhập liệu và kéo giãn chiều cao
 const CustomCell = (props) => {
@@ -247,9 +248,11 @@ const TableEditor = ({item, basePath}) => {
   }
 
   return (
-    <Form.Item name={tablePath} label={CustomLabel} style={{marginBottom: 0}}>
-      <AgGridTableInput firstColumnHeader={firstColumnHeader} />
-    </Form.Item>
+    <UpdateRequireWrapper isRequired={item.requires_update}>
+      <Form.Item name={tablePath} label={CustomLabel} style={{marginBottom: 0}}>
+        <AgGridTableInput firstColumnHeader={firstColumnHeader} />
+      </Form.Item>
+    </UpdateRequireWrapper>
   );
 };
 

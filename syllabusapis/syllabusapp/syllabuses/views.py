@@ -1,15 +1,22 @@
+from datetime import datetime
+import io
+
 from django.db import transaction
+from django.http import HttpResponse
 from django.utils import timezone
 
 from django.db.models.functions import Length
-from django.shortcuts import render
-from django.views import generic
+from django.shortcuts import render, get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
+from docx import Document
+from docxcompose.composer import Composer
+from docxtpl import DocxTemplate
 from rest_framework import viewsets, status, generics, parsers, permissions, mixins, filters
 from rest_framework.decorators import action, permission_classes
-from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
+from handlers import get_strategy_map
 from syllabuses import perms
 from syllabuses.filters import SyllabusFilter, SubjectFilter, LearningMaterialsFilter, UserFilter, LecturerFilter
 from syllabuses.models import User, Syllabus, Faculty, Subject, AttributeGroup, TypeRequirement, \
@@ -311,13 +318,18 @@ class TrainingProgramView(mixins.ListModelMixin,
     serializer_class = TrainingProgramSerializer
     pagination_class = TrainingPagination
     http_method_names = ['get', 'post', 'patch', 'delete']
-    permission_classes = [perms.IsAdmin]
+    permission_classes = [permissions.IsAuthenticated]
 
 
     @action(detail=True, methods=['get'], url_path="syllabuses")
     def get_program_syllabuses(self, request, pk=None):
+        user = self.request.user
         program = self.get_object()
         syllabuses = Syllabus.objects.filter(trainingprogramsyllabus__training_program=program)
+        if not user.is_superuser:
+            syllabuses = syllabuses.filter(
+                lecturer__user=user
+            )
         q = self.request.query_params.get('q')
         if q:
             syllabuses = syllabuses.filter(name__icontains=q)
@@ -330,9 +342,7 @@ class TrainingProgramView(mixins.ListModelMixin,
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-
-
-class AttributeGroupView(viewsets.ViewSet, generics.ListAPIView):
+class AttributeGroupView(viewsets.ViewSet, generics.ListAPIView, generics.RetrieveAPIView):
     queryset = AttributeGroup.objects.all()
     serializer_class = AttributeGroupListSerializer
 
@@ -383,4 +393,103 @@ class ScheduleView(viewsets.ViewSet, generics.ListAPIView):
     serializer_class = ScheduleGroupSerializer
 
 
+def get_formatted_syllabus_data_orm(syllabus_id):
+    syllabus = get_object_or_404(Syllabus, pk=syllabus_id)
 
+    raw_json = SyllabusDetailSerializer(syllabus).data
+
+    la_ma = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"]
+    formatted_data = []
+
+    for i, main_sec in enumerate(raw_json.get("main_sections", [])):
+        section_data = {
+            "stt_la_ma": la_ma[i],
+            "tieu_de": main_sec["name"],
+            "subs": []
+        }
+
+        for sub in main_sec.get("sub_sections", []):
+            sub_type = sub["type"]
+            mapped_sub = {
+                "position": sub["position"],
+                "sub_title": sub["name"],
+                "type": sub_type
+            }
+
+            if sub_type == "text":
+                mapped_sub["content"] = sub.get("content") or ""
+            elif sub_type == "selection":
+                mapped_sub["attribute_group_id"] = sub.get("attribute_group_id")
+                mapped_sub["selected_values"] = sub.get("selected_values", [])
+            elif sub_type == "table":
+                schema = sub.get("table_schema", {})
+                cols = schema.get("columns", [])
+                rows = schema.get("rows", [])
+                mapped_sub["headers"] = [c["headerName"] for c in cols]
+                mapped_sub["rows"] = [[str(r.get(c["field"], "")) for c in cols] for r in rows]
+            elif sub_type == "reference":
+                mapped_sub["reference_code"] = sub.get("reference_code")
+                mapped_sub["reference_data"] = sub.get("reference_data")
+
+            section_data["subs"].append(mapped_sub)
+
+        formatted_data.append(section_data)
+
+    return formatted_data
+
+
+class ExportSyllabusDocxView(APIView):
+    def get(self, request, syllabus_id):
+        try:
+            data = get_formatted_syllabus_data_orm(syllabus_id)
+
+            strategies = get_strategy_map()
+
+            master_doc = Document("templates/exports/master_template.docx")
+            composer = Composer(master_doc)
+
+            for main in data:
+                main_stream = io.BytesIO()
+                tpl_main = DocxTemplate("templates/exports/snipper_main_title.docx")
+                tpl_main.render(main)
+                tpl_main.save(main_stream)
+                main_stream.seek(0)
+
+                composer.append(Document(main_stream))
+
+                for sub in main["subs"]:
+                    handler = strategies.get(sub["type"])
+                    if handler:
+                        handler(sub, composer)
+            now = datetime.now()
+
+            compiler_name = "Chưa cập nhật"
+            dean_name = "Chưa cập nhật"
+            footer_data = {
+                "day": f"{now.day:02d}",
+                "month": f"{now.month:02d}",
+                "year": str(now.year),
+                "dean_name": compiler_name,
+                "compiler_name": dean_name
+            }
+            footer_stream = io.BytesIO()
+            tpl_footer = DocxTemplate("templates/exports/snipper_footer.docx")
+            tpl_footer.render(footer_data)
+            tpl_footer.save(footer_stream)
+            footer_stream.seek(0)
+
+            composer.append(Document(footer_stream))
+
+            final_stream = io.BytesIO()
+            composer.save(final_stream)
+            final_stream.seek(0)
+
+            response = HttpResponse(
+                final_stream.getvalue(),
+                content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+            )
+            response['Content-Disposition'] = f'attachment; filename="Syllabus_{syllabus_id}.docx"'
+            return response
+
+        except Exception as e:
+            return Response({"detail": f"Lỗi xuất file: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

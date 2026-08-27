@@ -219,27 +219,32 @@ class AttributeGroupListSerializer(serializers.ModelSerializer):
         model = AttributeGroup
         fields = ['id', 'name', 'attribute_values']
 
-
-class TextSubSectionSerializer(serializers.ModelSerializer):
+class BaseSubSectionSerializer(serializers.ModelSerializer):
     class Meta:
+        model = SubSection
+        fields = ['id', 'name', 'position', 'type', 'code', 'requires_update']
+
+
+class TextSubSectionSerializer(BaseSubSectionSerializer):
+    class Meta(BaseSubSectionSerializer.Meta):
         model = TextSubSection
-        fields = ['id', 'name', 'position', 'type', 'code', 'content', 'display_mode', 'place_holder']
+        fields = BaseSubSectionSerializer.Meta.fields + ['content', 'display_mode', 'place_holder']
 
 
-class SelectionSubSectionSerializer(serializers.ModelSerializer):
+class SelectionSubSectionSerializer(BaseSubSectionSerializer):
     selected_values = AttributeValueSerializer(many=True, read_only=True)
     attribute_group_id = serializers.IntegerField(source='attribute_group.id', read_only=True)
-    class Meta:
+    class Meta(BaseSubSectionSerializer.Meta):
         model = SelectionSubSection
-        fields = ['id', 'name', 'position', 'type', 'code', 'attribute_group_id','selected_values']
+        fields = BaseSubSectionSerializer.Meta.fields + ['attribute_group_id','selected_values']
 
 
-class ReferenceSubSectionSerializer(serializers.ModelSerializer):
+class ReferenceSubSectionSerializer(BaseSubSectionSerializer):
     reference_data = serializers.SerializerMethodField()
 
-    class Meta:
+    class Meta(BaseSubSectionSerializer.Meta):
         model = ReferenceSubSection
-        fields = ['id', 'name', 'position', 'type', 'code', 'reference_code', 'reference_data']
+        fields = BaseSubSectionSerializer.Meta.fields + ['reference_code', 'reference_data']
 
     def get_reference_data(self, obj):
         syllabus = obj.main_section.syllabus
@@ -269,16 +274,16 @@ class ReferenceSubSectionSerializer(serializers.ModelSerializer):
 
 class TableSubSectionSerializer(serializers.ModelSerializer):
     table_schema = serializers.JSONField(source='data')
-    class Meta:
+    class Meta(BaseSubSectionSerializer.Meta):
         model = TableSubSection
-        fields = ['id', 'name', 'position', 'type', 'code', 'table_schema']
+        fields = BaseSubSectionSerializer.Meta.fields + ['table_schema']
 
 
 
-class SubSectionSerializer(serializers.ModelSerializer):
+class SubSectionSerializer(BaseSubSectionSerializer):
     class Meta:
         model = SubSection
-        fields = ['id', 'name', 'position', 'type', 'code']
+        fields = ['id', 'name', 'position', 'type', 'code', 'requires_update']
 
     def to_representation(self, instance):
         strategy_map = {

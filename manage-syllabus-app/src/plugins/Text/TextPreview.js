@@ -1,4 +1,4 @@
-import React, {useState} from "react";
+import React, {useEffect, useState} from "react";
 import {Input, Select, Typography} from "antd";
 
 const {TextArea} = Input;
@@ -18,7 +18,12 @@ const TextPreview = ({item, onUpdateField}) => {
     onUpdateField("display_mode", val);
   };
 
-  // Kiểm tra email: Nếu đã nhập text mà thiếu '@' thì báo lỗi
+  useEffect(() => {
+    if (!item.display_mode) {
+      onUpdateField("display_mode", "text");
+    }
+  }, []);
+
   const isEmailInvalid =
     mode === "email" && testValue.length > 0 && !testValue.includes("@");
 

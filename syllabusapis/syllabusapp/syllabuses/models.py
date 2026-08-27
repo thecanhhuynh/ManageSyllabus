@@ -226,14 +226,14 @@ class SubSection(BaseModel):
     type = models.CharField(max_length=50)
     code = models.CharField(max_length=50)
     main_section = models.ForeignKey(MainSection, on_delete=models.CASCADE, related_name='sub_sections')
-
+    requires_update = models.BooleanField(default=False)
     class Meta:
         ordering = ['position']
 
 
 class TextSubSection(SubSection):
     content = models.TextField(null=True, blank=True)
-    display_mode = models.CharField(max_length=50, default="input")
+    display_mode = models.CharField(max_length=50, default="input", null=True, blank=True)
     place_holder = models.CharField(max_length=100, null=True, blank=True)
 
 
