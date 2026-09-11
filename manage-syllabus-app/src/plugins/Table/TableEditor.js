@@ -5,8 +5,8 @@ import {AgGridReact} from "ag-grid-react";
 import "ag-grid-community/styles/ag-grid.css";
 import "ag-grid-community/styles/ag-theme-alpine.css";
 import UpdateRequireWrapper from "../../components/wrapper/UpdateRequireWrapper";
+import {useSyllabusStore} from "../../store/useSyllabusStore";
 
-// 1. Dùng lại CustomCell từ TableSchemaBuilder để nhập liệu và kéo giãn chiều cao
 const CustomCell = (props) => {
   const handleChange = (e) => {
     props.onCellChange(props.data.id, props.colDef.field, e.target.value);
@@ -50,7 +50,6 @@ const CustomCell = (props) => {
     document.body.style.cursor = "row-resize";
   };
 
-  // Nếu là cột bị khóa (Cột đầu tiên - rowTitle), không cho nhập
   const isReadonly = props.colDef.field === "rowTitle";
 
   return (
@@ -87,11 +86,9 @@ const CustomCell = (props) => {
   );
 };
 
-// 2. Component chính xử lý bảng
 const AgGridTableInput = ({value, onChange, firstColumnHeader}) => {
   const gridApiRef = useRef(null);
 
-  // Nếu giá trị khởi tạo bị stringify
   let schema = {columns: [], rows: []};
   if (value) {
     schema = typeof value === "string" ? JSON.parse(value) : value;
@@ -103,7 +100,6 @@ const AgGridTableInput = ({value, onChange, firstColumnHeader}) => {
     gridApiRef.current = params.api;
   }, []);
 
-  // --- CÁC HÀM CẬP NHẬT DỮ LIỆU ---
   const updateCell = (rowId, field, newValue) => {
     const newRows = schema.rows.map((r) =>
       r.id === rowId ? {...r, [field]: newValue} : r,
@@ -139,10 +135,8 @@ const AgGridTableInput = ({value, onChange, firstColumnHeader}) => {
     syncToForm({...schema, rows: newRows});
   };
 
-  // --- ĐỊNH NGHĨA CỘT ---
   const columnDefs = [];
 
-  // Cột khóa đầu tiên (nếu có)
   if (firstColumnHeader) {
     columnDefs.push({
       headerName: firstColumnHeader,
@@ -158,7 +152,6 @@ const AgGridTableInput = ({value, onChange, firstColumnHeader}) => {
     });
   }
 
-  // Cột dữ liệu bình thường
   const dynamicCols =
     schema.columns?.map((col) => ({
       headerName: col.headerName,
@@ -180,7 +173,6 @@ const AgGridTableInput = ({value, onChange, firstColumnHeader}) => {
 
   columnDefs.push(...dynamicCols);
 
-  // Cột nút Xóa
   columnDefs.push({
     headerName: "",
     width: 50,
@@ -231,7 +223,18 @@ const AgGridTableInput = ({value, onChange, firstColumnHeader}) => {
 
 const TableEditor = ({item, basePath}) => {
   const tablePath = [...basePath, "table_schema"];
+  const tableSchema = useSyllabusStore(
+    (state) =>
+      state.localBlocks[item.code]?.data?.table_schema ?? {
+        columns: [],
+        rows: [],
+      },
+  );
 
+  const updateLocalBlock = useSyllabusStore((state) => state.updateLocalBlock);
+  const handleTableChange = (newSchema) => {
+    updateLocalBlock(item.code, {table_schema: newSchema});
+  };
   const CustomLabel = item.place_holder ? (
     <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">
       {item.place_holder}
@@ -239,18 +242,27 @@ const TableEditor = ({item, basePath}) => {
   ) : null;
 
   let firstColumnHeader = null;
-  if (item.table_schema) {
+  const currentSchemaObj =
+    typeof tableSchema === "string" ? JSON.parse(tableSchema) : tableSchema;
+
+  if (currentSchemaObj?.firstColumnHeader) {
+    firstColumnHeader = currentSchemaObj.firstColumnHeader;
+  } else if (item.table_schema) {
     const parsedData =
       typeof item.table_schema === "string"
         ? JSON.parse(item.table_schema)
         : item.table_schema;
-    firstColumnHeader = parsedData.firstColumnHeader;
+    firstColumnHeader = parsedData?.firstColumnHeader;
   }
 
   return (
     <UpdateRequireWrapper isRequired={item.requires_update}>
       <Form.Item name={tablePath} label={CustomLabel} style={{marginBottom: 0}}>
-        <AgGridTableInput firstColumnHeader={firstColumnHeader} />
+        <AgGridTableInput
+          firstColumnHeader={firstColumnHeader}
+          value={tableSchema}
+          onChange={handleTableChange}
+        />
       </Form.Item>
     </UpdateRequireWrapper>
   );

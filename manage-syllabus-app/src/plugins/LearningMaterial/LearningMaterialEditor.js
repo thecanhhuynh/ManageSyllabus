@@ -1,22 +1,29 @@
-import React, {useState, useRef, useEffect} from "react";
-import {Form, Input, AutoComplete, Button, message} from "antd";
+import React, {useState, useRef, useEffect, memo} from "react";
+import {AutoComplete, Button, message} from "antd";
 import {PlusOutlined, BookOutlined, CloseOutlined} from "@ant-design/icons";
 import Apis, {authApis, endpoints} from "../../config/Apis";
+import {useSyllabusStore} from "../../store/useSyllabusStore";
 
-const MaterialItem = ({
-  field,
-  form,
-  refPath,
-  remove,
+const EMPTY_ARRAY = [];
+
+const MaterialTagItem = ({
+  material,
   materialOptions,
   loading,
-  handleSearch,
-  handlePopupScroll,
-  handleMaterialChange,
+  onSearch,
+  onPopupScroll,
+  onChangeMaterial,
+  onRemove,
 }) => {
-  const initialName = form.getFieldValue([...refPath, field.name, "name"]);
-  const [isEditing, setIsEditing] = useState(!initialName);
+  const [isEditing, setIsEditing] = useState(!material.name);
   const inputRef = useRef(null);
+  const latestNameRef = useRef(material.name || "");
+  const isSelectingRef = useRef(false);
+
+  // Đồng bộ giá trị mới nhất vào ref để tránh stale closure khi onBlur/onConfirm
+  useEffect(() => {
+    latestNameRef.current = material.name || "";
+  }, [material.name]);
 
   useEffect(() => {
     if (isEditing && inputRef.current) {
@@ -26,83 +33,110 @@ const MaterialItem = ({
 
   const onConfirm = () => {
     setTimeout(() => {
-      const currentName = form.getFieldValue([...refPath, field.name, "name"]);
-      if (currentName && currentName.trim() !== "") {
+      // Nếu đang trong quá trình chọn option, không trigger logic blur
+      if (isSelectingRef.current) {
+        isSelectingRef.current = false;
+        return;
+      }
+
+      const currentVal = (latestNameRef.current || "").trim();
+      console.log(">>> [CONFIRM CHECK]:", {
+        currentVal,
+        materialPropName: material.name,
+      });
+
+      if (currentVal !== "") {
+        console.log("    -> Giữ tài liệu, đóng chế độ edit.");
         setIsEditing(false);
       } else {
-        remove(field.name);
+        console.warn("    -> Tên rỗng, xóa tài liệu khỏi danh sách!");
+        onRemove();
       }
-    }, 150);
+    }, 200);
   };
 
-  return (
-    <div className="flex items-center">
-      <Form.Item {...field} name={[field.name, "id"]} hidden>
-        <Input />
-      </Form.Item>
-      <Form.Item {...field} name={[field.name, "type_material"]} hidden>
-        <Input />
-      </Form.Item>
+  if (!isEditing && material.name) {
+    return (
+      <div className="group flex items-center gap-1.5 bg-blue-50 border border-blue-200 text-blue-700 px-3 py-1 rounded-full text-[13px] font-medium transition-all hover:bg-blue-100 h-8">
+        <BookOutlined className="text-blue-500" />
+        <span
+          className="max-w-[250px] truncate cursor-pointer hover:underline"
+          title={material.name}
+          onClick={() => setIsEditing(true)}
+        >
+          {material.name}
+        </span>
+        <CloseOutlined
+          className="cursor-pointer text-blue-400 hover:text-red-500 ml-1 opacity-60 group-hover:opacity-100 transition-opacity"
+          onClick={(e) => {
+            e.stopPropagation();
+            onRemove();
+          }}
+        />
+      </div>
+    );
+  }
 
-      {!isEditing ? (
-        <div className="group flex items-center gap-1.5 bg-blue-50 border border-blue-200 text-blue-700 px-3 py-1 rounded-full text-[13px] font-medium transition-all hover:bg-blue-100 h-8">
-          <BookOutlined className="text-blue-500" />
-          <span
-            className="max-w-[250px] truncate cursor-pointer hover:underline"
-            title={form.getFieldValue([...refPath, field.name, "name"])}
-            onClick={() => setIsEditing(true)}
-          >
-            {form.getFieldValue([...refPath, field.name, "name"])}
-          </span>
-          <CloseOutlined
-            className="cursor-pointer text-blue-400 hover:text-red-500 ml-1 opacity-60 group-hover:opacity-100 transition-opacity"
-            onClick={() => remove(field.name)}
-          />
-          <Form.Item {...field} name={[field.name, "name"]} hidden>
-            <Input />
-          </Form.Item>
-        </div>
-      ) : (
-        <div className="flex items-center bg-white border border-blue-400 rounded-full pl-3 pr-1 h-8 shadow-sm transition-all hover:border-blue-500">
-          <Form.Item
-            {...field}
-            name={[field.name, "name"]}
-            rules={[{required: true, message: "Nhập tên tài liệu"}]}
-            className="mb-0"
-            style={{width: 220}}
-          >
-            <AutoComplete
-              ref={inputRef}
-              bordered={false}
-              placeholder="Nhập tên tài liệu / sách..."
-              options={materialOptions}
-              onSearch={handleSearch}
-              onPopupScroll={handlePopupScroll}
-              onChange={(val) => handleMaterialChange(val, field.name)}
-              onSelect={onConfirm}
-              onBlur={onConfirm}
-              className="w-full text-[13px]"
-              notFoundContent={loading ? "Đang tìm..." : "Gõ để tạo sách mới"}
-            />
-          </Form.Item>
-          <Button
-            type="text"
-            danger
-            shape="circle"
-            icon={<CloseOutlined className="text-[11px]" />}
-            onClick={() => remove(field.name)}
-            size="small"
-            className="w-6 h-6 min-w-0 flex items-center justify-center bg-gray-50 hover:bg-red-50 ml-1"
-          />
-        </div>
-      )}
+  return (
+    <div className="flex items-center bg-white border border-blue-400 rounded-full pl-3 pr-1 h-8 shadow-sm transition-all hover:border-blue-500">
+      <AutoComplete
+        ref={inputRef}
+        bordered={false}
+        placeholder="Nhập tên tài liệu / sách..."
+        options={materialOptions}
+        value={material.name || ""}
+        onSearch={onSearch}
+        onPopupScroll={onPopupScroll}
+        onChange={(val) => {
+          console.log(">>> [AUTOCOMPLETE ON_CHANGE]:", val);
+          latestNameRef.current = val;
+          const matched = materialOptions.find((opt) => opt.value === val);
+          onChangeMaterial({
+            ...material,
+            id: matched ? matched.id : undefined,
+            name: val,
+          });
+        }}
+        onSelect={(val, option) => {
+          console.log(">>> [AUTOCOMPLETE ON_SELECT]:", {val, option});
+          isSelectingRef.current = true;
+          latestNameRef.current = val;
+          onChangeMaterial({
+            ...material,
+            id: option.id,
+            name: val,
+          });
+          setIsEditing(false);
+        }}
+        onBlur={() => {
+          console.log(">>> [AUTOCOMPLETE ON_BLUR TRIGGERED]");
+          onConfirm();
+        }}
+        className="w-[220px] text-[13px]"
+        notFoundContent={loading ? "Đang tìm..." : "Gõ để tạo sách mới"}
+      />
+      <Button
+        type="text"
+        danger
+        shape="circle"
+        icon={<CloseOutlined className="text-[11px]" />}
+        onClick={(e) => {
+          e.stopPropagation();
+          onRemove();
+        }}
+        size="small"
+        className="w-6 h-6 min-w-0 flex items-center justify-center bg-gray-50 hover:bg-red-50 ml-1"
+      />
     </div>
   );
 };
 
 const LearningMaterialEditor = ({item, basePath}) => {
-  const refPath = [...basePath, "reference_data"];
-  const form = Form.useFormInstance();
+  const referenceData = useSyllabusStore(
+    (state) =>
+      state.localBlocks[item.code]?.data?.reference_data || EMPTY_ARRAY,
+  );
+  const updateLocalBlock = useSyllabusStore((state) => state.updateLocalBlock);
 
   const [materialOptions, setMaterialOptions] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -113,47 +147,44 @@ const LearningMaterialEditor = ({item, basePath}) => {
 
   const [materialTypeOptions, setMaterialTypeOptions] = useState([]);
 
-  const loadTypeOptions = async () => {
-    try {
-      const res = await Apis.get(endpoints["type-materials"]);
-      // Lưu thẳng mảng gốc {id, name} để dùng cho map Categories
-      setMaterialTypeOptions(res.data);
-    } catch (error) {
-      console.log(error);
-      message.error("Lỗi tải loại tài liệu");
-    }
-  };
-
-  const loadMaterials = async () => {
-    try {
-      setLoading(true);
-      let url = `${endpoints["learning-materials"]}?page=${page}`;
-      if (q) url += `&q=${q}`;
-
-      const res = await authApis().get(url);
-      if (res.status === 200) {
-        const newData = res.data.results.map((mat) => ({
-          value: mat.name,
-          id: mat.id,
-        }));
-
-        setHasNext(res.data.next != null);
-
-        if (page === 1) setMaterialOptions(newData);
-        else setMaterialOptions((prev) => [...prev, ...newData]);
-      }
-    } catch (error) {
-      console.error("Lỗi tải tài liệu:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
+    const loadTypeOptions = async () => {
+      try {
+        const res = await Apis.get(endpoints["type-materials"]);
+        setMaterialTypeOptions(res.data || []);
+      } catch (error) {
+        console.error("Lỗi tải loại tài liệu:", error);
+        message.error("Lỗi tải loại tài liệu");
+      }
+    };
     loadTypeOptions();
   }, []);
 
   useEffect(() => {
+    const loadMaterials = async () => {
+      try {
+        setLoading(true);
+        let url = `${endpoints["learning-materials"]}?page=${page}`;
+        if (q) url += `&q=${q}`;
+
+        const res = await authApis().get(url);
+        if (res.status === 200) {
+          const newData = (res.data.results || []).map((mat) => ({
+            value: mat.name,
+            id: mat.id,
+          }));
+
+          setHasNext(res.data.next != null);
+          if (page === 1) setMaterialOptions(newData);
+          else setMaterialOptions((prev) => [...prev, ...newData]);
+        }
+      } catch (error) {
+        console.error("Lỗi tải tài liệu:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     loadMaterials();
   }, [page, q]);
 
@@ -162,7 +193,7 @@ const LearningMaterialEditor = ({item, basePath}) => {
     searchTimeoutRef.current = setTimeout(() => {
       setQ(keyword);
       setPage(1);
-    }, 500);
+    }, 400);
   };
 
   const handlePopupScroll = (e) => {
@@ -172,90 +203,103 @@ const LearningMaterialEditor = ({item, basePath}) => {
     }
   };
 
-  const handleMaterialChange = (value, nameFieldPath) => {
-    const matchedOption = materialOptions.find((opt) => opt.value === value);
-    const idFieldPath = [...refPath, nameFieldPath, "id"];
-
-    if (matchedOption) {
-      form.setFieldValue(idFieldPath, matchedOption.id);
-    } else {
-      form.setFieldValue(idFieldPath, "");
-    }
+  const handleAddMaterial = (matType) => {
+    const currentList =
+      useSyllabusStore.getState().localBlocks[item.code]?.data
+        ?.reference_data || [];
+    const newItem = {
+      _temp_id: `temp_${Date.now()}_${Math.random()}`,
+      name: "",
+      type_material: {id: matType.id, name: matType.name},
+    };
+    console.log(">>> [STORE ADD MATERIAL]:", newItem);
+    updateLocalBlock(item.code, {
+      reference_data: [...currentList, newItem],
+    });
   };
 
-  // Hàm chuẩn hóa ID
-  const getMatTypeId = (val) => {
-    if (!val) return null;
-    return typeof val === "object" ? val.id : val;
+  const handleUpdateMaterial = (globalIndex, updatedMaterial) => {
+    const currentList =
+      useSyllabusStore.getState().localBlocks[item.code]?.data
+        ?.reference_data || [];
+    const nextData = [...currentList];
+    console.log(
+      ">>> [STORE UPDATE MATERIAL AT INDEX " + globalIndex + "]:",
+      updatedMaterial,
+    );
+    nextData[globalIndex] = updatedMaterial;
+    updateLocalBlock(item.code, {reference_data: nextData});
+  };
+
+  const handleRemoveMaterial = (globalIndex) => {
+    const currentList =
+      useSyllabusStore.getState().localBlocks[item.code]?.data
+        ?.reference_data || [];
+    console.log(">>> [STORE REMOVE MATERIAL AT INDEX " + globalIndex + "]");
+    const nextData = currentList.filter((_, idx) => idx !== globalIndex);
+    updateLocalBlock(item.code, {reference_data: nextData});
   };
 
   return (
-    <div className="w-full">
-      <Form.List name={refPath}>
-        {(fields, {add, remove}) => (
-          <div className="flex flex-col gap-4">
-            {materialTypeOptions.map((matType) => {
-              // Lấy an toàn các field thuộc Category hiện tại (Không dùng useWatch để chống lag)
-              const typeFields = fields.filter((field) => {
-                const val = form.getFieldValue([
-                  ...refPath,
-                  field.name,
-                  "type_material",
-                ]);
-                if (!val) return false;
-                return String(getMatTypeId(val)) === String(matType.id);
-              });
+    <div className="w-full flex flex-col gap-4">
+      {materialTypeOptions.map((matType) => {
+        const groupMaterialsWithIndex = referenceData
+          .map((mat, index) => ({mat, globalIndex: index}))
+          .filter(({mat}) => {
+            const typeId =
+              typeof mat.type_material === "object"
+                ? mat.type_material?.id
+                : mat.type_material;
+            return String(typeId) === String(matType.id);
+          });
 
-              return (
-                <div
-                  key={matType.id}
-                  className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm"
-                >
-                  {/* HEADER CỦA CATEGORY TÀI LIỆU */}
-                  <div className="px-4 py-2 border-b border-gray-100 bg-gray-50/80">
-                    <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">
-                      {matType.name}
-                    </span>
-                  </div>
+        return (
+          <div
+            key={matType.id}
+            className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm"
+          >
+            <div className="px-4 py-2 border-b border-gray-100 bg-gray-50/80">
+              <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">
+                {matType.name}
+              </span>
+            </div>
 
-                  {/* DANH SÁCH TÀI LIỆU */}
-                  <div className="p-3 flex flex-wrap gap-2 items-center min-h-[54px]">
-                    {typeFields.map((field) => (
-                      <MaterialItem
-                        key={field.key}
-                        field={field}
-                        form={form}
-                        refPath={refPath}
-                        remove={remove}
-                        materialOptions={materialOptions}
-                        loading={loading}
-                        handleSearch={handleSearchMaterials}
-                        handlePopupScroll={handlePopupScroll}
-                        handleMaterialChange={handleMaterialChange}
-                      />
-                    ))}
+            <div className="p-3 flex flex-wrap gap-2 items-center min-h-[54px]">
+              {groupMaterialsWithIndex.map(({mat, globalIndex}) => {
+                // Giữ key ổn định không bị đổi khi từ chưa có ID sang có ID
+                const stableKey =
+                  mat._temp_id ||
+                  (mat.id ? `mat_${mat.id}` : `mat_idx_${globalIndex}`);
 
-                    {/* NÚT THÊM TÀI LIỆU */}
-                    <div
-                      className="flex items-center gap-1.5 border border-dashed border-gray-300 text-gray-500 px-3 py-1 rounded-full text-[13px] font-medium hover:text-blue-500 hover:border-blue-500 hover:bg-blue-50 cursor-pointer transition-all select-none h-8"
-                      onClick={() =>
-                        add({
-                          type_material: {id: matType.id, name: matType.name},
-                        })
-                      }
-                    >
-                      <PlusOutlined className="text-[11px]" />
-                      <span>Thêm Tài liệu</span>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+                return (
+                  <MaterialTagItem
+                    key={stableKey}
+                    material={mat}
+                    materialOptions={materialOptions}
+                    loading={loading}
+                    onSearch={handleSearchMaterials}
+                    onPopupScroll={handlePopupScroll}
+                    onChangeMaterial={(updated) =>
+                      handleUpdateMaterial(globalIndex, updated)
+                    }
+                    onRemove={() => handleRemoveMaterial(globalIndex)}
+                  />
+                );
+              })}
+
+              <div
+                className="flex items-center gap-1.5 border border-dashed border-gray-300 text-gray-500 px-3 py-1 rounded-full text-[13px] font-medium hover:text-blue-500 hover:border-blue-500 hover:bg-blue-50 cursor-pointer transition-all select-none h-8"
+                onClick={() => handleAddMaterial(matType)}
+              >
+                <PlusOutlined className="text-[11px]" />
+                <span>Thêm Tài liệu</span>
+              </div>
+            </div>
           </div>
-        )}
-      </Form.List>
+        );
+      })}
     </div>
   );
 };
 
-export default LearningMaterialEditor;
+export default memo(LearningMaterialEditor);

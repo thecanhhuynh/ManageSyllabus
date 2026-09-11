@@ -1,9 +1,10 @@
-import {message, Tabs, Typography, Card} from "antd";
+import {message, Tabs, Typography, Card, notification, Button} from "antd";
 import {useEffect, useState} from "react";
 import {useParams} from "react-router-dom";
 import {authApis, endpoints} from "../../config/Apis";
 import MySpinner from "../../components/MySpinner";
 import MainSectionForm from "./MainSectionForm";
+import {useSyllabusStore} from "../../store/useSyllabusStore";
 
 const {Title} = Typography;
 
@@ -20,6 +21,10 @@ const SyllabusEdit = () => {
         endpoints["syllabus-detail"](syllabusId),
       );
       if (res.status === 200) {
+        const initData = useSyllabusStore.getState().initData;
+        console.log(initData);
+        const serverRevision = res.data.revision || 1;
+        initData(serverRevision, res.data.main_sections);
         setSyllabusData(res.data);
       } else {
         console.log("Không có data");
@@ -31,6 +36,41 @@ const SyllabusEdit = () => {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    const BASE_URL = process.env.REACT_APP_BASE_URL;
+    const eventSource = new EventSource(
+      `${BASE_URL}${endpoints["sse/sync-stream/"]}`,
+    );
+
+    eventSource.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+
+      if (data.action === "sync_completed") {
+        console.log("Nhận tín hiệu đồng bộ xong! Tự động làm mới UI...");
+        if (data.action === "sync_completed") {
+          notification.info({
+            message: "Template đã được cập nhật",
+            description:
+              "Chuyên viên vừa thay đổi cấu trúc Template. Vui lòng lưu các dữ liệu đang gõ và làm mới để xem thay đổi.",
+            btn: (
+              <Button
+                type="primary"
+                onClick={() => loadSyllabusDetail(syllabusId)}
+              >
+                Tải lại dữ liệu ngay
+              </Button>
+            ),
+            duration: 0,
+          });
+        }
+      }
+    };
+
+    return () => {
+      eventSource.close();
+    };
+  }, [syllabusId]);
 
   useEffect(() => {
     if (syllabusId) {

@@ -4,10 +4,10 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 
 from syllabuses import views
-from syllabuses.views import ExportSyllabusDocxView
+from syllabuses.views import ExportSyllabusDocxView, sse_sync_stream
 
 routes = DefaultRouter()
-routes.register('users', views.UserView )
+routes.register('users', views.UserView)
 routes.register('syllabuses', views.SyllabusView)
 routes.register('faculties', views.FacultyView)
 routes.register('subjects', views.SubjectView)
@@ -24,5 +24,6 @@ routes.register('templates', views.TemplateSyllabusView)
 
 urlpatterns = [
     path('', include(routes.urls)),
-    path('export-syllabus/<int:syllabus_id>/', ExportSyllabusDocxView.as_view(), name='export-syllabus-docx')
+    path('export-syllabus/<int:syllabus_id>/', ExportSyllabusDocxView.as_view(), name='export-syllabus-docx'),
+    path('sse/sync-stream/', sse_sync_stream, name='sse_sync_stream'),
 ]

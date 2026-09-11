@@ -9,7 +9,7 @@ import {
   Tag,
   Tooltip,
   Divider,
-  Tabs, // <-- Thêm import Divider từ antd
+  Tabs,
 } from "antd";
 import {useContext, useEffect, useState} from "react";
 import {authApis, endpoints} from "../../config/Apis";
@@ -30,6 +30,7 @@ import {MyUserContext} from "../../config/contexts/MyContext";
 const Home = () => {
   const [user] = useContext(MyUserContext);
   const [loading, setLoading] = useState(false);
+  const [exportingId, setExportingId] = useState(null);
   const [faculties, setFaculties] = useState([]);
   const [facultyId, setFacultyId] = useState(null);
   const [facultyPage, setFacultyPage] = useState(1);
@@ -129,16 +130,16 @@ const Home = () => {
     }
   };
 
-  const loadPrograms = async (programPage) => {
+  const loadPrograms = async (page) => {
     try {
       const res = await authApis().get(
-        `${endpoints["training-programs"]}?page=${programPage}`,
+        `${endpoints["training-programs"]}?page=${page}`,
       );
 
       const newPrograms = res.data.results;
       setHasMorePrograms(res.data.next != null);
-      setProgramPage(programPage);
-      if (programPage === 1) {
+      setProgramPage(page);
+      if (page === 1) {
         setPrograms(newPrograms);
         if (newPrograms.length > 0) {
           const firstTabId = newPrograms[0].id.toString();
@@ -166,12 +167,16 @@ const Home = () => {
 
   const handleExportDocx = async (syllabusId) => {
     try {
-      let url = endpoints["export-docx"](syllabusId);
+      setExportingId(syllabusId);
+      message.loading({
+        content: "Đang tạo file Word...",
+        key: `export_${syllabusId}`,
+      });
 
+      const url = endpoints["export-docx"](syllabusId);
       const res = await authApis().get(url, {responseType: "blob"});
 
       const fileData = res.data ? res.data : res;
-
       if (!fileData) {
         throw new Error("Không nhận được dữ liệu file từ Server");
       }
@@ -191,10 +196,18 @@ const Home = () => {
       link.parentNode.removeChild(link);
       window.URL.revokeObjectURL(downloadUrl);
 
-      message.success({content: "Đã tải file thành công!", key: "export"});
+      message.success({
+        content: "Đã tải file thành công!",
+        key: `export_${syllabusId}`,
+      });
     } catch (error) {
       console.error(error);
-      message.error({content: "Lỗi khi xuất file docx", key: "export"});
+      message.error({
+        content: "Lỗi khi xuất file docx",
+        key: `export_${syllabusId}`,
+      });
+    } finally {
+      setExportingId(null);
     }
   };
 
@@ -372,6 +385,7 @@ const Home = () => {
                                     <Button
                                       type="text"
                                       icon={<DownloadOutlined />}
+                                      loading={exportingId === item.id}
                                       style={{color: "#52c41a"}}
                                       onClick={() => handleExportDocx(item.id)}
                                     >
@@ -381,7 +395,7 @@ const Home = () => {
                                 ]}
                               >
                                 <Space
-                                  orientation="vertical"
+                                  direction="vertical"
                                   size="middle"
                                   style={{width: "100%"}}
                                 >

@@ -1,67 +1,259 @@
-import React, {useEffect, useState} from "react";
-import {
-  Form,
-  Input,
-  Select,
-  Button,
-  Row,
-  Col,
-  InputNumber,
-  Progress,
-} from "antd";
+import React, {useMemo, memo} from "react";
+import {Input, Select, Button, Row, Col, InputNumber, Progress} from "antd";
 import {
   PlusOutlined,
   DeleteOutlined,
   PercentageOutlined,
   ClockCircleOutlined,
 } from "@ant-design/icons";
-import {authApis, endpoints} from "../../config/Apis";
-import {useParams} from "react-router-dom";
-const AssessmentEditor = ({item, basePath}) => {
-  const refPath = [...basePath, "reference_data"];
-  const params = useParams();
-  const syllabusId = params.syllabusId;
-  const form = Form.useFormInstance();
-  const [cloOptions, setCloOptions] = useState([]);
+import {useSyllabusStore} from "../../store/useSyllabusStore";
 
-  const loadCLOOptions = async () => {
-    try {
-      const res = await authApis().get(endpoints["syllabus-clos"](syllabusId));
+const EMPTY_ARRAY = [];
 
-      const options = res.data.map((clo) => ({
-        label: (
-          <div className="flex flex-col border-b border-gray-50 pb-1">
-            <span className="font-bold text-blue-600 text-xs">{clo.name}</span>
-            <span
-              className="text-gray-500 text-xs truncate max-w-[250px]"
-              title={clo.content}
-            >
-              {clo.content}
-            </span>
-          </div>
-        ),
-        value: clo.id,
-        tagLabel: clo.name,
-      }));
+const AssessmentMethodRow = ({
+  method,
+  methodIdx,
+  cloOptions,
+  onChange,
+  onRemove,
+}) => {
+  const selectedCloIds = useMemo(() => {
+    return (method.course_learning_outcomes || []).map((clo) =>
+      typeof clo === "object" ? clo.id : clo,
+    );
+  }, [method.course_learning_outcomes]);
 
-      setCloOptions(options);
-    } catch (error) {
-      console.error("Lỗi tải danh sách CLO:", error);
-    }
+  const handleFieldChange = (field, value) => {
+    onChange({
+      ...method,
+      [field]: value,
+    });
   };
 
-  useEffect(() => {
-    loadCLOOptions();
-  }, [form.getFieldValue(refPath.slice(0, -2))]);
+  const handleCloChange = (selectedIds) => {
+    onChange({
+      ...method,
+      course_learning_outcomes: (selectedIds || []).map((id) => ({id})),
+    });
+  };
 
-  const liveData = Form.useWatch(refPath, form) || [];
-  const grandTotalWeight = liveData.reduce((sum, item) => {
-    const methods = item?.assessment_methods || [];
-    return (
-      sum +
-      methods.reduce((mSum, method) => mSum + (Number(method?.weight) || 0), 0)
+  return (
+    <Row
+      gutter={12}
+      className="items-end bg-gray-50/50 p-3 rounded-lg border border-gray-100 group hover:border-blue-200 transition-colors"
+    >
+      <Col span={7}>
+        <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">
+          Phương pháp
+        </div>
+        <Input
+          placeholder="VD: Thi tự luận"
+          value={method.name ?? ""}
+          onChange={(e) => handleFieldChange("name", e.target.value)}
+          className="rounded-md text-[13px]"
+        />
+      </Col>
+
+      <Col span={5}>
+        <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">
+          Thời gian
+        </div>
+        <Input
+          prefix={<ClockCircleOutlined className="text-gray-400" />}
+          placeholder="VD: 60 phút"
+          value={method.time ?? ""}
+          onChange={(e) => handleFieldChange("time", e.target.value)}
+          className="rounded-md text-[13px]"
+        />
+      </Col>
+
+      <Col span={4}>
+        <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">
+          Trọng số
+        </div>
+        <InputNumber
+          min={0}
+          max={100}
+          addonAfter={<PercentageOutlined />}
+          placeholder="0"
+          value={method.weight ?? 0}
+          onChange={(val) => handleFieldChange("weight", Number(val || 0))}
+          className="w-full text-[13px] rounded-md"
+        />
+      </Col>
+
+      <Col span={7}>
+        <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">
+          Đánh giá CLO
+        </div>
+        <Select
+          mode="multiple"
+          allowClear
+          placeholder="Chọn CLOs..."
+          options={cloOptions}
+          optionLabelProp="tagLabel"
+          maxTagCount="responsive"
+          value={selectedCloIds}
+          onChange={handleCloChange}
+          className="w-full rounded-md"
+        />
+      </Col>
+
+      <Col span={1} className="flex justify-center pb-1">
+        <Button
+          type="text"
+          danger
+          icon={<DeleteOutlined />}
+          onClick={onRemove}
+          className="opacity-40 group-hover:opacity-100 hover:bg-red-50"
+        />
+      </Col>
+    </Row>
+  );
+};
+
+const AssessmentGroupCard = ({group, groupIdx, cloOptions, onUpdateGroup}) => {
+  const typeName =
+    group?.type_assessment?.name || `Loại đánh giá ${groupIdx + 1}`;
+
+  const methods = group?.assessment_methods || [];
+  const totalWeight = useMemo(() => {
+    return methods.reduce(
+      (sum, method) => sum + (Number(method?.weight) || 0),
+      0,
     );
-  }, 0);
+  }, [methods]);
+
+  const handleAddMethod = () => {
+    const newMethod = {
+      name: "",
+      time: "",
+      weight: 0,
+      course_learning_outcomes: [],
+    };
+    onUpdateGroup({
+      ...group,
+      assessment_methods: [...methods, newMethod],
+    });
+  };
+
+  const handleUpdateMethod = (methodIdx, updatedMethod) => {
+    const nextMethods = [...methods];
+    nextMethods[methodIdx] = updatedMethod;
+    onUpdateGroup({
+      ...group,
+      assessment_methods: nextMethods,
+    });
+  };
+
+  const handleRemoveMethod = (methodIdx) => {
+    const nextMethods = methods.filter((_, idx) => idx !== methodIdx);
+    onUpdateGroup({
+      ...group,
+      assessment_methods: nextMethods,
+    });
+  };
+
+  return (
+    <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+      <div className="px-5 py-3 border-b border-gray-100 bg-gray-50/80 flex justify-between items-center">
+        <span className="text-[12px] font-bold text-gray-600 uppercase tracking-wider">
+          {typeName}
+        </span>
+        <span
+          className={`text-[12px] font-bold px-3 py-1 rounded-full ${
+            totalWeight > 0
+              ? "bg-blue-50 text-blue-600"
+              : "bg-gray-100 text-gray-400"
+          }`}
+        >
+          Tổng: {totalWeight}%
+        </span>
+      </div>
+
+      <div className="p-4">
+        <div className="flex flex-col gap-3">
+          {methods.map((method, methodIdx) => (
+            <AssessmentMethodRow
+              key={
+                method.id ? `method_${method.id}` : `method_temp_${methodIdx}`
+              }
+              method={method}
+              methodIdx={methodIdx}
+              cloOptions={cloOptions}
+              onChange={(updated) => handleUpdateMethod(methodIdx, updated)}
+              onRemove={() => handleRemoveMethod(methodIdx)}
+            />
+          ))}
+
+          <Button
+            type="dashed"
+            onClick={handleAddMethod}
+            icon={<PlusOutlined />}
+            className="h-10 mt-2 border-gray-300 text-gray-500 font-medium rounded-lg hover:border-blue-500 hover:text-blue-500 bg-white"
+          >
+            Thêm phương pháp {typeName}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const AssessmentEditor = ({item, basePath}) => {
+  const referenceData = useSyllabusStore(
+    (state) =>
+      state.localBlocks[item.code]?.data?.reference_data || EMPTY_ARRAY,
+  );
+  const updateLocalBlock = useSyllabusStore((state) => state.updateLocalBlock);
+
+  const rawCloData = useSyllabusStore((state) => {
+    const targetBlock = Object.values(state.localBlocks).find(
+      (b) =>
+        b.data?.reference_code === "course_learning_outcomes" ||
+        b.data?.code === "course_learning_outcomes",
+    );
+    return targetBlock?.data?.reference_data || EMPTY_ARRAY;
+  });
+
+  const cloOptions = useMemo(() => {
+    const options = [];
+    (rawCloData || []).forEach((co, coIdx) => {
+      (co.clos || []).forEach((clo, cloIdx) => {
+        if (!clo.id && !clo.content) return;
+        const cloCode = `CLO${coIdx + 1}.${cloIdx + 1}`;
+        options.push({
+          label: (
+            <div className="flex flex-col border-b border-gray-50 pb-1">
+              <span className="font-bold text-blue-600 text-xs">{cloCode}</span>
+              <span
+                className="text-gray-500 text-xs truncate max-w-[250px]"
+                title={clo.content}
+              >
+                {clo.content || "Chưa có nội dung"}
+              </span>
+            </div>
+          ),
+          value: clo.id || `${coIdx}-${cloIdx}`,
+          tagLabel: cloCode,
+        });
+      });
+    });
+    return options;
+  }, [rawCloData]);
+
+  const grandTotalWeight = useMemo(() => {
+    return (referenceData || []).reduce((sum, group) => {
+      const methods = group?.assessment_methods || [];
+      return (
+        sum +
+        methods.reduce(
+          (mSum, method) => mSum + (Number(method?.weight) || 0),
+          0,
+        )
+      );
+    }, 0);
+  }, [referenceData]);
 
   let status = "active";
   let strokeColor = "#3b82f6";
@@ -73,6 +265,12 @@ const AssessmentEditor = ({item, basePath}) => {
     strokeColor = "#ef4444";
   }
 
+  const handleUpdateGroup = (groupIdx, updatedGroup) => {
+    const nextData = [...referenceData];
+    nextData[groupIdx] = updatedGroup;
+    updateLocalBlock(item.code, {reference_data: nextData});
+  };
+
   return (
     <div className="w-full">
       <div className="mb-6 bg-white p-3 rounded-xl border border-gray-200 shadow-sm">
@@ -81,7 +279,13 @@ const AssessmentEditor = ({item, basePath}) => {
             Tổng trọng số đánh giá học phần
           </span>
           <span
-            className={`font-bold text-sm ${grandTotalWeight === 100 ? "text-green-600" : grandTotalWeight > 100 ? "text-red-500" : "text-blue-600"}`}
+            className={`font-bold text-sm ${
+              grandTotalWeight === 100
+                ? "text-green-600"
+                : grandTotalWeight > 100
+                  ? "text-red-500"
+                  : "text-blue-600"
+            }`}
           >
             {grandTotalWeight}% / 100%
           </span>
@@ -100,197 +304,20 @@ const AssessmentEditor = ({item, basePath}) => {
           </div>
         )}
       </div>
-      <Form.List name={refPath}>
-        {(assessmentFields) => (
-          <div className="flex flex-col gap-6">
-            {assessmentFields.map((assessmentField, index) => {
-              const assessmentItem = liveData[assessmentField.name] || {};
-              const typeName =
-                assessmentItem?.type_assessment?.name ||
-                `Loại đánh giá ${index + 1}`;
 
-              const methods = assessmentItem?.assessment_methods || [];
-              const totalWeight = methods.reduce(
-                (sum, method) => sum + (Number(method?.weight) || 0),
-                0,
-              );
-
-              return (
-                <div
-                  key={assessmentField.key}
-                  className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm"
-                >
-                  <Form.Item name={[assessmentField.name, "id"]} hidden>
-                    <Input />
-                  </Form.Item>
-                  <Form.Item
-                    name={[assessmentField.name, "type_assessment", "id"]}
-                    hidden
-                  >
-                    <Input />
-                  </Form.Item>
-                  <Form.Item
-                    name={[assessmentField.name, "type_assessment", "name"]}
-                    hidden
-                  >
-                    <Input />
-                  </Form.Item>
-
-                  <div className="px-5 py-3 border-b border-gray-100 bg-gray-50/80 flex justify-between items-center">
-                    <span className="text-[12px] font-bold text-gray-600 uppercase tracking-wider">
-                      {typeName}
-                    </span>
-                    <span
-                      className={`text-[12px] font-bold px-3 py-1 rounded-full ${totalWeight > 0 ? "bg-blue-50 text-blue-600" : "bg-gray-100 text-gray-400"}`}
-                    >
-                      Tổng: {totalWeight}%
-                    </span>
-                  </div>
-
-                  <div className="p-4">
-                    <Form.List
-                      name={[assessmentField.name, "assessment_methods"]}
-                    >
-                      {(methodFields, {add, remove}) => (
-                        <div className="flex flex-col gap-3">
-                          {methodFields.map((methodField) => (
-                            <Row
-                              key={methodField.key}
-                              gutter={12}
-                              className="items-end bg-gray-50/50 p-3 rounded-lg border border-gray-100 group hover:border-blue-200 transition-colors"
-                            >
-                              <Form.Item name={[methodField.name, "id"]} hidden>
-                                <Input />
-                              </Form.Item>
-
-                              <Col span={7}>
-                                <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">
-                                  Phương pháp
-                                </div>
-                                <Form.Item
-                                  {...methodField}
-                                  name={[methodField.name, "name"]}
-                                  rules={[
-                                    {required: true, message: "Nhập tên"},
-                                  ]}
-                                  className="mb-0"
-                                >
-                                  <Input
-                                    placeholder="VD: Thi tự luận"
-                                    className="rounded-md text-[13px]"
-                                  />
-                                </Form.Item>
-                              </Col>
-
-                              <Col span={5}>
-                                <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">
-                                  Thời gian
-                                </div>
-                                <Form.Item
-                                  {...methodField}
-                                  name={[methodField.name, "time"]}
-                                  className="mb-0"
-                                >
-                                  <Input
-                                    prefix={
-                                      <ClockCircleOutlined className="text-gray-400" />
-                                    }
-                                    placeholder="VD: 60 phút"
-                                    className="rounded-md text-[13px]"
-                                  />
-                                </Form.Item>
-                              </Col>
-
-                              <Col span={4}>
-                                <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">
-                                  Trọng số
-                                </div>
-                                <Form.Item
-                                  {...methodField}
-                                  name={[methodField.name, "weight"]}
-                                  rules={[{required: true, message: "Nhập %"}]}
-                                  className="mb-0"
-                                >
-                                  <InputNumber
-                                    min={0}
-                                    max={100}
-                                    addonAfter={<PercentageOutlined />}
-                                    placeholder="0"
-                                    className="w-full text-[13px] rounded-md"
-                                  />
-                                </Form.Item>
-                              </Col>
-
-                              <Col span={7}>
-                                <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">
-                                  Đánh giá CLO
-                                </div>
-                                <Form.Item
-                                  {...methodField}
-                                  name={[
-                                    methodField.name,
-                                    "course_learning_outcomes",
-                                  ]}
-                                  className="mb-0"
-                                  getValueProps={(valueArray) => ({
-                                    value:
-                                      valueArray?.map((v) =>
-                                        typeof v === "object" ? v.id : v,
-                                      ) || [],
-                                  })}
-                                  getValueFromEvent={(selectedIds) =>
-                                    selectedIds
-                                      ? selectedIds.map((id) => ({id}))
-                                      : []
-                                  }
-                                >
-                                  <Select
-                                    mode="multiple"
-                                    allowClear
-                                    placeholder="Chọn CLOs..."
-                                    options={cloOptions}
-                                    optionLabelProp="tagLabel"
-                                    maxTagCount="responsive"
-                                    className="w-full rounded-md"
-                                  />
-                                </Form.Item>
-                              </Col>
-
-                              <Col
-                                span={1}
-                                className="flex justify-center pb-1"
-                              >
-                                <Button
-                                  type="text"
-                                  danger
-                                  icon={<DeleteOutlined />}
-                                  onClick={() => remove(methodField.name)}
-                                  className="opacity-40 group-hover:opacity-100 hover:bg-red-50"
-                                />
-                              </Col>
-                            </Row>
-                          ))}
-
-                          <Button
-                            type="dashed"
-                            onClick={() => add()}
-                            icon={<PlusOutlined />}
-                            className="h-10 mt-2 border-gray-300 text-gray-500 font-medium rounded-lg hover:border-blue-500 hover:text-blue-500 bg-white"
-                          >
-                            Thêm phương pháp {typeName}
-                          </Button>
-                        </div>
-                      )}
-                    </Form.List>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </Form.List>
+      <div className="flex flex-col gap-6">
+        {(referenceData || []).map((group, groupIdx) => (
+          <AssessmentGroupCard
+            key={group.id ? `assessment_${group.id}` : `group_${groupIdx}`}
+            group={group}
+            groupIdx={groupIdx}
+            cloOptions={cloOptions}
+            onUpdateGroup={(updated) => handleUpdateGroup(groupIdx, updated)}
+          />
+        ))}
+      </div>
     </div>
   );
 };
 
-export default AssessmentEditor;
+export default memo(AssessmentEditor);

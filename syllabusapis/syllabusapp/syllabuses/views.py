@@ -1,8 +1,9 @@
 from datetime import datetime
 import io
 
+import redis
 from django.db import transaction
-from django.http import HttpResponse
+from django.http import HttpResponse, StreamingHttpResponse
 from django.utils import timezone
 
 from django.db.models.functions import Length
@@ -13,10 +14,12 @@ from docxcompose.composer import Composer
 from docxtpl import DocxTemplate
 from rest_framework import viewsets, status, generics, parsers, permissions, mixins, filters
 from rest_framework.decorators import action, permission_classes
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from handlers import get_strategy_map
+# from handlers import get_strategy_map
+from handlers.renderer import SyllabusDocxRenderer
 from syllabuses import perms
 from syllabuses.filters import SyllabusFilter, SubjectFilter, LearningMaterialsFilter, UserFilter, LecturerFilter
 from syllabuses.models import User, Syllabus, Faculty, Subject, AttributeGroup, TypeRequirement, \
@@ -393,103 +396,37 @@ class ScheduleView(viewsets.ViewSet, generics.ListAPIView):
     serializer_class = ScheduleGroupSerializer
 
 
-def get_formatted_syllabus_data_orm(syllabus_id):
-    syllabus = get_object_or_404(Syllabus, pk=syllabus_id)
-
-    raw_json = SyllabusDetailSerializer(syllabus).data
-
-    la_ma = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"]
-    formatted_data = []
-
-    for i, main_sec in enumerate(raw_json.get("main_sections", [])):
-        section_data = {
-            "stt_la_ma": la_ma[i],
-            "tieu_de": main_sec["name"],
-            "subs": []
-        }
-
-        for sub in main_sec.get("sub_sections", []):
-            sub_type = sub["type"]
-            mapped_sub = {
-                "position": sub["position"],
-                "sub_title": sub["name"],
-                "type": sub_type
-            }
-
-            if sub_type == "text":
-                mapped_sub["content"] = sub.get("content") or ""
-            elif sub_type == "selection":
-                mapped_sub["attribute_group_id"] = sub.get("attribute_group_id")
-                mapped_sub["selected_values"] = sub.get("selected_values", [])
-            elif sub_type == "table":
-                schema = sub.get("table_schema", {})
-                cols = schema.get("columns", [])
-                rows = schema.get("rows", [])
-                mapped_sub["headers"] = [c["headerName"] for c in cols]
-                mapped_sub["rows"] = [[str(r.get(c["field"], "")) for c in cols] for r in rows]
-            elif sub_type == "reference":
-                mapped_sub["reference_code"] = sub.get("reference_code")
-                mapped_sub["reference_data"] = sub.get("reference_data")
-
-            section_data["subs"].append(mapped_sub)
-
-        formatted_data.append(section_data)
-
-    return formatted_data
-
 
 class ExportSyllabusDocxView(APIView):
+    permission_classes = [AllowAny]
+
     def get(self, request, syllabus_id):
         try:
-            data = get_formatted_syllabus_data_orm(syllabus_id)
-
-            strategies = get_strategy_map()
-
-            master_doc = Document("templates/exports/master_template.docx")
-            composer = Composer(master_doc)
-
-            for main in data:
-                main_stream = io.BytesIO()
-                tpl_main = DocxTemplate("templates/exports/snipper_main_title.docx")
-                tpl_main.render(main)
-                tpl_main.save(main_stream)
-                main_stream.seek(0)
-
-                composer.append(Document(main_stream))
-
-                for sub in main["subs"]:
-                    handler = strategies.get(sub["type"])
-                    if handler:
-                        handler(sub, composer)
-            now = datetime.now()
-
-            compiler_name = "Chưa cập nhật"
-            dean_name = "Chưa cập nhật"
-            footer_data = {
-                "day": f"{now.day:02d}",
-                "month": f"{now.month:02d}",
-                "year": str(now.year),
-                "dean_name": compiler_name,
-                "compiler_name": dean_name
-            }
-            footer_stream = io.BytesIO()
-            tpl_footer = DocxTemplate("templates/exports/snipper_footer.docx")
-            tpl_footer.render(footer_data)
-            tpl_footer.save(footer_stream)
-            footer_stream.seek(0)
-
-            composer.append(Document(footer_stream))
-
-            final_stream = io.BytesIO()
-            composer.save(final_stream)
-            final_stream.seek(0)
+            renderer = SyllabusDocxRenderer(syllabus_id=syllabus_id)
+            buffer = renderer.render()
 
             response = HttpResponse(
-                final_stream.getvalue(),
+                buffer.getvalue(),
                 content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document'
             )
-            response['Content-Disposition'] = f'attachment; filename="Syllabus_{syllabus_id}.docx"'
+            response['Content-Disposition'] = f'attachment; filename="DeCuong_ChiTiet_{syllabus_id}.docx"'
             return response
 
         except Exception as e:
-            return Response({"detail": f"Lỗi xuất file: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return HttpResponse(f"Đã xảy ra lỗi xuất file: {str(e)}", status=500)
+
+
+def sse_sync_stream(request):
+    def event_stream():
+        r = redis.StrictRedis(host='localhost', port=6379, db=0)
+        pubsub = r.pubsub()
+        pubsub.subscribe('syllabus_sync_channel')
+
+        for message in pubsub.listen():
+            if message['type'] == 'message':
+                yield f"data: {message['data'].decode('utf-8')}\n\n"
+
+    response = StreamingHttpResponse(event_stream(), content_type='text/event-stream')
+    response['Cache-Control'] = 'no-cache'
+    response['X-Accel-Buffering'] = 'no'
+    return response

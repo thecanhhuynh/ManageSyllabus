@@ -175,6 +175,7 @@ class Syllabus(BaseModel):
     edit_date = models.CharField(max_length=100, null=True, blank=True)
     learning_materials_rel = models.ManyToManyField('LearningMaterial', through='SyllabusLearningMaterial',
                                                     related_name='syllabuses_rel')
+    revision = models.IntegerField(default=1)
 
 
 class TypeLearningMaterial(BaseModel):

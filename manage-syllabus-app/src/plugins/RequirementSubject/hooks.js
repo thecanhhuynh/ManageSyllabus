@@ -11,7 +11,6 @@ export const useRequirementData = () => {
       .catch(console.error);
   }, []);
 
-  // Tái sử dụng logic tìm kiếm, phân trang
   const {
     data: subjects,
     loading,

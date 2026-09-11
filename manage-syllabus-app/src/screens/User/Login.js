@@ -99,7 +99,7 @@ const Login = () => {
                 fontSize: 22,
               }}
             >
-              Hệ thống quản lí đề cương môn học
+              Management Syllabus System
             </Title>
           </div>
 

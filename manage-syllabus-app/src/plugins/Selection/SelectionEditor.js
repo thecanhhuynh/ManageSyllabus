@@ -2,6 +2,7 @@ import React, {useContext} from "react";
 import {Form, Select} from "antd";
 import {MySelectionDataContext} from "../../config/contexts/MyContext";
 import UpdateRequireWrapper from "../../components/wrapper/UpdateRequireWrapper";
+import {useSyllabusStore} from "../../store/useSyllabusStore";
 
 const SelectionEditor = ({item, basePath}) => {
   const {selectionDictionary, isDictLoading} = useContext(
@@ -9,7 +10,20 @@ const SelectionEditor = ({item, basePath}) => {
   );
   const optionsForThisSelect =
     selectionDictionary[item.attribute_group_id] || [];
+  // console.log("Trạng thái update:", item.requires_update);
+  const selectedValues = useSyllabusStore(
+    (state) => state.localBlocks[item.code]?.data?.selected_values ?? [],
+  );
 
+  const updateLocalBlock = useSyllabusStore((state) => state.updateLocalBlock);
+  const currentVal = Array.isArray(selectedValues)
+    ? selectedValues.map((v) => (typeof v === "object" ? v.id : v))
+    : [];
+
+  const handleChange = (selectedIds) => {
+    const formattedValues = (selectedIds || []).map((id) => ({id}));
+    updateLocalBlock(item.code, {selected_values: formattedValues});
+  };
   return (
     <UpdateRequireWrapper isRequired={item.requires_update}>
       <Form.Item
@@ -29,6 +43,8 @@ const SelectionEditor = ({item, basePath}) => {
           size="large"
           className="rounded-lg-select"
           required
+          value={currentVal}
+          onChange={handleChange}
         />
       </Form.Item>
     </UpdateRequireWrapper>

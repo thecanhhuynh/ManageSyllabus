@@ -31,9 +31,9 @@ export const endpoints = {
   lecturers: "/lecturers/",
   templates: "/templates/",
   "clone-templates": (templateId) => `/templates/${templateId}/clone/`,
-  // "publish-templates": (templateId) => `/templates/${templateId}/publish/`,
   "publish-template": (templateId) => `/publish-template/${templateId}`,
   "export-docx": (syllabusId) => `/export-syllabus/${syllabusId}/`,
+  "sse/sync-stream/": "/sse/sync-stream/",
 };
 const CLIENT_ID = process.env.REACT_APP_CLIENT_ID;
 const CLIENT_SECRET = process.env.REACT_APP_CLIENT_SECRET;

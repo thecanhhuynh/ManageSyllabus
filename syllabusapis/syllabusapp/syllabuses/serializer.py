@@ -323,9 +323,16 @@ class SyllabusDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = Syllabus
         fields = ['id', 'name', 'status', 'main_sections', 'start_date_edition',
-                  'end_date_edition']
+                  'end_date_edition', 'revision']
 
     def update(self, instance, validated_data):
+        client_revision = self.initial_data.get('revision')
+
+        if client_revision is not None and int(client_revision) != instance.revision:
+            raise ValidationError(
+                {"err_msg": "Cấu trúc đã thay đổi, vui lòng sao chép dữ liệu và tải lại."})
+
+
         validated_data.pop('main_sections', None)
         instance = super().update(instance, validated_data)
 
@@ -352,7 +359,8 @@ class SyllabusDetailSerializer(serializers.ModelSerializer):
                     syllabus_instance=instance,
                     serializer_instance=self
                 )
-
+        instance.revision = instance.revision + 1
+        instance.save(update_fields=['revision'])
         return instance
 
     def _update_credit(self, instance, ref_data):
@@ -536,65 +544,58 @@ class SyllabusDetailSerializer(serializers.ModelSerializer):
                     )
 
     def _update_learning_material(self, instance, ref_data):
-
         seen_identifiers = set()
         duplicate_names = set()
-
-        incoming_material_ids = []
 
         for item in ref_data:
             if not isinstance(item, dict):
                 continue
 
             mat_id = item.get('id')
-            mat_name = item.get('name')
+            mat_name = (item.get('name') or '').strip()
 
             if not mat_name:
                 continue
 
-            identifier = str(mat_id).strip() if (mat_id and str(mat_id).strip()) else mat_name.strip().lower()
+            identifier = str(mat_id).strip() if (mat_id and str(mat_id).strip()) else mat_name.lower()
 
             if identifier in seen_identifiers:
                 duplicate_names.add(mat_name)
             seen_identifiers.add(identifier)
-
-            if mat_id and str(mat_id).strip():
-                incoming_material_ids.append(mat_id)
 
         if duplicate_names:
             raise ValidationError({
                 "err_msg": f"Danh sách có chứa tài liệu bị trùng lặp: {', '.join(duplicate_names)}."
             })
 
-        SyllabusLearningMaterial.objects.filter(syllabus=instance).exclude(
-            learning_material_id__in=incoming_material_ids).delete()
+        persisted_material_ids = []
 
         for item in ref_data:
-            if not isinstance(item, dict): continue
+            if not isinstance(item, dict):
+                continue
 
             mat_id = item.get('id')
-            mat_name = item.get('name')
+            mat_name = (item.get('name') or '').strip()
             type_mat_data = item.get('type_material')
 
             if not mat_name:
-                raise ValidationError({"learning_material": "Tên tài liệu không được để trống."})
+                raise ValidationError({"err_msg": "Tên tài liệu không được để trống."})
             if not type_mat_data or not isinstance(type_mat_data, dict) or not type_mat_data.get('id'):
-                raise ValidationError({"learning_material": f"Vui lòng chọn Loại tài liệu cho '{mat_name}'."})
+                raise ValidationError({"err_msg": f"Vui lòng chọn Loại tài liệu cho '{mat_name}'."})
 
             type_mat_id = type_mat_data.get('id')
             type_mat_obj = TypeLearningMaterial.objects.filter(id=type_mat_id).first()
             if not type_mat_obj:
-                raise ValidationError({"learning_material": f"Không tìm thấy Phân loại tài liệu (ID: {type_mat_id})."})
+                raise ValidationError({"err_msg": f"Không tìm thấy Phân loại tài liệu (ID: {type_mat_id})."})
 
             if mat_id:
                 material_obj = LearningMaterial.objects.filter(id=mat_id).first()
                 if not material_obj:
-                    raise ValidationError({"learning_material": f"Không tìm thấy tài liệu ID: {mat_id}."})
-
-                # material_obj.name = mat_name
-                # material_obj.save()
+                    raise ValidationError({"err_msg": f"Không tìm thấy tài liệu ID: {mat_id}."})
             else:
                 material_obj, _ = LearningMaterial.objects.get_or_create(name=mat_name)
+
+            persisted_material_ids.append(material_obj.id)
 
             SyllabusLearningMaterial.objects.update_or_create(
                 syllabus=instance,
@@ -603,6 +604,10 @@ class SyllabusDetailSerializer(serializers.ModelSerializer):
                     'type_material': type_mat_obj
                 }
             )
+
+        SyllabusLearningMaterial.objects.filter(syllabus=instance).exclude(
+            learning_material_id__in=persisted_material_ids
+        ).delete()
 
     def _update_assessment(self, instance, ref_data):
         total_weight = 0

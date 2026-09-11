@@ -1,4 +1,7 @@
 # File: syllabuses/services.py
+import json
+
+import redis
 
 from syllabuses.models import (
     Syllabus, MainSection, SubSection, TextSubSection,
@@ -70,40 +73,59 @@ SYNC_STRATEGIES = {
 # ==============================================================================
 # SERVICE ĐỒNG BỘ CHÍNH
 # ==============================================================================
+
+redis_client = redis.StrictRedis(host='localhost', port=6379, db=0)
+
 class TemplateSyncService:
     @classmethod
     def sync(cls, template_instance):
         print(f"--- Bắt đầu đồng bộ Template ID: {template_instance.id} ---")
         syllabuses = Syllabus.objects.filter(template=template_instance)
-        current_main_sections = TemplateMainSection.objects.filter(template=template_instance)
+        tpl_mains = list(TemplateMainSection.objects.filter(template=template_instance))
+        tpl_subs = list(TemplateSubSection.objects.filter(main_section__in=tpl_mains))
 
         for syllabus in syllabuses:
-            print(f"-> Đang xử lý Syllabus ID: {syllabus.id}")
-            valid_main_codes = []
+            syllabus.revision += 1
+            syllabus.save(update_fields=['revision'])
+            valid_main_codes = [m.code for m in tpl_mains]
 
-            for tpl_main in current_main_sections:
-                valid_main_codes.append(tpl_main.code)
-                main_sec, _ = MainSection.objects.update_or_create(
+            main_upsert_list = [
+                MainSection(
                     syllabus=syllabus, code=tpl_main.code,
-                    defaults={'name': tpl_main.name, 'position': tpl_main.position}
-                )
+                    name=tpl_main.name, position=tpl_main.position
+                ) for tpl_main in tpl_mains
+            ]
 
-                valid_sub_codes = []
-                current_sub_sections = TemplateSubSection.objects.filter(main_section=tpl_main)
-
-                for tpl_sub in current_sub_sections:
-                    valid_sub_codes.append(tpl_sub.code)
-                    sub_sec = SubSection.objects.filter(main_section=main_sec, code=tpl_sub.code).first()
-
-                    strategy = SYNC_STRATEGIES.get(tpl_sub.type, SubSectionSyncStrategy())
-
-                    if not sub_sec:
-                        strategy.create(main_sec, tpl_sub)
-                    else:
-                        strategy.update(sub_sec, tpl_sub)
-
-                SubSection.objects.filter(main_section=main_sec).exclude(code__in=valid_sub_codes).delete()
+            MainSection.objects.bulk_create(
+                main_upsert_list,
+                update_conflicts=True,
+                update_fields=['name', 'position']
+            )
 
             MainSection.objects.filter(syllabus=syllabus).exclude(code__in=valid_main_codes).delete()
 
+            valid_sub_codes = [s.code for s in tpl_subs]
+            existing_mains = {m.code: m for m in MainSection.objects.filter(syllabus=syllabus)}
+
+            for tpl_sub in tpl_subs:
+                target_main = existing_mains.get(tpl_sub.main_section.code)
+                if not target_main:
+                    continue
+
+                sub_sec = SubSection.objects.filter(main_section=target_main, code=tpl_sub.code).first()
+                strategy = SYNC_STRATEGIES.get(tpl_sub.type, SubSectionSyncStrategy())
+
+                if not sub_sec:
+                    strategy.create(target_main, tpl_sub)
+                else:
+                    strategy.update(sub_sec, tpl_sub)
+
+            # Xóa SubSection thừa
+            SubSection.objects.filter(main_section__in=existing_mains.values()).exclude(
+                code__in=valid_sub_codes).delete()
+
         print("--- Hoàn tất đồng bộ ---")
+        redis_client.publish('syllabus_sync_channel', json.dumps({
+            'action': 'sync_completed',
+            'template_id': template_instance.id
+        }))
