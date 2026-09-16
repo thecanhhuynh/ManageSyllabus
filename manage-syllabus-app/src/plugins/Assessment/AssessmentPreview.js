@@ -16,7 +16,6 @@ const AssessmentPreview = ({item}) => {
         </div>
       )}
 
-      {/* Khối Progress Bar ảo */}
       <div className="mb-6 bg-white p-3 rounded-xl border border-gray-200 shadow-sm">
         <div className="flex justify-between items-center mb-2">
           <span className="text-[12px] font-bold text-gray-600 uppercase">
@@ -27,7 +26,6 @@ const AssessmentPreview = ({item}) => {
         <Progress percent={50} showInfo={false} status="active" size="small" />
       </div>
 
-      {/* Khối Giao diện mẫu */}
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
         <div className="px-5 py-3 border-b border-gray-100 bg-gray-50/80 flex justify-between items-center">
           <span className="text-[12px] font-bold text-gray-600 uppercase">

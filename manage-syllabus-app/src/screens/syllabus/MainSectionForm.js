@@ -114,7 +114,6 @@ const MainSectionForm = ({syllabusId, mainSection}) => {
         onFinish={onFinish}
         requiredMark={false}
       >
-        {/* Nút lưu cố định ở góc trên bên phải màn hình, luôn trôi theo khi cuộn */}
         <div
           style={{
             position: "fixed",

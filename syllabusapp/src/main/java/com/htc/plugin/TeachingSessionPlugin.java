@@ -58,7 +58,6 @@ public class TeachingSessionPlugin implements ReferencePlugin {
             
             newSession = sessionRepo.save(newSession);
 
-            // Clone 3 bảng trung gian dựa vào các Map ánh xạ trong Context
             cloneSessionCLOs(oldSession, newSession, context);
             cloneSessionAssessments(oldSession, newSession, context);
             cloneSessionMaterials(oldSession, newSession);

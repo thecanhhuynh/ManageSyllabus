@@ -63,14 +63,12 @@ const CourseLearningOutcomePreview = ({item}) => {
 
   return (
     <div className="bg-white border border-gray-200 rounded-xl p-5 opacity-80 pointer-events-none">
-      {/* Placeholder */}
       {item.place_holder && (
         <div className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-4">
           {item.place_holder}
         </div>
       )}
 
-      {/* Danh sách CLO */}
       <div className="mb-6">
         <div className="font-semibold mb-3">Chuẩn đầu ra 1</div>
 
@@ -103,7 +101,6 @@ const CourseLearningOutcomePreview = ({item}) => {
         </div>
       </div>
 
-      {/* Matrix */}
       <div className="border rounded-xl p-4 bg-gray-50">
         <div className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1">
           Ma trận chuẩn đầu ra

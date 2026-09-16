@@ -1,7 +1,6 @@
 import Apis, {authApis, endpoints} from "../config/Apis";
 
 export const AppServices = {
-  // --- Requirement Subject ---
   getReqTypes: () => authApis().get(endpoints["type-requirements"]),
 
   getSubjects: (page, q) =>
@@ -12,10 +11,8 @@ export const AppServices = {
       },
     }),
 
-  // --- CLO & Objective Outcome ---
   getPLOs: () => authApis().get(endpoints["programme-learning-outcomes"]),
 
-  // --- Learning Material ---
   getMaterials: (page, q) =>
     authApis().get(endpoints["materials"], {
       params: {

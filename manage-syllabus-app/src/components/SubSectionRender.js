@@ -27,7 +27,6 @@ const SubSectionRenderer = ({item, basePath}) => {
     );
   }
 
-  // Render Component lấy từ Registry
   return <TargetComponent item={item} basePath={basePath} />;
 };
 

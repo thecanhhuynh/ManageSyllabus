@@ -43,21 +43,17 @@ public class CourseObjectivePlugin implements ReferencePlugin {
     @Override
     public void processSpecificData(SyllabusesSyllabus oldSyllabus, SyllabusesSyllabus newSyllabus, 
                              SyllabusCloneContext context) {
-    // Lấy danh sách CO theo đề cương cũ
         List<SyllabusesCourseobjective> oldCOs = coRepo.findBySyllabusIdId(oldSyllabus.getId());
 
         for (SyllabusesCourseobjective oldCO : oldCOs) {
-            // 1. Clone CO và gắn vào đề cương mới
             SyllabusesCourseobjective newCO = new SyllabusesCourseobjective();
             newCO.setSyllabusId(newSyllabus);
             newCO.setContent(oldCO.getContent());
             newCO.setPosition(oldCO.getPosition());
             newCO = coRepo.save(newCO);
 
-            // 2. Clone quan hệ CO - PLO
             cloneCoPloMapping(oldCO, newCO);
 
-            // 3. Clone CLO (chuẩn đầu ra môn học) thuộc về CO này
             cloneCLOs(oldCO, newCO, context);
         }
     }
@@ -80,7 +76,6 @@ public class CourseObjectivePlugin implements ReferencePlugin {
         List<SyllabusesCourselearningoutcome> oldCLOs = cloRepo.findByCourseObjectiveIdId(oldCo.getId());
         
         for (SyllabusesCourselearningoutcome oldCLO : oldCLOs) {
-            // Clone CLO và gắn vào CO mới
             SyllabusesCourselearningoutcome newCLO = new SyllabusesCourselearningoutcome();
             newCLO.setCourseObjectiveId(newCo);
             newCLO.setContent(oldCLO.getContent());
@@ -88,7 +83,6 @@ public class CourseObjectivePlugin implements ReferencePlugin {
             newCLO = cloRepo.save(newCLO);
             context.addCloMapping(oldCLO, newCLO);
 
-            // Clone quan hệ CLO - PLO
             cloneCloPloMapping(oldCLO, newCLO);
         }
     }

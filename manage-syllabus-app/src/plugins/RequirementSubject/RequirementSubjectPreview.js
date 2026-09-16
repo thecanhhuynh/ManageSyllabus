@@ -11,7 +11,6 @@ const RequirementSubjectPreview = ({item}) => {
         </div>
       )}
       <div className="flex flex-col gap-4">
-        {/* Mockup 1: Môn tiên quyết */}
         <div className="p-3 bg-white rounded-lg border border-gray-100">
           <div className="text-[13px] font-bold text-gray-700 mb-2">
             Môn tiên quyết (Mẫu)
@@ -23,7 +22,6 @@ const RequirementSubjectPreview = ({item}) => {
           </div>
         </div>
 
-        {/* Mockup 2: Môn học trước */}
         <div className="p-3 bg-white rounded-lg border border-gray-100">
           <div className="text-[13px] font-bold text-gray-700 mb-2">
             Môn học trước (Mẫu)

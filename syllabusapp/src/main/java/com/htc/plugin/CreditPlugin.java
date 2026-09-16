@@ -22,7 +22,6 @@ public class CreditPlugin implements ReferencePlugin{
     @Override
     public void processSpecificData(SyllabusesSyllabus oldSyllabus, SyllabusesSyllabus newSyllabus, 
                              SyllabusCloneContext context) {
-        //Credit đã đi liền với Subject
     }
     
 }

@@ -1,3 +1,5 @@
+import os
+
 from cloudinary.models import CloudinaryField
 from django.contrib.auth.models import AbstractUser
 from django.db import models
@@ -5,6 +7,9 @@ from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
 from django.utils import timezone
 
+
+def template_upload_path(instance, filename):
+    return os.path.join('templates', 'docx', filename)
 
 # =============================================================================
 # BASE MODEL
@@ -117,9 +122,16 @@ class CloPloAssociation(models.Model):
     rating = models.IntegerField()
 
 #=== TEMPLATE ===
+
 class TemplateSyllabus(BaseModel):
     name = models.CharField(max_length=100)
     version = models.CharField(max_length=20, default="v1.0")
+    file = models.FileField(
+        upload_to=template_upload_path, verbose_name="File mẫu DOCX",null=True,
+        blank=True,
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
     is_active = models.BooleanField(default=False)
     parent = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True)
     class Meta:
@@ -157,6 +169,39 @@ class TemplateTableSubSection(TemplateSubSection):
 
 class TemplateSelectionSubSection(TemplateSubSection):
     attribute_group_id = models.IntegerField(null=True, blank=True)
+
+
+class TemplateControlField(models.Model):
+    FIELD_TYPES = (
+        ("TEXT", "Văn bản đơn"),
+        ("TABLE", "Bảng dữ liệu lặp"),
+        ("RICH_TEXT", "Định dạng nâng cao"),
+    )
+
+    template = models.ForeignKey(
+        TemplateSyllabus,
+        on_delete=models.CASCADE,
+        related_name="control_fields",
+    )
+    tag = models.CharField(
+        max_length=100,
+        help_text="Tag đặt trong Word Content Control (ví dụ: SUBJECT_NAME)",
+    )
+    field_type = models.CharField(
+        max_length=20, choices=FIELD_TYPES, default="TEXT"
+    )
+    description = models.CharField(
+        max_length=255, blank=True, null=True, verbose_name="Mô tả trường"
+    )
+    is_locked = models.BooleanField(
+        default=True, help_text="Khóa không cho sửa trong ONLYOFFICE"
+    )
+
+    class Meta:
+        unique_together = ("template", "tag")
+
+    def __str__(self):
+        return f"{self.template.name} - {self.tag}"
 
 #================
 

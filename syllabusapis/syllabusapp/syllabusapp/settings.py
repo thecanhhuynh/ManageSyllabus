@@ -15,7 +15,9 @@ import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-MEDIA_ROOT = '%s/syllabuses/static/' % BASE_DIR
+# MEDIA_ROOT = '%s/syllabuses/static/' % BASE_DIR
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
@@ -48,6 +50,9 @@ INSTALLED_APPS = [
 ]
 
 AUTH_USER_MODEL = 'syllabuses.User'
+CORS_ALLOW_ALL_ORIGINS = (
+    True
+)
 CORS_ALLOW_CREDENTIALS = True
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
@@ -96,6 +101,32 @@ DATABASES = {
         'HOST': ''
     }
 }
+#
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.mysql',
+#         'NAME': os.environ.get('DATABASE_NAME', 'managesyllabusv2'),
+#         'USER': os.environ.get('DATABASE_USER', 'django_user'),
+#         'PASSWORD': os.environ.get('DATABASE_PASSWORD', '123456'),
+#         'HOST': os.environ.get('DATABASE_HOST', '127.0.0.1'),
+#         'PORT': os.environ.get('DATABASE_PORT', '3306'),
+#     }
+# }
+
+
+# DJANGO_INTERNAL_URL = os.environ.get('DJANGO_INTERNAL_URL', 'http://backend:8000')
+# ONLYOFFICE_DOCS_URL = os.environ.get('ONLYOFFICE_DOCS_URL', 'http://localhost:8080/')
+# ONLYOFFICE_JWT_SECRET = os.environ.get('ONLYOFFICE_JWT_SECRET', 'my_super_secret_jwt_key_syllabus_2026')
+
+
+# Cấu hình ONLYOFFICE
+ONLYOFFICE_DOCS_URL = 'http://localhost:8082/'
+ONLYOFFICE_JWT_SECRET = 'my_super_secret_jwt_key_syllabus_2026'
+
+DJANGO_INTERNAL_URL = 'http://host.docker.internal:8000'
+
+
+
 
 # Password validation
 # https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators
@@ -157,3 +188,14 @@ cloudinary.config(
 )
 CLIENT_ID = "ivb9uKsLIPFr5u9kRFSZYAG9xadcbKD9woDUXn3O"
 CLIENT_SECRET = "e3V5YCrisUHseVSgS5qkEjoGev7VDq3xGI2uVnQHENjWXAhthk7pTUdEYl8iUJLtghJRExGnnr9IxIzueo2yh6rm4opZ2BHVdPpOgiwhiNckBL7YWyLFHhKwOwUN9TUm"
+
+
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": "redis://127.0.0.1:6379/1",
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        },
+    }
+}

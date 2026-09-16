@@ -181,7 +181,6 @@ class TemplateSyllabusView(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'], url_path='clone')
     @transaction.atomic
     def clone_template(self, request, pk=None):
-        """Nhân bản template hiện tại thành bản Draft với version mới"""
         old_template = self.get_object()
         new_name = request.data.get("new_name", old_template.name)
         new_version = request.data.get(
@@ -198,7 +197,6 @@ class TemplateSyllabusView(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # 1. Clone Template
         new_template = TemplateSyllabus.objects.create(
             name=new_name,
             version=new_version,
@@ -206,7 +204,6 @@ class TemplateSyllabusView(viewsets.ModelViewSet):
             parent_id=old_template.id
         )
 
-        # 2. Clone Main Sections & Sub Sections
         for old_main in old_template.main_sections.all():
             new_main = TemplateMainSection.objects.create(
                 name=old_main.name,
@@ -270,32 +267,14 @@ class MajorView(mixins.ListModelMixin,
     permission_classes = [perms.IsAdmin]
 
     def create(self, request, *args, **kwargs):
-        print("===== REQUEST DATA =====")
-        print(request.data)
-
         serializer = self.get_serializer(data=request.data)
-
-        print("===== INITIAL DATA =====")
-        print(serializer.initial_data)
-
         if serializer.is_valid():
-            print("===== VALIDATED DATA =====")
-            print(serializer.validated_data)
-
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-        print("===== ERRORS =====")
-        print(serializer.errors)
-
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def update(self, request, *args, **kwargs):
         instance = self.get_object()
-
-        print("===== REQUEST DATA =====")
-        print(request.data)
-
         serializer = self.get_serializer(
             instance,
             data=request.data,
@@ -305,10 +284,6 @@ class MajorView(mixins.ListModelMixin,
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
-
-        print("===== ERRORS =====")
-        print(serializer.errors)
-
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 

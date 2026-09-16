@@ -251,7 +251,6 @@ const TemplateManagement = () => {
         </div>
       )}
 
-      {/* Modal Sửa/Thêm Thông Tin Cơ Bản */}
       <Modal
         title={form.getFieldValue("id") ? "Sửa Template" : "Thêm Template mới"}
         open={isModalVisible}

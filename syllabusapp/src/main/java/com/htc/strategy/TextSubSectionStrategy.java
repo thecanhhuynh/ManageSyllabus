@@ -52,8 +52,8 @@ public class TextSubSectionStrategy implements CustomSubSectionStrategy {
         SyllabusesTemplatetextsubsection subText = this.templateTextRepo.findById(subId).orElse(null);
         if (subText != null) {
             SyllabusesTextsubsection textSub = new SyllabusesTextsubsection();
-            textSub.setSubsectionPtrId(newSub.getId()); // Dùng chung ID (cơ chế kế thừa)
-            textSub.setContent(""); // Dữ liệu rỗng
+            textSub.setSubsectionPtrId(newSub.getId()); 
+            textSub.setContent("");
             textSub.setDisplayMode(subText.getDisplayMode() != null ? subText.getDisplayMode() : "");
             textSub.setPlaceHolder(subText.getPlaceHolder() != null ? subText.getPlaceHolder() : "");
             this.textSubSectionRepo.save(textSub);

@@ -8,7 +8,6 @@ from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from docx.shared import Pt, Cm, RGBColor
 
-# Import models & serializers của bạn
 from syllabuses.models import AttributeValue, TypeRequirement, TypeLearningMaterial
 from syllabuses.serializer import ReferenceSubSectionSerializer
 

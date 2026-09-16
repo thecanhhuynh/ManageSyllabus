@@ -106,7 +106,6 @@ class SubjectSerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'code', 'credit']
 
     def create(self, validated_data):
-        print("DEBUG VALIDATED DATA:", validated_data)
         credit_data = validated_data.pop('credit')
         credit_instance = Credit.objects.create(**credit_data)
 
@@ -298,11 +297,9 @@ class SubSectionSerializer(BaseSubSectionSerializer):
             serializer_class, child_relation_name = strategy
             try:
                 child_instance = getattr(instance, child_relation_name)
-                print(f" [SUB SERIALIZER - SUCCESS] SubID={instance.id} (type='{instance.type}') -> Gọi {serializer_class.__name__}")
 
                 return serializer_class(child_instance).data
             except AttributeError as e:
-                print(f" [SUB SERIALIZER - FAILED] SubID={instance.id} có type='{instance.type}' nhưng không có quan hệ '{child_relation_name}'! Lỗi: {e}")
                 pass
 
         return super().to_representation(instance)

@@ -1,9 +1,128 @@
 version: "3.8"
 
 services:
+  # # 1. Cơ sở dữ liệu MySQL
+  # mysql:
+  #   image: mysql:8.0
+  #   container_name: syllabus_mysql
+  #   restart: always
+  #   environment:
+  #     MYSQL_DATABASE: managesyllabusv2
+  #     MYSQL_ROOT_PASSWORD: 123456
+  #   ports:
+  #     - "3306:3306"
+  #   volumes:
+  #     - mysql_data:/var/lib/mysql
+  #   networks:
+  #     - syllabus_net
+  #   healthcheck:
+  #     test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p123456"]
+  #     interval: 5s
+  #     timeout: 5s
+  #     retries: 10
+
+  # 2. Redis Message Broker
   redis:
     image: redis:alpine
-    container_name: redis-local
+    container_name: syllabus_redis
+    restart: always
     ports:
       - "6379:6379"
-    restart: unless-stopped
+    # networks:
+    #   - syllabus_net
+
+  # # 3. ONLYOFFICE Document Server
+  # onlyoffice:
+  #   image: onlyoffice/documentserver:latest
+  #   container_name: syllabus_onlyoffice
+  #   restart: always
+  #   ports:
+  #     - "8080:80"
+  #   environment:
+  #     - JWT_ENABLED=true
+  #     - JWT_SECRET=my_super_secret_jwt_key_syllabus_2026
+  #     - JWT_HEADER=Authorization
+  #     - JWT_IN_BODY=true
+  #   volumes:
+  #     - onlyoffice_data:/var/www/onlyoffice/Data
+  #     - onlyoffice_log:/var/log/onlyoffice
+  #   networks:
+  #     - syllabus_net
+
+  onlyoffice:
+    image: onlyoffice/documentserver:latest
+    container_name: syllabus_onlyoffice
+    restart: always
+    ports:
+      - "8082:80"
+    environment:
+      - JWT_ENABLED=true
+      - JWT_SECRET=my_super_secret_jwt_key_syllabus_2026
+      - JWT_HEADER=Authorization
+      - JWT_IN_BODY=true
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - onlyoffice_data:/var/www/onlyoffice/Data
+      - onlyoffice_log:/var/log/onlyoffice
+
+  # # 4. Django REST Backend
+  # backend:
+  #   build:
+  #     context: ./syllabusapis/syllabusapp
+  #     dockerfile: Dockerfile
+  #   container_name: syllabus_backend
+  #   restart: always
+  #   command: python manage.py runserver 0.0.0.0:8000
+  #   volumes:
+  #     - ./syllabusapis/syllabusapp:/app
+  #   ports:
+  #     - "8000:8000"
+  #   environment:
+  #     - DATABASE_HOST=mysql
+  #     - DATABASE_PORT=3306
+  #     - DATABASE_NAME=managesyllabusv2
+  #     - DATABASE_USER=django_user
+  #     - DATABASE_PASSWORD=123456
+  #     - REDIS_HOST=redis
+  #     - REDIS_PORT=6379
+  #     - ONLYOFFICE_DOCS_URL=http://localhost:8080/
+  #     - DJANGO_INTERNAL_URL=http://backend:8000
+  #     - ONLYOFFICE_JWT_SECRET=my_super_secret_jwt_key_syllabus_2026
+  #   depends_on:
+  #     mysql:
+  #       condition: service_healthy
+  #     redis:
+  #       condition: service_started
+  #     onlyoffice:
+  #       condition: service_started
+  #   networks:
+  #     - syllabus_net
+
+  # # 5. ReactJS Frontend
+  # frontend:
+  #   build:
+  #     context: ./manage-syllabus-app
+  #     dockerfile: Dockerfile
+  #   container_name: syllabus_frontend
+  #   restart: always
+  #   volumes:
+  #     - ./manage-syllabus-app:/app
+  #     - /app/node_modules
+  #   ports:
+  #     - "3000:3000"
+  #   environment:
+  #     - REACT_APP_API_URL=http://localhost:8000
+  #   depends_on:
+  #     - backend
+  #   networks:
+  #     - syllabus_net
+
+volumes:
+  # mysql_data:
+  onlyoffice_data:
+  onlyoffice_log:
+
+# networks:
+#   syllabus_net:
+#     driver: bridge

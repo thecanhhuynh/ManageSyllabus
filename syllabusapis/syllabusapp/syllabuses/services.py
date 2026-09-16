@@ -9,9 +9,6 @@ from syllabuses.models import (
     TemplateMainSection, TemplateSubSection
 )
 
-# ==============================================================================
-# STRATEGY PATTERN CHO ĐỒNG BỘ SUBSECTION
-# ==============================================================================
 class SubSectionSyncStrategy:
     """Base Strategy xử lý khởi tạo và cập nhật SubSection mặc định"""
     def create(self, main_sec, tpl_sub):
@@ -70,10 +67,6 @@ SYNC_STRATEGIES = {
 }
 
 
-# ==============================================================================
-# SERVICE ĐỒNG BỘ CHÍNH
-# ==============================================================================
-
 redis_client = redis.StrictRedis(host='localhost', port=6379, db=0)
 
 class TemplateSyncService:
@@ -120,7 +113,6 @@ class TemplateSyncService:
                 else:
                     strategy.update(sub_sec, tpl_sub)
 
-            # Xóa SubSection thừa
             SubSection.objects.filter(main_section__in=existing_mains.values()).exclude(
                 code__in=valid_sub_codes).delete()
 

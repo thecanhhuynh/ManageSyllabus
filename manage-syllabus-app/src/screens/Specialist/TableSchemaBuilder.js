@@ -40,7 +40,6 @@ const CustomCell = (props) => {
     const startY = e.clientY;
     const {node, api} = props;
 
-    // Lấy chiều cao hiện tại (từ state hoặc fallback)
     let startHeight =
       props.data.customHeight ||
       node.rowHeight ||
@@ -91,12 +90,12 @@ const CustomCell = (props) => {
         style={{
           flex: 1,
           resize: "none",
-          padding: "2px 6px", // tuỳ chỉnh
+          padding: "2px 6px",
           lineHeight: "normal",
           border: "none",
           outline: "none",
           background: "transparent",
-          minHeight: 0, // ngăn TextArea co giãn không mong muốn
+          minHeight: 0,
         }}
         className="w-full rounded-none bg-transparent focus:bg-white"
         placeholder="..."
@@ -125,7 +124,7 @@ const TableSchemaBuilder = ({value, onChange}) => {
       rows: Array.from({length: 3}, (_, i) => ({
         id: `r_${Date.now()}_${i}`,
         rowTitle: `Hàng ${i + 1}`,
-        customHeight: 60, // Khởi tạo trường lưu chiều cao
+        customHeight: 60,
         c_1: "",
         c_2: "",
         c_3: "",
@@ -222,7 +221,6 @@ const TableSchemaBuilder = ({value, onChange}) => {
     });
   };
 
-  // HÀM MỚI: Cập nhật chiều cao vào state và ép Grid render lại
   const updateRowHeight = (rowId, customHeight) => {
     setTableData((prev) => {
       const newData = {
@@ -235,7 +233,7 @@ const TableSchemaBuilder = ({value, onChange}) => {
 
     setTimeout(() => {
       if (gridApiRef.current) {
-        gridApiRef.current.resetRowHeights(); // Gọi hàm này để ép Grid chạy lại getRowHeight
+        gridApiRef.current.resetRowHeights();
       }
     }, 50);
   };
@@ -267,7 +265,6 @@ const TableSchemaBuilder = ({value, onChange}) => {
       headerComponent: CustomHeader,
       headerComponentParams: {onNameChange: updateFirstColumnName},
     },
-    // 3. Các cột động
     ...tableData.columns.map((col) => ({
       ...col,
       flex: 1,
@@ -294,7 +291,6 @@ const TableSchemaBuilder = ({value, onChange}) => {
         onNameChange: updateColumnName,
       },
     })),
-    // 4. Cột xóa
     {
       headerName: "",
       width: 50,

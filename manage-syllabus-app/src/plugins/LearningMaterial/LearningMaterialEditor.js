@@ -20,7 +20,6 @@ const MaterialTagItem = ({
   const latestNameRef = useRef(material.name || "");
   const isSelectingRef = useRef(false);
 
-  // Đồng bộ giá trị mới nhất vào ref để tránh stale closure khi onBlur/onConfirm
   useEffect(() => {
     latestNameRef.current = material.name || "";
   }, [material.name]);
@@ -33,7 +32,6 @@ const MaterialTagItem = ({
 
   const onConfirm = () => {
     setTimeout(() => {
-      // Nếu đang trong quá trình chọn option, không trigger logic blur
       if (isSelectingRef.current) {
         isSelectingRef.current = false;
         return;
@@ -266,7 +264,6 @@ const LearningMaterialEditor = ({item, basePath}) => {
 
             <div className="p-3 flex flex-wrap gap-2 items-center min-h-[54px]">
               {groupMaterialsWithIndex.map(({mat, globalIndex}) => {
-                // Giữ key ổn định không bị đổi khi từ chưa có ID sang có ID
                 const stableKey =
                   mat._temp_id ||
                   (mat.id ? `mat_${mat.id}` : `mat_idx_${globalIndex}`);

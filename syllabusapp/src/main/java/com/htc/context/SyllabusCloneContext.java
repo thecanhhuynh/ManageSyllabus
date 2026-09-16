@@ -17,7 +17,6 @@ import lombok.Getter;
 public class SyllabusCloneContext {
     private final Map<SyllabusesCourselearningoutcome, SyllabusesCourselearningoutcome> cloIdMap = new HashMap<>();
     
-    // Ánh xạ ID từ đề cương cũ sang mới cho Assessment
     private final Map<SyllabusesAssessment, SyllabusesAssessment> assessmentIdMap = new HashMap<>();
 
     public void addCloMapping(SyllabusesCourselearningoutcome oldId, SyllabusesCourselearningoutcome newId) {

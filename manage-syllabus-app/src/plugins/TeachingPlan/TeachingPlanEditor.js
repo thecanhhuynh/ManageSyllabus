@@ -32,7 +32,6 @@ const ACTIVITY_FIELDS = [
   },
 ];
 
-// --- SUB-COMPONENT: Nội dung bên trong Panel ---
 const SessionContent = ({
   session,
   cloOptions,
@@ -199,19 +198,16 @@ const SessionContent = ({
   );
 };
 
-// --- MAIN COMPONENT: Kết nối Zustand Store ---
 const TeachingPlanEditor = ({item, basePath}) => {
   const [scheduleGroupOptions, setScheduleGroupOptions] = useState([]);
   const hasInitializedRef = useRef(false);
 
-  // 1. Trích xuất dữ liệu gốc của Lịch trình
   const referenceData = useSyllabusStore(
     (state) =>
       state.localBlocks[item.code]?.data?.reference_data || EMPTY_ARRAY,
   );
   const updateLocalBlock = useSyllabusStore((state) => state.updateLocalBlock);
 
-  // 2. Trích xuất reference_data THÔ từ các block liên quan
   const rawCloData = useSyllabusStore((state) => {
     const target = Object.values(state.localBlocks).find(
       (b) =>
@@ -239,7 +235,6 @@ const TeachingPlanEditor = ({item, basePath}) => {
     return target?.data?.reference_data || EMPTY_ARRAY;
   });
 
-  // 3. Biến đổi dữ liệu sang options an toàn qua useMemo
   const cloOptions = useMemo(() => {
     const list = [];
     (rawCloData || []).forEach((co, coIdx) => {
@@ -268,7 +263,6 @@ const TeachingPlanEditor = ({item, basePath}) => {
     }));
   }, [rawMaterialData]);
 
-  // 4. Tải danh mục Schedule Groups (Lý thuyết / Thực hành)
   useEffect(() => {
     authApis()
       .get(endpoints["schedule-groups"])
@@ -276,7 +270,6 @@ const TeachingPlanEditor = ({item, basePath}) => {
       .catch(console.error);
   }, []);
 
-  // 5. Khởi tạo cấu trúc nhóm lịch trình (chỉ chạy đúng 1 lần khi có scheduleGroupOptions)
   useEffect(() => {
     if (scheduleGroupOptions.length === 0 || hasInitializedRef.current) return;
 
@@ -321,7 +314,6 @@ const TeachingPlanEditor = ({item, basePath}) => {
     hasInitializedRef.current = true;
   }, [scheduleGroupOptions]);
 
-  // 6. Thao tác CRUD buổi học trong nhóm
   const handleAddSession = (groupIdx) => {
     const nextData = [...referenceData];
     const group = {...nextData[groupIdx]};

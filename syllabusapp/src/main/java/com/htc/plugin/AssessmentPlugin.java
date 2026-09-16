@@ -51,10 +51,8 @@ public class AssessmentPlugin implements ReferencePlugin{
             newAss.setTypeAssessmentId(oldAss.getTypeAssessmentId());
             newAss = assessmentRepo.save(newAss);
 
-            // Lưu ánh xạ Assessment cũ -> mới vào Context
             context.addAssessmentMapping(oldAss, newAss);
 
-            // Clone Methods và mapping CLO
             cloneMethods(oldAss, newAss, context);
         }
     }
@@ -71,7 +69,6 @@ public class AssessmentPlugin implements ReferencePlugin{
             newMethod.setCreatedDate(new Date());
             newMethod = methodRepo.save(newMethod);
 
-            // Clone quan hệ Method - CLO dựa vào Context CLO map
             cloneMethodCloMapping(oldMethod, newMethod, context);
         }
     }
@@ -82,7 +79,6 @@ public class AssessmentPlugin implements ReferencePlugin{
             List<SyllabusesMethodcourselearningoutcome> newMappings = oldMappings.stream().map(old -> {
                 var mapping = new SyllabusesMethodcourselearningoutcome();
                 mapping.setMethodId(newMethodId);
-                // Dùng ID của CLO mới đã được clone ở bước trước
                 SyllabusesCourselearningoutcome targetClo = context.getCloIdMap().getOrDefault(old.getCloId(), old.getCloId());
                 
                 mapping.setCloId(targetClo);

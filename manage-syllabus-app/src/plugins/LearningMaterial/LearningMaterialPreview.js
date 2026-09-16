@@ -35,14 +35,12 @@ const LearningMaterialPreview = ({item}) => {
             key={type.name}
             className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm"
           >
-            {/* Header */}
             <div className="px-4 py-2 border-b border-gray-100 bg-gray-50/80">
               <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">
                 {type.name}
               </span>
             </div>
 
-            {/* Materials */}
             <div className="p-3 flex flex-wrap gap-2 items-center min-h-[54px]">
               {type.materials.map((material) => (
                 <div
@@ -54,7 +52,6 @@ const LearningMaterialPreview = ({item}) => {
                 </div>
               ))}
 
-              {/* Fake Add Button */}
               <div className="flex items-center gap-1.5 border border-dashed border-gray-300 text-gray-500 px-3 py-1 rounded-full text-[13px] font-medium h-8">
                 <PlusOutlined className="text-[11px]" />
                 <span>Thêm Tài liệu</span>
