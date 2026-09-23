@@ -7,7 +7,8 @@ from syllabuses import views
 from syllabuses.views import ExportSyllabusDocxView, sse_sync_stream
 
 routes = DefaultRouter()
-routes.register('users', views.UserView)
+routes.register('users', views.UserView, basename='users')
+routes.register('admin/users', views.UserView, basename='admin-users')
 routes.register('syllabuses', views.SyllabusView)
 routes.register('faculties', views.FacultyView)
 routes.register('subjects', views.SubjectView)
@@ -24,6 +25,8 @@ routes.register('templates', views.TemplateSyllabusView)
 
 urlpatterns = [
     path('', include(routes.urls)),
+    path('api/auth/register/', views.RegisterView.as_view(), name='api-auth-register'),
+    path('register/', views.RegisterView.as_view(), name='register'),
     path('export-syllabus/<int:syllabus_id>/', ExportSyllabusDocxView.as_view(), name='export-syllabus-docx'),
     path('sse/sync-stream/', sse_sync_stream, name='sse_sync_stream'),
 ]

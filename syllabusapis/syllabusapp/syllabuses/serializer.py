@@ -45,7 +45,7 @@ class LecturerBasicSerializer(serializers.ModelSerializer):
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'first_name', 'last_name', 'username', 'password', 'avatar', 'email', 'user_role']
+        fields = ['id', 'first_name', 'last_name', 'username', 'password', 'avatar', 'email', 'user_role', 'is_active']
         extra_kwargs = {
             'password': {
                 'write_only': True,
@@ -59,37 +59,51 @@ class UserSerializer(serializers.ModelSerializer):
         return data
 
     def create(self, validated_data):
-        user = User(**validated_data)
-        user.set_password(validated_data['password'])
-        user.user_role = User.UserRole.USER
-        user.save()
+        with transaction.atomic():
+            user = User(**validated_data)
+            user.set_password(validated_data['password'])
+            user.user_role = User.UserRole.USER
+            user.save()
 
-        Lecturer.objects.create(user=user)
-        return user
+            Lecturer.objects.create(user=user)
+            return user
 
 
 class UserDetailSerializer(UserSerializer):
     lecturer = LecturerSerializer(source='lecturer_profile', read_only=True)
 
-    room = serializers.CharField(write_only=True, required=False)
-    faculty = serializers.CharField(write_only=True, required=False)
+    room = serializers.CharField(
+        write_only=True, required=False, allow_blank=True, allow_null=True
+    )
+    faculty = serializers.PrimaryKeyRelatedField(
+        queryset=Faculty.objects.all(),
+        write_only=True,
+        required=False,
+        allow_null=True
+    )
 
     class Meta(UserSerializer.Meta):
         fields = [f for f in UserSerializer.Meta.fields if f != 'password'] + ['lecturer', 'room', 'faculty']
 
     def update(self, instance, validated_data):
+        has_room = 'room' in validated_data
+        has_faculty = 'faculty' in validated_data
         room = validated_data.pop('room', None)
-        faculty_id = validated_data.pop('faculty', None)
-        instance = super().update(instance, validated_data)
-        if hasattr(instance, 'lecturer_profile'):
-            if room is not None:
-                instance.lecturer_profile.room = room
-            if faculty_id is not None:
-                faculty_obj = Faculty.objects.filter(id=faculty_id).first()
-                if faculty_obj:
-                    instance.lecturer_profile.faculty = faculty_obj
-            instance.lecturer_profile.save()
-        return instance
+        faculty = validated_data.pop('faculty', None)
+
+        with transaction.atomic():
+            instance = super().update(instance, validated_data)
+            lecturer, _ = Lecturer.objects.get_or_create(user=instance)
+
+            if has_room:
+                lecturer.room = room or ""
+
+            if has_faculty:
+                lecturer.faculty = faculty
+
+            lecturer.save()
+            instance.refresh_from_db()
+            return instance
 
 
 class CreditSerializer(serializers.ModelSerializer):

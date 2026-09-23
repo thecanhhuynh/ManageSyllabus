@@ -33,10 +33,12 @@ class LecturerFilter(django_filters.FilterSet):
 
 class UserFilter(django_filters.FilterSet):
     q = django_filters.CharFilter(method='custom_search')
+    user_role = django_filters.ChoiceFilter(choices=User.UserRole.choices)
+    is_active = django_filters.BooleanFilter(field_name='is_active')
 
     class Meta:
         model = User
-        fields = ['q']
+        fields = ['q', 'user_role', 'is_active']
 
     def custom_search(self, queryset, name, value):
         return queryset.annotate(

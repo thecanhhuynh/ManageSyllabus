@@ -2,7 +2,7 @@ import axios from "axios";
 import cookies from "react-cookies";
 export const endpoints = {
   login: "/o/token/",
-  register: "/register/",
+  register: "/api/auth/register/",
   profile: "/users/current-user/",
   syllabuses: "/syllabuses/",
   "syllabus-detail": (syllabusId) => `/syllabuses/${syllabusId}/`,
@@ -34,6 +34,9 @@ export const endpoints = {
   "publish-template": (templateId) => `/publish-template/${templateId}`,
   "export-docx": (syllabusId) => `/export-syllabus/${syllabusId}/`,
   "sse/sync-stream/": "/sse/sync-stream/",
+  "admin-users": "/admin/users/",
+  "admin-user-detail": (id) => `/admin/users/${id}/`,
+  "admin-user-activate": (id) => `/admin/users/${id}/activate/`,
 };
 const CLIENT_ID = process.env.REACT_APP_CLIENT_ID;
 const CLIENT_SECRET = process.env.REACT_APP_CLIENT_SECRET;

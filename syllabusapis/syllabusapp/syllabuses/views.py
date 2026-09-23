@@ -1,9 +1,19 @@
+import json
+import logging
+import os
+import time
+import urllib
 from datetime import datetime
 import io
 
+import jwt
 import redis
+import requests
+from django.conf import settings
+from django.core.files.base import ContentFile
+from django.core.files.storage import default_storage
 from django.db import transaction
-from django.http import HttpResponse, StreamingHttpResponse
+from django.http import HttpResponse, StreamingHttpResponse, JsonResponse
 from django.utils import timezone
 
 from django.db.models.functions import Length
@@ -19,7 +29,9 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 # from handlers import get_strategy_map
-from handlers.renderer import SyllabusDocxRenderer
+from handlers.renderer import SyllabusDocxRenderer, MasterTemplateRenderer
+from services.user_service import UserService
+from syllabusapp.settings import ONLYOFFICE_JWT_SECRET
 from syllabuses import perms
 from syllabuses.filters import SyllabusFilter, SubjectFilter, LearningMaterialsFilter, UserFilter, LecturerFilter
 from syllabuses.models import User, Syllabus, Faculty, Subject, AttributeGroup, TypeRequirement, \
@@ -38,33 +50,91 @@ from syllabuses.strategies import SUB_SECTION_STRATEGIES, DefaultStrategy
 
 
 class UserView(mixins.ListModelMixin,
+               mixins.RetrieveModelMixin,
                mixins.CreateModelMixin,
                mixins.UpdateModelMixin,
                mixins.DestroyModelMixin,
                viewsets.GenericViewSet):
-    queryset = User.objects.filter(is_active=True)
+    queryset = User.objects.all()
     pagination_class = UserPaginator
     parser_classes = [parsers.MultiPartParser, parsers.JSONParser]
     filter_backends = [DjangoFilterBackend]
-    filterset_class  = UserFilter
-    http_method_names = ['get', 'post', 'patch', 'delete']
+    filterset_class = UserFilter
+    http_method_names = ['get', 'post', 'patch', 'put', 'delete']
+
+    def get_queryset(self):
+        base_query = User.objects.select_related(
+            'lecturer_profile', 'lecturer_profile__faculty'
+        ).order_by('-id')
+
+        user = self.request.user
+        if not user or not user.is_authenticated:
+            return base_query.filter(is_active=True)
+
+        if getattr(user, 'user_role', None) == 'admin' or user.is_superuser:
+            return base_query
+
+        return base_query.filter(is_active=True)
 
     def get_serializer_class(self):
-        if self.action == 'current_user':
-            return UserDetailSerializer
-        return UserSerializer
+        if self.action == 'create':
+            return UserSerializer
+        return UserDetailSerializer
+
     def get_permissions(self):
-        if self.action in ['list', 'create', 'partial_update', 'destroy']:
-            return [perms.IsAdmin()]
         if self.action == 'current_user':
             return [permissions.IsAuthenticated()]
-        return []
+        return [perms.IsAdmin()]
+
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        if not serializer.is_valid():
+            logging.getLogger(__name__).error(
+                "Lỗi validation UserView (User ID: %s): %s | Payload: %s",
+                instance.id, serializer.errors, request.data
+            )
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        self.perform_update(serializer)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def partial_update(self, request, *args, **kwargs):
+        kwargs['partial'] = True
+        return self.update(request, *args, **kwargs)
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        if instance.id == request.user.id:
+            return Response(
+                {"error": "Admin không thể tự vô hiệu hóa tài khoản của chính mình."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        instance.is_active = False
+        instance.active = False
+        instance.save(update_fields=['is_active', 'active'])
+        return Response(
+            {"message": "Vô hiệu hóa tài khoản thành công."},
+            status=status.HTTP_200_OK
+        )
+
+    @action(detail=True, methods=['post'], url_path='activate', permission_classes=[perms.IsAdmin])
+    def activate(self, request, pk=None):
+        instance = self.get_object()
+        instance.is_active = True
+        instance.active = True
+        instance.save(update_fields=['is_active', 'active'])
+        return Response(
+            {"message": "Kích hoạt tài khoản thành công."},
+            status=status.HTTP_200_OK
+        )
 
     @action(detail=False, methods=['get', 'patch'], url_path='current-user',
             permission_classes=[permissions.IsAuthenticated])
     def current_user(self, request):
         u = request.user
-        if request.method.__eq__('PATCH'):
+        if request.method == 'PATCH':
             serializer = self.get_serializer(u, data=request.data, partial=True)
             serializer.is_valid(raise_exception=True)
             serializer.save()
@@ -216,6 +286,202 @@ class TemplateSyllabusView(viewsets.ModelViewSet):
                 strategy.clone(old_sub, new_main)
         serializer = self.get_serializer(new_template)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    ONLYOFFICE_JWT_SECRET = getattr(settings, 'ONLYOFFICE_JWT_SECRET', 'my_super_secret_jwt_key_syllabus_2026')
+
+    @action(methods=['get'], detail=True, url_path='onlyoffice-config')
+    def onlyoffice_config(self, request, pk=None):
+        template = self.get_object()
+        if not template.file:
+            return Response({"error": "Template chưa có file docx"}, status=status.HTTP_400_BAD_REQUEST)
+
+        docker_host = "http://host.docker.internal:8000"
+        file_url = f"{docker_host}{template.file.url}"
+
+        base_callback_path = request.build_absolute_uri(request.path).replace('onlyoffice-config/',
+                                                                              'onlyoffice-callback/')
+        callback_url = base_callback_path.replace(request.get_host(), "host.docker.internal:8000")
+
+        doc_key = f"template_{template.id}_{int(template.updated_at.timestamp())}"
+
+        config = {
+            "document": {
+                "fileType": "docx",
+                "key": doc_key,
+                "title": f"{template.name}.docx",
+                "url": file_url,
+                "permissions": {
+                    "download": True,
+                    "edit": True,
+                    "print": True,
+                    "review": False,
+                    "chat": False,
+                    "fillForms": True
+                }
+            },
+            "documentType": "word",
+            "editorConfig": {
+                "mode": "edit",
+                "lang": "vi",
+                "callbackUrl": callback_url,
+                "user": {
+                    "id": str(request.user.id) if request.user.is_authenticated else "specialist_1",
+                    "name": request.user.username if request.user.is_authenticated else "Specialist"
+                },
+                "customization": {
+                    "autosave": True,
+                    "forcesave": True,
+                    "comments": False,
+                    "plugins": True
+                },
+                "plugins": {
+                    "autostart": [
+                        "asc.{D4E8B0E1-5B3F-4A9A-90D1-2B4C5F7A9D10}"
+                    ]
+                    # Đã gỡ bỏ pluginsData vì plugin đã nằm sẵn trong thư mục hệ thống sdkjs-plugins
+                }
+            }
+        }
+
+        token = jwt.encode(config, self.ONLYOFFICE_JWT_SECRET, algorithm="HS256")
+        config["token"] = token
+
+        return Response(config)
+    @action(
+        methods=['post'],
+        detail=True,
+        url_path='onlyoffice-callback',
+        authentication_classes=[],
+        permission_classes=[AllowAny]
+    )
+    def onlyoffice_callback(self, request, pk=None):
+        template = self.get_object()
+        try:
+            body = json.loads(request.body.decode('utf-8'))
+        except Exception:
+            return JsonResponse({"error": 0})
+
+        status_code = body.get('status')
+        if status_code in [2, 6]:
+            download_url = body.get('url')
+            if download_url:
+                # Nếu URL trả về từ container là localhost, thay sang host.docker.internal hoặc port 8082
+                download_token = body.get('token')
+                headers = {}
+                if download_token:
+                    headers["Authorization"] = f"Bearer {download_token}"
+                elif self.ONLYOFFICE_JWT_SECRET:
+                    gen_token = jwt.encode({"payload": {}}, self.ONLYOFFICE_JWT_SECRET, algorithm="HS256")
+                    headers["Authorization"] = f"Bearer {gen_token}"
+
+                # Tải file mới từ ONLYOFFICE với header Authorization
+                try:
+                    resp = requests.get(download_url, headers=headers, stream=True, timeout=15)
+                    if resp.status_code == 200:
+                        with open(template.file.path, 'wb') as f:
+                            for chunk in resp.iter_content(chunk_size=8192):
+                                f.write(chunk)
+                        template.updated_at = timezone.now()
+                        template.save()
+                except Exception as e:
+                    print(f"Lỗi tải file callback: {e}")
+
+        return JsonResponse({"error": 0})
+
+    @action(detail=True, methods=['get'], url_path='control-fields')
+    def get_control_fields(self, request, pk=None):
+        """
+        API trả về danh sách các token (thẻ) khả dụng để React render lên Sidebar.
+        """
+        # Gọi thẳng classmethod từ MasterTemplateRenderer
+        registry = MasterTemplateRenderer.get_all_available_tags(template_id=pk)
+        return Response(registry, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['post'], url_path='preview')
+    def preview_template(self, request, pk=None):
+        """
+        API Render Template thành bản Preview (Chỉ đọc).
+        Không làm ảnh hưởng file gốc.
+        """
+        template = self.get_object()
+
+        if not template.file:
+            return Response({"error": "Template chưa có file docx"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # 1. Xác định Syllabus dùng để lấy dữ liệu test
+        syllabus_id = request.data.get('syllabus_id')
+        if syllabus_id:
+            syllabus = Syllabus.objects.filter(id=syllabus_id).first()
+        else:
+            # Nếu không truyền, lấy đại 1 syllabus bất kỳ trong DB để test
+            syllabus = Syllabus.objects.first()
+
+        if not syllabus:
+            return Response({"error": "Không có dữ liệu Syllabus nào trong hệ thống để preview."},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            # 2. Render In-Memory
+            renderer = MasterTemplateRenderer(template.file.path)
+            rendered_io = renderer.render(syllabus)
+
+            # 3. Lưu thành file tạm (Temp file) vào thư mục media/previews/
+            temp_filename = f"previews/preview_{template.id}_{int(time.time())}.docx"
+            saved_path = default_storage.save(temp_filename, ContentFile(rendered_io.read()))
+
+            # Lấy URL truy cập file tạm
+            file_url = request.build_absolute_uri(default_storage.url(saved_path))
+            # Nếu chạy Docker network internal, cần map lại domain như cũ
+            docker_host = getattr(settings, 'ONLYOFFICE_DOC_URL_HOST', "http://host.docker.internal:8000")
+            file_url = file_url.replace(request.get_host(), docker_host.replace("http://", ""))
+
+            # 4. Sinh Config ONLYOFFICE (Chế độ CHỈ ĐỌC - VIEW)
+            doc_key = f"preview_{template.id}_{int(time.time())}"
+
+            config = {
+                "document": {
+                    "fileType": "docx",
+                    "key": doc_key,
+                    "title": f"Bản xem trước - {template.name}.docx",
+                    "url": file_url,
+                    "permissions": {
+                        "download": True,
+                        "edit": False,  # KHÓA CHỈNH SỬA
+                        "print": True,
+                        "review": False,
+                        "chat": False,
+                        "fillForms": False
+                    }
+                },
+                "documentType": "word",
+                "editorConfig": {
+                    "mode": "view",  # CHẾ ĐỘ CHỈ ĐỌC
+                    "lang": "vi",
+                    "user": {
+                        "id": str(request.user.id) if request.user.is_authenticated else "specialist_preview",
+                        "name": request.user.username if request.user.is_authenticated else "Preview User"
+                    },
+                    "customization": {
+                        "autosave": False,
+                        "forcesave": False,
+                        "comments": False,
+                        "plugins": False  # Tắt plugins vì không cần thiết lúc xem trước
+                    }
+                }
+            }
+
+            # Bọc JWT nếu ONLYOFFICE yêu cầu
+            onlyoffice_secret = getattr(settings, 'ONLYOFFICE_JWT_SECRET', 'my_super_secret_jwt_key_syllabus_2026')
+            if onlyoffice_secret and onlyoffice_secret != 'my_super_secret_jwt_key_syllabus_2026':
+                token = jwt.encode(config, onlyoffice_secret, algorithm="HS256")
+                config["token"] = token
+
+            return Response(config, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            return Response({"error": f"Lỗi render preview: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class FacultyView(mixins.ListModelMixin,
@@ -405,3 +671,13 @@ def sse_sync_stream(request):
     response['Cache-Control'] = 'no-cache'
     response['X-Accel-Buffering'] = 'no'
     return response
+
+
+class RegisterView(APIView):
+    """API endpoint xử lý đăng ký người dùng mới."""
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        result, status_code = UserService.register_user(request.data)
+        return Response(result, status=status_code)
+

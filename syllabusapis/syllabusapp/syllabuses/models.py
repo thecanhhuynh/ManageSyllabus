@@ -70,7 +70,7 @@ class Credit(models.Model):
         return self.number_theory + self.number_practice
 
     def __str__(self):
-        return f"TC: {self.get_total_credit()} (LT: {self.number_theory} - TH: {self.number_practice})"
+        return f"TC: {self.get_total_credit()} (LT: {self.number_theory} - TH: {self.number_practice}) HOURS: {self.hour_self_study}"
 
 
 class Subject(models.Model):
@@ -140,6 +140,9 @@ class TemplateSyllabus(BaseModel):
     def __str__(self):
         return f"{self.name} ({self.version})"
 
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+
 
 class TemplateMainSection(BaseModel):
     template = models.ForeignKey(TemplateSyllabus, on_delete=models.CASCADE, related_name='main_sections')
@@ -171,37 +174,51 @@ class TemplateSelectionSubSection(TemplateSubSection):
     attribute_group_id = models.IntegerField(null=True, blank=True)
 
 
-class TemplateControlField(models.Model):
-    FIELD_TYPES = (
-        ("TEXT", "Văn bản đơn"),
-        ("TABLE", "Bảng dữ liệu lặp"),
-        ("RICH_TEXT", "Định dạng nâng cao"),
+class TemplateField(models.Model):
+    FIELD_TYPE_CHOICES = (
+        ('SCALAR', 'Scalar (Giá trị đơn)'),
+        ('TABLE_FIXED', 'Table Fixed (Bảng cố định)'),
+        ('TABLE_DYNAMIC', 'Table Dynamic (Bảng động)'),
     )
 
     template = models.ForeignKey(
         TemplateSyllabus,
         on_delete=models.CASCADE,
-        related_name="control_fields",
+        related_name='fields',
+        null=True,
+        blank=True
     )
     tag = models.CharField(
         max_length=100,
-        help_text="Tag đặt trong Word Content Control (ví dụ: SUBJECT_NAME)",
+        unique=True,
+        help_text="Mã token, vd: SUBJECT_CODE, CUSTOM_TABLE_123"
+    )
+    friendly_label = models.CharField(
+        max_length=255,
+        help_text="Tên tiếng Việt, vd: Mã môn học"
     )
     field_type = models.CharField(
-        max_length=20, choices=FIELD_TYPES, default="TEXT"
+        max_length=20,
+        choices=FIELD_TYPE_CHOICES,
+        default='SCALAR'
     )
-    description = models.CharField(
-        max_length=255, blank=True, null=True, verbose_name="Mô tả trường"
+    group = models.CharField(
+        max_length=100,
+        default='Thông tin chung'
     )
-    is_locked = models.BooleanField(
-        default=True, help_text="Khóa không cho sửa trong ONLYOFFICE"
+    schema = models.JSONField(
+        null=True,
+        blank=True,
+        help_text="Lưu cấu trúc cột của bảng (chỉ dùng cho TABLE_DYNAMIC)"
     )
+    order = models.IntegerField(default=0)
+    is_active = models.BooleanField(default=True)
 
     class Meta:
-        unique_together = ("template", "tag")
+        ordering = ['group', 'order']
 
     def __str__(self):
-        return f"{self.template.name} - {self.tag}"
+        return f"{self.template.name if self.template else 'Global'} - {self.friendly_label} ({self.tag})"
 
 #================
 
@@ -417,5 +434,5 @@ def on_template_activated(sender, instance, created, **kwargs):
     """
     if instance.is_active:
 
-        from syllabuses.services import TemplateSyncService
+        from services.synchronize_service import TemplateSyncService
         TemplateSyncService.sync(instance)

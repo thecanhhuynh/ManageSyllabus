@@ -19,6 +19,7 @@ import {
   CheckCircleOutlined,
   BuildOutlined,
   CloseCircleOutlined,
+  FileWordOutlined,
 } from "@ant-design/icons";
 import {authApis, endpoints, springApi} from "../../config/Apis";
 import {useNavigate} from "react-router-dom";
@@ -166,6 +167,13 @@ const TemplateManagement = () => {
             icon={<BuildOutlined />}
             title="Xây dựng Form"
             onClick={() => nav(`/specialist/templates/${record.id}/builder`)}
+          />
+          <Button
+            type="text"
+            className="text-blue-600"
+            icon={<FileWordOutlined />}
+            title="Định dạng Word (ONLYOFFICE)"
+            onClick={() => nav(`/specialist/templates/${record.id}/editor`)}
           />
           <Button
             type="text"

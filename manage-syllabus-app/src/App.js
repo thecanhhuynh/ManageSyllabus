@@ -6,6 +6,7 @@ import Home from "./screens/Home/Home";
 import "bootstrap/dist/css/bootstrap.min.css";
 import {ConfigProvider} from "antd";
 import Login from "./screens/User/Login";
+import Register from "./screens/User/Register";
 import {useEffect, useReducer, useState} from "react";
 import MyUserReducer from "./reducers/MyUserReducer";
 import {
@@ -21,6 +22,7 @@ import AdminRoutes from "./screens/Admin/AdminRoutes";
 import SubjectManagement from "./screens/Admin/SubjectManagement";
 import MySpinner from "./components/MySpinner";
 import AdminManagement from "./screens/Admin/AdminManagement";
+import UserManagement from "./screens/Admin/UserManagement";
 import MajorManagement from "./screens/Admin/MajorManagement";
 import TrainingProgramManagement from "./screens/Admin/TrainingProgramManagement";
 import SyllabusesProgram from "./screens/Admin/SyllabusesProgram";
@@ -29,6 +31,7 @@ import SpecialistRoutes from "./screens/Specialist/SpecialistRoutes";
 import TemplateManagement from "./screens/Specialist/TemplateManagement";
 import SpecialistManagement from "./screens/Specialist/SpecialistManagement";
 import TemplateBuilder from "./screens/Specialist/TemplateBuilder";
+import TemplateEditor from "./screens/Specialist/TemplateEditor";
 const App = () => {
   const [user, dispatch] = useReducer(MyUserReducer, null);
   const [selectionDictionary, setSelectionDictionary] = useState({});
@@ -113,6 +116,7 @@ const App = () => {
                 <Container>
                   <Routes>
                     <Route path="/login" element={<Login />} />
+                    <Route path="/register" element={<Register />} />
                     <Route path="/profile" element={<User />} />
                     <Route path="/" element={<Home />} />
                     <Route
@@ -132,6 +136,7 @@ const App = () => {
                       <Route path="faculties" element={<FacultyManagement />} />
                       <Route path="subjects" element={<SubjectManagement />} />
                       <Route path="majors" element={<MajorManagement />} />
+                      <Route path="users" element={<UserManagement />} />
 
                       <Route path="training-programs">
                         <Route index element={<TrainingProgramManagement />} />
@@ -161,6 +166,10 @@ const App = () => {
                       <Route
                         path="templates/:id/builder"
                         element={<TemplateBuilder />}
+                      />
+                      <Route
+                        path="templates/:id/editor"
+                        element={<TemplateEditor />}
                       />
                     </Route>
                   </Routes>

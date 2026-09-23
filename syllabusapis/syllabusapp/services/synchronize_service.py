@@ -1,4 +1,4 @@
-# File: syllabuses/services.py
+# File: syllabuses/synchronize_service.py
 import json
 
 import redis

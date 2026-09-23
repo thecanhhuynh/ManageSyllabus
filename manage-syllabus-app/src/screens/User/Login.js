@@ -188,7 +188,7 @@ const Login = () => {
 
           <div className="flex flex-col items-center gap-3">
             <Link
-              to="/forgot-password"
+              to="/register"
               style={{color: "#6b7280", fontSize: 13, fontWeight: 500}}
               className="hover:text-blue-500 transition-colors"
             >

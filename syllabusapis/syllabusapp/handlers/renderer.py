@@ -2,14 +2,20 @@ import io
 import json
 import os
 
+import jinja2
 from django.conf import settings
 from docx import Document
 from docx.enum.table import WD_TABLE_ALIGNMENT
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.shared import Pt, Cm
+from docxtpl import DocxTemplate
 
 from handlers.base import TextRenderer, TableRenderer, set_table_borders, SelectionRenderer, ReferenceRenderer
-from syllabuses.models import Syllabus
+from handlers.data_mapper import SyllabusDataMapper
+from handlers.extractors import SubSectionExtractorFactory
+from handlers.injectors import PlainTextInjector, TableInjector
+from handlers.table_renderer import render_dynamic_tables
+from syllabuses.models import Syllabus, SubSection, TemplateField
 
 
 def int_to_roman(num):
@@ -23,6 +29,7 @@ def int_to_roman(num):
             num -= val[i]
         i += 1
     return roman_num
+
 
 class SyllabusDocxRenderer:
     def __init__(self, syllabus_id):
@@ -170,3 +177,71 @@ class SyllabusDocxRenderer:
         buffer.seek(0)
         return buffer
 
+class MasterTemplateRenderer:
+    def __init__(self, template_path: str):
+        if not os.path.exists(template_path):
+            raise FileNotFoundError(
+                f"Không tìm thấy file template tại: {template_path}"
+            )
+
+        self.template_path = template_path
+        # Không khởi tạo injectors (PlainTextInjector, TableInjector) nữa
+
+    @classmethod
+    def get_all_available_tags(cls, template_id=None) -> dict:
+        """
+        Lấy danh mục thẻ từ Database để trả về cho giao diện React (Sidebar).
+        Không dùng sample_syllabus để đoán dữ liệu nữa.
+        """
+        qs = TemplateField.objects.filter(is_active=True)
+        if template_id:
+            qs = qs.filter(template_id=template_id)
+
+        registry = {"SCALAR": [], "TABLE_FIXED": [], "TABLE_DYNAMIC": []}
+        for field in qs.order_by('group', 'order'):
+            registry[field.field_type].append({
+                "tag": field.tag,
+                "label": field.friendly_label,
+                "schema": field.schema,
+                "group": field.group
+            })
+        return registry
+
+    def render(self, syllabus) -> io.BytesIO:
+        """
+        Pipeline render hoàn chỉnh (Không dùng SDT).
+        """
+        # Bước 1: Trích xuất toàn bộ dữ liệu (Reflection) thành 1 Dictionary
+        mapper = SyllabusDataMapper(syllabus)
+        data_context = mapper.build()
+
+        # Bước 2: Load tài liệu gốc bằng python-docx
+        doc = Document(self.template_path)
+
+        # Bước 3: Xử lý nhân bản Bảng động (Dynamic Tables & Fixed Tables)
+        # Quét tìm thẻ [[ROW.xxx]], clone row qua lxml và điền data
+        render_dynamic_tables(doc, data_context)
+
+        # Bước 4: Lưu trạng thái trung gian (sau khi xử lý bảng) vào RAM
+        temp_buffer = io.BytesIO()
+        doc.save(temp_buffer)
+        temp_buffer.seek(0)
+
+        # Bước 5: Ủy quyền cho docxtpl xử lý toàn bộ các thẻ Scalar (Văn bản đơn)
+        tpl = DocxTemplate(temp_buffer)
+
+        # Override cú pháp Jinja2 từ {{ }} thành [[ ]]
+        custom_jinja_env = jinja2.Environment(
+            variable_start_string='[[',
+            variable_end_string=']]'
+        )
+
+        # Chèn dữ liệu vào các thẻ [[TAG]] còn lại
+        tpl.render(data_context, jinja_env=custom_jinja_env)
+
+        # Bước 6: Xuất file cuối cùng
+        final_buffer = io.BytesIO()
+        tpl.save(final_buffer)
+        final_buffer.seek(0)
+
+        return final_buffer
