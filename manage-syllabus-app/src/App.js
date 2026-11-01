@@ -31,7 +31,6 @@ import SpecialistRoutes from "./screens/Specialist/SpecialistRoutes";
 import TemplateManagement from "./screens/Specialist/TemplateManagement";
 import SpecialistManagement from "./screens/Specialist/SpecialistManagement";
 import TemplateBuilder from "./screens/Specialist/TemplateBuilder";
-import TemplateEditor from "./screens/Specialist/TemplateEditor";
 const App = () => {
   const [user, dispatch] = useReducer(MyUserReducer, null);
   const [selectionDictionary, setSelectionDictionary] = useState({});
@@ -168,8 +167,8 @@ const App = () => {
                         element={<TemplateBuilder />}
                       />
                       <Route
-                        path="templates/:id/editor"
-                        element={<TemplateEditor />}
+                        path="templates/:id/style-editor"
+                        element={<TemplateBuilder />}
                       />
                     </Route>
                   </Routes>

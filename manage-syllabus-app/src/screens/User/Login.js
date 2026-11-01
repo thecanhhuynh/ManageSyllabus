@@ -20,12 +20,50 @@ const Login = () => {
   const [params] = useSearchParams();
   const [form] = Form.useForm();
 
+  const validateLoginForm = (values) => {
+    const errors = {};
+    const cleanData = {};
+
+    const username = values?.username || "";
+    cleanData.username = username.trim();
+
+    if (!cleanData.username) {
+      errors.username = "Tên đăng nhập không được để trống!";
+    } else if (cleanData.username.length < 3) {
+      errors.username = "Tên đăng nhập phải có ít nhất 3 ký tự!";
+    } else if (cleanData.username.length > 50) {
+      errors.username = "Tên đăng nhập không được vượt quá 50 ký tự!";
+    }
+
+    const password = values?.password || "";
+    cleanData.password = password;
+
+    if (!cleanData.password) {
+      errors.password = "Mật khẩu không được để trống!";
+    } else if (cleanData.password.length < 3) {
+      errors.password = "Mật khẩu phải có ít nhất 3 ký tự!";
+    }
+
+    return {
+      isValid: Object.keys(errors).length === 0,
+      errors,
+      cleanData,
+    };
+  };
+
   const handleLogin = async (values) => {
+    const {isValid, errors, cleanData} = validateLoginForm(values);
+
+    if (!isValid) {
+      const firstError = Object.values(errors)[0];
+      message.error(firstError);
+      return;
+    }
     try {
       setLoading(true);
       const res = await Apis.post(
         endpoints["login"],
-        `grant_type=password&username=${values.username}&password=${values.password}&client_id=${CLIENT_ID}&client_secret=${CLIENT_SECRET}`,
+        `grant_type=password&username=${cleanData.username}&password=${cleanData.password}&client_id=${CLIENT_ID}&client_secret=${CLIENT_SECRET}`,
         {
           headers: {
             "Content-Type": "application/x-www-form-urlencoded",
@@ -126,6 +164,17 @@ const Login = () => {
               }
               rules={[
                 {required: true, message: "Vui lòng nhập tên đăng nhập!"},
+                {min: 3, message: "Tên đăng nhập phải có ít nhất 3 ký tự!"},
+                {
+                  validator: (_, value) =>
+                    value && value.trim() === ""
+                      ? Promise.reject(
+                          new Error(
+                            "Tên đăng nhập không được chỉ chứa khoảng trắng!",
+                          ),
+                        )
+                      : Promise.resolve(),
+                },
               ]}
               style={{marginBottom: 20}}
             >
@@ -152,7 +201,10 @@ const Login = () => {
                   PASSWORD
                 </span>
               }
-              rules={[{required: true, message: "Vui lòng nhập mật khẩu!"}]}
+              rules={[
+                {required: true, message: "Vui lòng nhập mật khẩu!"},
+                {min: 3, message: "Mật khẩu phải có ít nhất 3 ký tự!"},
+              ]}
               style={{marginBottom: 24}}
             >
               <Input.Password

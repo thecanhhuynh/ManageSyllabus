@@ -1,4 +1,4 @@
-// src/components/TemplateSidebar/TemplateSidebar.jsx
+
 import React from "react";
 import {Collapse, Button, message, Empty, Tooltip} from "antd";
 import {CopyOutlined, TableOutlined} from "@ant-design/icons";
@@ -7,7 +7,6 @@ import {copyTableToClipboard} from "./copyTableToClipboard";
 const {Panel} = Collapse;
 
 export const TemplateSidebar = ({controlFields}) => {
-  // controlFields có dạng: { SCALAR: [...], TABLE_FIXED: [...], TABLE_DYNAMIC: [...] }
 
   const handleCopyScalar = async (tag, label) => {
     const success = await copyScalarToClipboard(tag);
@@ -59,7 +58,7 @@ export const TemplateSidebar = ({controlFields}) => {
       </div>
 
       <Collapse defaultActiveKey={["1", "2"]} expandIconPosition="right">
-        {/* NHÓM 1: THẺ VĂN BẢN (SCALAR) */}
+
         <Panel
           header={<strong style={{color: "#333"}}>Thẻ văn bản đơn</strong>}
           key="1"
@@ -94,7 +93,6 @@ export const TemplateSidebar = ({controlFields}) => {
           )}
         </Panel>
 
-        {/* NHÓM 2: BẢNG BIỂU HỆ THỐNG (FIXED TABLE) */}
         <Panel
           header={<strong style={{color: "#333"}}>Bảng biểu (Hệ thống)</strong>}
           key="2"
@@ -133,7 +131,6 @@ export const TemplateSidebar = ({controlFields}) => {
           )}
         </Panel>
 
-        {/* NHÓM 3: BẢNG TỰ ĐỊNH NGHĨA (DYNAMIC TABLE) */}
         <Panel
           header={<strong style={{color: "#333"}}>Bảng tự định nghĩa</strong>}
           key="3"

@@ -11,6 +11,10 @@ const ObjectiveOutcomeItem = ({
   index,
   ploOptions,
   isFetching,
+  labels = {},
+  coCustomCols = [],
+  customValues = {},
+  updateCustomValue,
   onChange,
   onRemove,
 }) => {
@@ -34,20 +38,22 @@ const ObjectiveOutcomeItem = ({
     });
   };
 
+  const rowId = itemData.id || `co_${index}`;
+
   return (
     <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-4 group hover:border-blue-300 transition-all">
       <Row gutter={16} align="top">
         <Col span={13}>
           <div className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1.5 flex items-center gap-2 h-6">
             <span className="bg-blue-50 text-blue-600 px-2 py-0.5 rounded text-[11px]">
-              CO-{index + 1}
+              {labels.col_code ? `${labels.col_code}-${index + 1}` : `CO-${index + 1}`}
             </span>
-            Nội dung mục tiêu
+            {labels.col_description || "Nội dung mục tiêu"}
           </div>
           <TextArea
             autoSize={{minRows: 2, maxRows: 4}}
             placeholder="VD: Phân tích và đánh giá độ phức tạp..."
-            className="rounded-md text-sm"
+            className="rounded-md text-sm font-normal text-gray-700"
             value={itemData.content ?? ""}
             onChange={handleContentChange}
           />
@@ -55,7 +61,7 @@ const ObjectiveOutcomeItem = ({
 
         <Col span={10}>
           <div className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1.5 flex items-center gap-1 h-6">
-            <span className="text-gray-400">≈</span> Chuẩn đầu ra (PLO)
+            <span className="text-gray-400">≈</span> {labels.col_plo || "Chuẩn đầu ra (PLO)"}
           </div>
           <Select
             mode="multiple"
@@ -65,7 +71,7 @@ const ObjectiveOutcomeItem = ({
             loading={isFetching}
             optionLabelProp="tagLabel"
             maxTagCount="responsive"
-            className="w-full rounded-md"
+            className="w-full rounded-md font-normal text-gray-700"
             value={currentPloIds}
             onChange={handlePloChange}
           />
@@ -83,6 +89,35 @@ const ObjectiveOutcomeItem = ({
           </Tooltip>
         </Col>
       </Row>
+
+      {coCustomCols.length > 0 && (
+        <div className="mt-3 pt-3 border-t border-dashed border-gray-200">
+          <Row gutter={12}>
+            {coCustomCols.map((col) => {
+              const valKey = `${col.id}_${rowId}`;
+              const val =
+                customValues[valKey] ?? customValues[col.id] ?? col.default_value ?? "";
+
+              return (
+                <Col
+                  key={col.id}
+                  span={Math.max(6, Math.floor(24 / coCustomCols.length))}
+                >
+                  <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">
+                    {col.column_label}
+                  </div>
+                  <Input
+                    placeholder={`Nhập ${col.column_label}...`}
+                    className="w-full rounded-md text-sm font-normal text-gray-700"
+                    value={val}
+                    onChange={(e) => updateCustomValue(valKey, e.target.value)}
+                  />
+                </Col>
+              );
+            })}
+          </Row>
+        </div>
+      )}
     </div>
   );
 };
@@ -95,6 +130,21 @@ const ObjectiveOutcomeEditor = ({item, basePath}) => {
     (state) => state.localBlocks[item.code]?.data?.reference_data ?? [],
   );
   const updateLocalBlock = useSyllabusStore((state) => state.updateLocalBlock);
+  const labelOverrides = useSyllabusStore((state) => state.labelOverrides) || {};
+  const labels =
+    labelOverrides.objective_outcomes ||
+    labelOverrides.objectives_and_outcomes ||
+    {};
+  const customColumns = useSyllabusStore((state) => state.customColumns) || [];
+  const customValues = useSyllabusStore((state) => state.customValues) || {};
+  const updateCustomValue = useSyllabusStore((state) => state.updateCustomValue);
+
+  const coCustomCols = customColumns.filter(
+    (col) =>
+      (col.table_code === "objective_outcomes" ||
+        col.table_code === "objectives_and_outcomes") &&
+      col.is_active !== false,
+  );
 
   useEffect(() => {
     const fetchPLOs = async () => {
@@ -157,6 +207,10 @@ const ObjectiveOutcomeEditor = ({item, basePath}) => {
             index={index}
             ploOptions={ploOptions}
             isFetching={isFetching}
+            labels={labels}
+            coCustomCols={coCustomCols}
+            customValues={customValues}
+            updateCustomValue={updateCustomValue}
             onChange={(updated) => handleItemChange(index, updated)}
             onRemove={() => handleRemoveItem(index)}
           />

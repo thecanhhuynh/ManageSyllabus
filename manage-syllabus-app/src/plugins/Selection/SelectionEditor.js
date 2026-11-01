@@ -10,7 +10,7 @@ const SelectionEditor = ({item, basePath}) => {
   );
   const optionsForThisSelect =
     selectionDictionary[item.attribute_group_id] || [];
-  // console.log("Trạng thái update:", item.requires_update);
+
   const selectedValues = useSyllabusStore(
     (state) => state.localBlocks[item.code]?.data?.selected_values ?? [],
   );

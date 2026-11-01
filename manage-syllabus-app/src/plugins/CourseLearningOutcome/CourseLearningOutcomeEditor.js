@@ -12,30 +12,66 @@ const {TextArea} = Input;
 
 const EMPTY_ARRAY = [];
 
-const CloItemRow = ({clo, coIdx, cloIdx, onContentChange, onRemove}) => {
+const CloItemRow = ({
+  clo,
+  coIdx,
+  cloIdx,
+  cloCustomCols = [],
+  customValues = {},
+  updateCustomValue,
+  onContentChange,
+  onRemove,
+}) => {
+  const rowId = clo.id || `clo_${coIdx}_${cloIdx}`;
+
   return (
-    <div className="flex gap-4 p-4 border border-gray-100 bg-gray-50/50 rounded-xl items-start group transition-colors hover:border-blue-200">
-      <div className="bg-blue-50 text-blue-600 font-bold px-3 py-1 rounded-md text-sm shrink-0 mt-1">
-        CLO{coIdx + 1}.{cloIdx + 1}
-      </div>
-      <TextArea
-        autoSize={{minRows: 2, maxRows: 4}}
-        variant="borderless"
-        placeholder="Thêm nội dung chuẩn đầu ra..."
-        value={clo.content ?? ""}
-        onChange={(e) => onContentChange(e.target.value)}
-        className="p-0 text-sm font-medium text-gray-700 bg-transparent resize-none focus:bg-white focus:p-2 focus:rounded-md transition-all flex-1"
-      />
-      <div className="flex flex-col items-center gap-2 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-        <Button
-          type="text"
-          danger
-          icon={<DeleteOutlined />}
-          onClick={onRemove}
-          size="small"
+    <div className="flex flex-col gap-2 p-4 border border-gray-100 bg-gray-50/50 rounded-xl group transition-colors hover:border-blue-200">
+      <div className="flex gap-4 items-start w-full">
+        <div className="bg-blue-50 text-blue-600 font-bold px-3 py-1 rounded-md text-sm shrink-0 mt-1">
+          CLO{coIdx + 1}.{cloIdx + 1}
+        </div>
+        <TextArea
+          autoSize={{minRows: 2, maxRows: 4}}
+          variant="borderless"
+          placeholder="Thêm nội dung chuẩn đầu ra..."
+          value={clo.content ?? ""}
+          onChange={(e) => onContentChange(e.target.value)}
+          className="p-0 text-sm font-normal text-gray-700 bg-transparent resize-none focus:bg-white focus:p-2 focus:rounded-md transition-all flex-1"
         />
-        <InfoCircleOutlined className="text-gray-400" />
+        <div className="flex flex-col items-center gap-2 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+          <Button
+            type="text"
+            danger
+            icon={<DeleteOutlined />}
+            onClick={onRemove}
+            size="small"
+          />
+          <InfoCircleOutlined className="text-gray-400" />
+        </div>
       </div>
+
+      {cloCustomCols.length > 0 && (
+        <div className="mt-1 pt-2 border-t border-dashed border-gray-200 flex flex-wrap gap-3">
+          {cloCustomCols.map((col) => {
+            const valKey = `${col.id}_${rowId}`;
+            const val =
+              customValues[valKey] ?? customValues[col.id] ?? col.default_value ?? "";
+            return (
+              <div key={col.id} className="flex-1 min-w-[150px]">
+                <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">
+                  {col.column_label}
+                </div>
+                <Input
+                  placeholder={`Nhập ${col.column_label}...`}
+                  className="w-full rounded-md text-sm font-normal text-gray-700"
+                  value={val}
+                  onChange={(e) => updateCustomValue(valKey, e.target.value)}
+                />
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 };
@@ -46,6 +82,9 @@ const CloPloMatrix = ({
   ploOptions,
   onMatrixCellChange,
 }) => {
+  const labelOverrides = useSyllabusStore((state) => state.labelOverrides) || {};
+  const labels = labelOverrides.course_learning_outcomes || {};
+
   const assignedPloIdsGlobal = useMemo(() => {
     const ids = new Set();
     (coReferenceData || []).forEach((co) => {
@@ -95,24 +134,26 @@ const CloPloMatrix = ({
 
   const columns = [
     {
-      title: "Course Learning Outcome",
+      title: labels.col_clo || "CĐR học phần (CLO)",
       dataIndex: "cloName",
-      width: 130,
+      width: 140,
       fixed: "left",
       render: (text) => <span className="font-bold text-blue-600">{text}</span>,
     },
     {
-      title: "Outcome Description",
+      title: labels.col_content || "Mô tả CĐR",
       dataIndex: "content",
       render: (text) => (
-        <span className="text-xs text-gray-500 italic line-clamp-2">
+        <span className="text-xs font-normal text-gray-500 italic line-clamp-2">
           {text || "..."}
         </span>
       ),
     },
     ...displayPloOptions.map((plo) => ({
       title: (
-        <div className="text-center text-xs text-gray-500">PLO{plo.value}</div>
+        <div className="text-center text-xs text-gray-500">
+          {labels.col_plo ? `${labels.col_plo} ${plo.value}` : `PLO${plo.value}`}
+        </div>
       ),
       key: plo.value,
       width: 70,
@@ -188,6 +229,16 @@ const CourseLearningOutcomeEditor = ({item, basePath}) => {
   );
 
   const updateLocalBlock = useSyllabusStore((state) => state.updateLocalBlock);
+  const customColumns = useSyllabusStore((state) => state.customColumns) || EMPTY_ARRAY;
+  const customValues = useSyllabusStore((state) => state.customValues) || {};
+  const updateCustomValue = useSyllabusStore((state) => state.updateCustomValue);
+
+  const cloCustomCols = useMemo(() => {
+    return customColumns.filter(
+      (col) =>
+        col.table_code === "course_learning_outcomes" && col.is_active !== false,
+    );
+  }, [customColumns]);
 
   useEffect(() => {
     const fetchPLOs = async () => {
@@ -326,6 +377,9 @@ const CourseLearningOutcomeEditor = ({item, basePath}) => {
               clo={clo}
               coIdx={coIdx}
               cloIdx={cloIdx}
+              cloCustomCols={cloCustomCols}
+              customValues={customValues}
+              updateCustomValue={updateCustomValue}
               onContentChange={(text) =>
                 handleCloContentChange(coIdx, cloIdx, text)
               }

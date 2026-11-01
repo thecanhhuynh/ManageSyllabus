@@ -4,41 +4,49 @@ import {MailOutlined, BankOutlined} from "@ant-design/icons";
 import {useSyllabusStore} from "../../store/useSyllabusStore";
 
 const LecturerInfoEditor = ({item, basePath}) => {
-  const refPath = [...basePath, "reference_data"];
+  const labelOverrides = useSyllabusStore((state) => state.labelOverrides) || {};
+  const labels = labelOverrides.lecturer_info || {};
+  const customColumns = useSyllabusStore((state) => state.customColumns) || [];
+  const customValues = useSyllabusStore((state) => state.customValues) || {};
+  const updateCustomValue = useSyllabusStore((state) => state.updateCustomValue);
+
+  const lecturerCustomCols = customColumns.filter(
+    (col) => col.table_code === "lecturer_info" && col.is_active !== false,
+  );
 
   const LECTURER_FIELDS = [
     {
       key: "first_name",
-      label: "Họ và tên đệm",
+      label: labels.col_fullname || "Họ và tên đệm",
       span: 12,
-      className: "p-0 text-sm font-medium text-gray-800",
+      className: "p-0 text-sm font-normal text-gray-800",
     },
     {
       key: "last_name",
-      label: "Tên",
+      label: labels.col_name || "Tên",
       span: 12,
-      className: "p-0 text-sm font-medium text-gray-800",
+      className: "p-0 text-sm font-normal text-gray-800",
     },
     {
       key: "email",
-      label: "Email Address",
+      label: labels.col_email || "Email Address",
       span: 12,
-      prefix: <MailOutlined className="text-black-500 mr-1" />,
-      className: "p-0 text-sm font-medium text-black-600",
+      prefix: <MailOutlined className="text-gray-400 mr-1" />,
+      className: "p-0 text-sm font-normal text-gray-700",
     },
     {
       key: "faculty",
-      label: "Khoa / Đơn vị",
+      label: labels.col_workplace || "Khoa / Đơn vị",
       span: 12,
-      className: "p-0 text-sm font-medium text-gray-800",
+      className: "p-0 text-sm font-normal text-gray-800",
     },
     {
       key: "room",
-      label: "Văn phòng / Phòng làm việc",
+      label: labels.col_room || "Văn phòng / Phòng làm việc",
       span: 24,
       prefix: <BankOutlined className="text-gray-400 mr-1" />,
       placeholder: "Chưa có thông tin phòng làm việc",
-      className: "p-0 text-sm font-medium text-gray-800",
+      className: "p-0 text-sm font-normal text-gray-800",
     },
   ];
 
@@ -66,6 +74,25 @@ const LecturerInfoEditor = ({item, basePath}) => {
             </Form.Item>
           </Col>
         ))}
+
+        {lecturerCustomCols.map((col) => {
+          const val = customValues[col.id] ?? col.default_value ?? "";
+          return (
+            <Col key={col.id} span={12}>
+              <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">
+                {col.column_label}
+              </div>
+              <Form.Item className="mb-0">
+                <Input
+                  placeholder={`Nhập ${col.column_label}...`}
+                  value={val}
+                  onChange={(e) => updateCustomValue(col.id, e.target.value)}
+                  className="rounded-md text-sm font-normal text-gray-700"
+                />
+              </Form.Item>
+            </Col>
+          );
+        })}
       </Row>
     </div>
   );

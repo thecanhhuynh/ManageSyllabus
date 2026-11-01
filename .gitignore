@@ -216,3 +216,24 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+# Playwright Testing & Cache
+playwright/
+.playwright/
+.playwright-cli/
+playwright-report/
+test-results/
+
+# AI Agent Skills & Tooling
+.agents/skills/
+skills/
+
+# Scratch & Temporary Folders
+scratch/
+**/scratch/
+
+# Graphify Knowledge Graph
+graphify-out/
+
+# Documentation
+docs/
+

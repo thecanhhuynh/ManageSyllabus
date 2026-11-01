@@ -1,513 +1,436 @@
-import React, {useState, useEffect} from "react";
-import {useParams, useNavigate} from "react-router-dom";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { Modal, message, Spin, Empty } from "antd";
 import {
-  Button,
-  Input,
-  message,
-  Typography,
-  Card,
-  Divider,
-  Spin,
-  Popconfirm,
-  Form,
-  Select,
-  Modal,
-} from "antd";
-import {
-  ArrowLeftOutlined,
-  SaveOutlined,
-  DeleteOutlined,
-  DragOutlined,
-} from "@ant-design/icons";
-import {DndContext, closestCenter} from "@dnd-kit/core";
-import {
-  arrayMove,
-  SortableContext,
-  useSortable,
-  verticalListSortingStrategy,
-} from "@dnd-kit/sortable";
-import {CSS} from "@dnd-kit/utilities";
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 
-import {authApis, endpoints} from "../../config/Apis";
-import {getPlugin} from "../../plugins/Registry";
-import TableSchemaBuilder from "./TableSchemaBuilder";
-import TextPreview from "../../plugins/Text/TextPreview";
+import { authApis, endpoints, springApi } from "../../config/Apis";
+import TemplateStyleService from "../../services/templateStyleService";
+import BlockService from "../../services/blockService";
+import CustomColumnService from "../../services/customColumnService";
 
-const {Title} = Typography;
-const useTemplateManager = (id) => {
-  const [loading, setLoading] = useState(false);
-  const [templateMeta, setTemplateMeta] = useState({name: "", version: ""});
-  const [sections, setSections] = useState([]);
-  const [attributeGroups, setAttributeGroups] = useState([]);
+import BlockFormatDrawer from "../../components/BlockFormatDrawer";
+import MainSectionFormatDrawer from "../../components/MainSectionFormatDrawer";
+import HeaderFooterEditor from "../../components/HeaderFooterEditor";
+import BulkSpacingModal from "../../components/BulkSpacingModal";
 
-  useEffect(() => {
-    loadTemplateData();
-    loadAttrGroups();
-  }, [id]);
-
-  const loadTemplateData = async () => {
-    setLoading(true);
-    try {
-      const res = await authApis().get(`${endpoints["templates"]}${id}/`);
-      setTemplateMeta({name: res.data.name, version: res.data.version});
-      setSections(res.data.main_sections || []);
-    } catch (error) {
-      message.error("Lỗi khi tải dữ liệu Template!");
-    }
-    setLoading(false);
-  };
-
-  const loadAttrGroups = async () => {
-    try {
-      const res = await authApis().get(endpoints["attribute-groups"]);
-      setAttributeGroups(res.data.results || res.data || []);
-    } catch (error) {
-      console.error("Lỗi lấy danh mục", error);
-    }
-  };
-
-  const removeMainSection = (sectionId) => {
-    setSections((prev) => prev.filter((s) => s.id !== sectionId));
-  };
-
-  const removeSubSection = (sectionId, subId) => {
-    setSections((prev) =>
-      prev.map((sec) => {
-        if (sec.id === sectionId) {
-          const filtered = sec.sub_sections.filter((sub) => sub.id !== subId);
-          const updated = filtered.map((sub, index) => ({
-            ...sub,
-            position: index + 1,
-          }));
-          return {...sec, sub_sections: updated};
-        }
-        return sec;
-      }),
-    );
-  };
-
-  const updateSubSectionField = (sectionId, subId, field, value) => {
-    setSections((prev) =>
-      prev.map((sec) => {
-        if (sec.id === sectionId) {
-          return {
-            ...sec,
-            sub_sections: sec.sub_sections.map((sub) => {
-              if (sub.id === subId) {
-                if (field === "name")
-                  return {...sub, name: value, place_holder: value};
-                return {...sub, [field]: value};
-              }
-              return sub;
-            }),
-          };
-        }
-        return sec;
-      }),
-    );
-  };
-
-  const addCustomSubSection = (sectionId, newSubSection) => {
-    setSections((prev) =>
-      prev.map((sec) => {
-        if (sec.id === sectionId) {
-          return {...sec, sub_sections: [...sec.sub_sections, newSubSection]};
-        }
-        return sec;
-      }),
-    );
-  };
-
-  const handleDragEnd = (event, sectionId) => {
-    const {active, over} = event;
-    if (!over || active.id === over.id) return;
-
-    setSections((prev) =>
-      prev.map((sec) => {
-        if (sec.id === sectionId) {
-          const oldIndex = sec.sub_sections.findIndex(
-            (sub) => sub.id === active.id,
-          );
-          const newIndex = sec.sub_sections.findIndex(
-            (sub) => sub.id === over.id,
-          );
-          const newSubSections = arrayMove(
-            sec.sub_sections,
-            oldIndex,
-            newIndex,
-          );
-
-          return {
-            ...sec,
-            sub_sections: newSubSections.map((sub, idx) => ({
-              ...sub,
-              position: idx + 1,
-            })),
-          };
-        }
-        return sec;
-      }),
-    );
-  };
-
-  const saveTemplate = async () => {
-    try {
-      await authApis().put(`${endpoints["templates"]}${id}/`, {
-        name: templateMeta.name,
-        version: templateMeta.version,
-        main_sections: sections,
-      });
-      message.success("Đã lưu cấu hình Template!");
-    } catch (error) {
-      message.error("Lỗi khi lưu Template!");
-    }
-  };
-
-  return {
-    loading,
-    templateMeta,
-    sections,
-    attributeGroups,
-    removeMainSection,
-    removeSubSection,
-    updateSubSectionField,
-    addCustomSubSection,
-    handleDragEnd,
-    saveTemplate,
-  };
-};
-
-const SortableWrapper = ({id, children}) => {
-  const {attributes, listeners, setNodeRef, transform, transition} =
-    useSortable({id});
-  const style = {transform: CSS.Transform.toString(transform), transition};
-
-  return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      className="flex items-center gap-2 group"
-    >
-      <div
-        {...attributes}
-        {...listeners}
-        className="cursor-grab p-2 text-gray-400 hover:text-blue-500 opacity-50 group-hover:opacity-100 transition-opacity"
-      >
-        <DragOutlined />
-      </div>
-      <div className="flex-1">{children}</div>
-    </div>
-  );
-};
-
-const SubSectionCard = ({
-  sub,
-  sectionId,
-  attributeGroups,
-  onUpdate,
-  onRemove,
-}) => {
-  const Plugin = getPlugin(sub.type, sub.code);
-  const DynamicPreview = Plugin ? Plugin.Preview : null;
-
-  return (
-    <div className="p-4 bg-white border border-gray-200 rounded-lg flex flex-col gap-4 hover:shadow-md transition">
-      <div className="flex items-start gap-4">
-        <div className="flex-1 space-y-3">
-          <div>
-            <div className="text-xs text-gray-500 mb-1">
-              Mục {sub.position} - Tiêu đề hiển thị
-            </div>
-            <Input
-              value={sub.name}
-              onChange={(e) =>
-                onUpdate(sectionId, sub.id, "name", e.target.value)
-              }
-              className="font-medium"
-            />
-          </div>
-        </div>
-
-        {sub.type === "selection" && (
-          <div className="mt-3">
-            <div className="text-xs text-gray-500 mb-1">
-              Nguồn dữ liệu (Attribute Group){" "}
-              <span className="text-red-500">*</span>
-            </div>
-            <Select
-              value={sub.attribute_group_id || null}
-              placeholder="Chọn bộ dữ liệu..."
-              style={{width: "100%"}}
-              onChange={(val) =>
-                onUpdate(sectionId, sub.id, "attribute_group_id", val)
-              }
-              status={!sub.attribute_group_id ? "error" : ""}
-            >
-              {attributeGroups.map((group) => (
-                <Select.Option key={group.id} value={group.id}>
-                  {group.name}
-                </Select.Option>
-              ))}
-            </Select>
-            {!sub.attribute_group_id && (
-              <div className="text-xs text-red-500 mt-1">
-                ⚠️ Cần chọn nguồn dữ liệu!
-              </div>
-            )}
-          </div>
-        )}
-
-        <Popconfirm
-          title="Ẩn/Xóa trường dữ liệu này?"
-          onConfirm={() => onRemove(sectionId, sub.id)}
-        >
-          <Button danger type="dashed" icon={<DeleteOutlined />}>
-            Xóa
-          </Button>
-        </Popconfirm>
-      </div>
-
-      <div
-        className={`p-3 bg-gray-50 border rounded-md mt-1 ${sub.type !== "text" ? "pointer-events-none opacity-80" : ""}`}
-      >
-        {sub.type === "text" ? (
-          <TextPreview
-            item={sub}
-            onUpdateField={(field, val) =>
-              onUpdate(sectionId, sub.id, field, val)
-            }
-          />
-        ) : DynamicPreview ? (
-          <DynamicPreview item={sub} />
-        ) : (
-          <div className="text-center text-gray-400 p-4 border border-dashed rounded bg-gray-100 font-medium">
-            🚧 Đang chờ lắp Plugin tĩnh cho: {sub.type} - {sub.code}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
-
-const CustomSubSectionModal = ({
-  isOpen,
-  onClose,
-  onAdd,
-  attributeGroups,
-  sectionId,
-  currentLength,
-}) => {
-  const [form] = Form.useForm();
-  const selectedType = Form.useWatch("type", form);
-
-  const handleSubmit = async () => {
-    try {
-      const values = await form.validateFields();
-      const timestamp = Date.now();
-      const typeMapping = {
-        text: "text",
-        selection: "selection",
-        table: "table",
-      };
-
-      const newSubSection = {
-        id: `custom_sub_${timestamp}`,
-        code: `CUSTOM_${values.type.toUpperCase()}_${timestamp}`,
-        type: typeMapping[values.type] || values.type,
-        name: values.place_holder,
-        place_holder: values.place_holder,
-        position: currentLength + 1,
-        ...(values.type === "selection" && {
-          attribute_group_id: values.attribute_group_id,
-        }),
-        ...(values.type === "table" && {table_schema: values.table_schema}),
-      };
-
-      onAdd(sectionId, newSubSection);
-      onClose();
-      form.resetFields();
-    } catch (error) {
-      console.log("Validate Failed:", error);
-    }
-  };
-
-  return (
-    <Modal
-      title="Thêm tiểu mục tùy chỉnh"
-      open={isOpen}
-      onOk={handleSubmit}
-      onCancel={onClose}
-      okText="Thêm mới"
-      cancelText="Hủy"
-      destroyOnClose
-      width={1000}
-    >
-      <Form form={form} layout="vertical" className="mt-4">
-        <Form.Item
-          name="place_holder"
-          label="Tên tiêu đề"
-          rules={[{required: true}]}
-        >
-          <Input placeholder="VD: Tài liệu tham khảo ngoài..." />
-        </Form.Item>
-
-        <Form.Item name="type" label="Loại dữ liệu" rules={[{required: true}]}>
-          <Select placeholder="Chọn loại...">
-            <Select.Option value="text">Văn bản (Nhập liệu)</Select.Option>
-            <Select.Option value="selection">Lựa chọn (Dropdown)</Select.Option>
-            <Select.Option value="table">Bảng (Grid)</Select.Option>
-          </Select>
-        </Form.Item>
-
-        {selectedType === "selection" && (
-          <Form.Item
-            name="attribute_group_id"
-            label="Nguồn dữ liệu"
-            rules={[{required: true}]}
-          >
-            <Select placeholder="Chọn danh mục hệ thống...">
-              {attributeGroups.map((g) => (
-                <Select.Option key={g.id} value={g.id}>
-                  {g.name}
-                </Select.Option>
-              ))}
-            </Select>
-          </Form.Item>
-        )}
-        {selectedType === "table" && (
-          <Form.Item name="table_schema" className="mb-0">
-            <TableSchemaBuilder />
-          </Form.Item>
-        )}
-      </Form>
-    </Modal>
-  );
-};
+import DocxPreviewModal from "./template_builder/DocxPreviewModal";
+import AddMainSectionModal from "./template_builder/AddMainSectionModal";
+import CustomSubSectionModal from "./template_builder/CustomSubSectionModal";
+import SortableMainSectionCard from "./template_builder/SortableMainSectionCard";
+import TemplateStudioHeader from "./template_builder/TemplateStudioHeader";
+import { DEFAULT_BLOCK_LAYOUT } from "./template_builder/constants";
+import useTemplateSections from "./template_builder/hooks/useTemplateSections";
+import useTemplateDocxPreview from "./template_builder/hooks/useTemplateDocxPreview";
 
 const TemplateBuilder = () => {
-  const {id} = useParams();
-  const nav = useNavigate();
+  const { id } = useParams();
+  const navigate = useNavigate();
+
+  const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [syncStatus, setSyncStatus] = useState("synced");
+
+  const [templateMeta, setTemplateMeta] = useState({ name: "", version: "", is_active: false });
+  const [sections, setSections] = useState([]);
+  const [blocks, setBlocks] = useState([]);
+  const [customColumns, setCustomColumns] = useState([]);
+  const [attributeGroups, setAttributeGroups] = useState([]);
+  const [blockLayout, setBlockLayout] = useState(DEFAULT_BLOCK_LAYOUT);
+  const [publishedAt, setPublishedAt] = useState(null);
+  const [canRollback, setCanRollback] = useState(false);
+
+  const [blockDrawerOpen, setBlockDrawerOpen] = useState(false);
+  const [selectedBlock, setSelectedBlock] = useState(null);
+  const [mainSectionDrawerOpen, setMainSectionDrawerOpen] = useState(false);
+  const [selectedMainSection, setSelectedMainSection] = useState(null);
+
+  const [headerFooterModalOpen, setHeaderFooterModalOpen] = useState(false);
+  const [bulkSpacingModalOpen, setBulkSpacingModalOpen] = useState(false);
+  const [addMainModalOpen, setAddMainModalOpen] = useState(false);
+  const [addSubModalOpen, setAddSubModalOpen] = useState(false);
+  const [activeSectionIdForSub, setActiveSectionIdForSub] = useState(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+  );
+
+  const loadData = useCallback(async () => {
+    if (!id) return;
+    try {
+      setLoading(true);
+      const [tplRes, styleData, blockList, colList, attrRes] = await Promise.all([
+        authApis().get(`${endpoints["templates"]}${id}/`),
+        TemplateStyleService.getStyleConfig(id),
+        BlockService.getBlocks(id),
+        CustomColumnService.getCustomColumns(id),
+        authApis().get(endpoints["attribute-groups"]),
+      ]);
+
+      setTemplateMeta({
+        name: tplRes.data?.name || "",
+        version: tplRes.data?.version || "",
+        is_active: tplRes.data?.is_active || false,
+      });
+
+      const rawSections = Array.isArray(tplRes.data?.main_sections) ? tplRes.data.main_sections : [];
+      const sortedSections = [...rawSections].sort((a, b) => (a.position || 0) - (b.position || 0));
+      setSections(sortedSections);
+
+      if (styleData?.block_layout) {
+        setBlockLayout({ ...DEFAULT_BLOCK_LAYOUT, ...styleData.block_layout });
+      }
+
+      const layout = styleData?.block_layout || tplRes.data?.block_layout || {};
+      setCanRollback(Boolean(layout.bulk_spacing_backup));
+      setPublishedAt(styleData?.layout_published_at || null);
+      setBlocks(Array.isArray(blockList) ? blockList : []);
+      setCustomColumns(Array.isArray(colList) ? colList : []);
+      setAttributeGroups(attrRes.data?.results || attrRes.data || []);
+    } catch {
+      message.error("Lỗi khi tải dữ liệu đề cương mẫu.");
+    } finally {
+      setLoading(false);
+    }
+  }, [id]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  const blockMap = useMemo(() => {
+    const map = {};
+    (blocks || []).forEach((b) => {
+      if (b.config?.code) map[b.config.code] = b;
+      if (b.config?.table_code) map[b.config.table_code] = b;
+      if (b.code) map[b.code] = b;
+      if (b.name) map[b.name] = b;
+    });
+    return map;
+  }, [blocks]);
+
+  const autoSaveSections = async (nextSections, customMeta = null) => {
+    if (!id) return;
+    try {
+      setSyncStatus("syncing");
+      const meta = customMeta || templateMeta;
+      await authApis().put(`${endpoints["templates"]}${id}/`, {
+        name: meta.name,
+        version: meta.version,
+        main_sections: nextSections,
+      });
+      setSyncStatus("synced");
+
+      const refreshedBlocks = await BlockService.getBlocks(id);
+      if (Array.isArray(refreshedBlocks)) {
+        setBlocks(refreshedBlocks);
+      }
+    } catch {
+      setSyncStatus("error");
+      message.error("Lỗi tự động lưu cấu trúc đề cương!");
+    }
+  };
 
   const {
-    loading,
-    templateMeta,
-    sections,
-    attributeGroups,
-    removeMainSection,
-    removeSubSection,
-    updateSubSectionField,
-    addCustomSubSection,
     handleDragEnd,
-    saveTemplate,
-  } = useTemplateManager(id);
+    handleAddMainSection,
+    handleRemoveMainSection,
+    handleUpdateSectionName,
+    handleAddSubSection,
+    handleRemoveSubSection,
+    handleUpdateSubName,
+    handleUpdateTemplateName,
+  } = useTemplateSections(sections, setSections, templateMeta, setTemplateMeta, autoSaveSections);
 
-  const [activeSectionId, setActiveSectionId] = useState(null);
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const {
+    previewUrl,
+    hasDocxRendered,
+    docxPreviewModalOpen,
+    setDocxPreviewModalOpen,
+    docxContainerRef,
+    handlePreviewDocx,
+    handleOpenDocxPreviewModal,
+    handlePreviewFromDrawer,
+    handlePreviewFromMainDrawer,
+    handleDownloadDocx,
+  } = useTemplateDocxPreview(id, blocks, blockLayout, setActionLoading);
 
-  const handleOpenAddModal = (sectionId) => {
-    setActiveSectionId(sectionId);
-    setIsAddModalOpen(true);
+  const handleOpenSubStyleDrawer = (block, sub) => {
+    const targetBlock = block?.id ? block : { ...sub, block_type: sub.type || "text" };
+    setSelectedBlock(targetBlock);
+    setBlockDrawerOpen(true);
   };
 
-  const handleAddSuccess = (sectionId, newSubSection) => {
-    addCustomSubSection(sectionId, newSubSection);
-    message.success("Đã thêm tiểu mục tùy chỉnh!");
+  const handleSaveBlockDrawer = async (updatedBlock) => {
+    try {
+      const result = await BlockService.batchSaveBlock(id, updatedBlock.id, {
+        style_config: updatedBlock.style_config,
+        config: updatedBlock.config,
+        label_overrides: updatedBlock.label_overrides,
+        new_custom_columns: updatedBlock.new_custom_columns || [],
+        updated_custom_columns: updatedBlock.updated_custom_columns || [],
+      });
+
+      const savedBlock = result?.block || updatedBlock;
+      setBlocks((prev) => prev.map((b) => (b.id === updatedBlock.id ? savedBlock : b)));
+
+      if (result?.block_layout) {
+        setBlockLayout(result.block_layout);
+      }
+
+      const created = result?.created_custom_columns || [];
+      const updated = result?.updated_custom_columns || [];
+      if (created.length > 0 || updated.length > 0) {
+        setCustomColumns((prev) => {
+          let next = [...prev];
+          updated.forEach((u) => {
+            next = next.map((c) => (c.id === u.id ? u : c));
+          });
+          return [...next, ...created];
+        });
+      }
+
+      message.success("Đã lưu định dạng block thành công!");
+      setBlockDrawerOpen(false);
+    } catch {
+      message.error("Lỗi khi lưu định dạng block.");
+    }
   };
 
-  if (loading)
+  const handleCreateCustomColumn = async (colData) => {
+    const res = await CustomColumnService.createCustomColumn(id, colData);
+    setCustomColumns((prev) => [...prev, res]);
+    message.success("Thêm cột tùy biến thành công!");
+    return res;
+  };
+
+  const handleDeleteCustomColumn = (colId) => {
+    setCustomColumns((prev) => prev.filter((c) => c.id !== colId));
+  };
+
+  const handleOpenSectionStyleDrawer = (sec) => {
+    setSelectedMainSection(sec);
+    setMainSectionDrawerOpen(true);
+  };
+
+  const handleSaveMainSectionStyle = async (styleConfig) => {
+    if (!selectedMainSection) return;
+    try {
+      await TemplateStyleService.updateMainSectionStyle(id, selectedMainSection.id, styleConfig);
+      setBlockLayout((prev) => ({
+        ...prev,
+        main_sections_style: {
+          ...(prev?.main_sections_style || {}),
+          [String(selectedMainSection.id)]: styleConfig,
+        },
+      }));
+      message.success("Đã lưu định dạng Phần lớn.");
+      setMainSectionDrawerOpen(false);
+    } catch {
+      message.error("Lỗi khi lưu định dạng Phần lớn.");
+    }
+  };
+
+  const handleHeaderFooterUpdated = (hfData) => {
+    setBlockLayout((prev) => ({ ...prev, header_footer: hfData }));
+  };
+
+  const handleBulkSpacingApplied = async (result) => {
+    setCanRollback(Boolean(result?.can_rollback));
+    await loadData();
+  };
+
+  const handleRollbackBulkSpacing = async () => {
+    try {
+      const res = await BlockService.rollbackBulkSpacing(id);
+      message.success(`Đã hoàn tác spacing cho ${res?.restored_count ?? 0} mục.`);
+      setCanRollback(false);
+      await loadData();
+    } catch {
+      message.error("Hoàn tác spacing thất bại.");
+    }
+  };
+
+  const handlePublish = async () => {
+    try {
+      setActionLoading(true);
+      const res = await TemplateStyleService.publishStyle(id, blockLayout);
+      let cloneSuccess = false;
+      try {
+        await springApi().post(endpoints["publish-template"](id));
+        cloneSuccess = true;
+      } catch (springErr) {
+        const errorMsg = springErr?.response?.data || springErr.message;
+        message.warning(`Đã ban hành cấu hình mẫu, nhưng nhân bản đề cương thất bại: ${errorMsg}`);
+      }
+      setPublishedAt(res.layout_published_at || new Date().toISOString());
+      setTemplateMeta((prev) => ({ ...prev, is_active: true }));
+      if (cloneSuccess) {
+        message.success("Ban hành đề cương mẫu và nhân bản toàn bộ đề cương thành công!");
+      }
+    } catch {
+      message.error("Lỗi khi ban hành đề cương mẫu.");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleSaveManual = async () => {
+    try {
+      setActionLoading(true);
+      await autoSaveSections(sections);
+      message.success("Đã lưu các thay đổi đề cương mẫu thành công!");
+    } catch {
+      message.error("Lỗi khi lưu thay đổi đề cương mẫu.");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const currentMainSectionStyle = useMemo(() => {
+    if (!selectedMainSection?.id) return {};
+    return blockLayout?.main_sections_style?.[String(selectedMainSection.id)] || {};
+  }, [blockLayout?.main_sections_style, selectedMainSection?.id]);
+
+  if (loading) {
     return (
-      <div className="text-center p-20">
+      <div className="flex justify-center items-center min-h-screen">
         <Spin size="large" />
       </div>
     );
+  }
 
   return (
-    <div className="bg-gray-50 p-6 min-h-screen">
-      <div className="flex items-center justify-between mb-6 bg-white p-4 rounded shadow-sm">
-        <div className="flex items-center gap-4">
-          <Button
-            type="text"
-            icon={<ArrowLeftOutlined />}
-            onClick={() => nav(-1)}
-          />
-          <Title level={4} className="!m-0">
-            Tinh chỉnh Template:{" "}
-            <span className="text-blue-600">{templateMeta.name}</span>
-          </Title>
-        </div>
-        <Button type="primary" icon={<SaveOutlined />} onClick={saveTemplate}>
-          Lưu Cấu Hình
-        </Button>
+    <div className="min-h-screen bg-slate-50 p-6">
+      <TemplateStudioHeader
+        templateName={templateMeta.name}
+        version={templateMeta.version}
+        publishedAt={publishedAt}
+        isActive={templateMeta.is_active}
+        syncStatus={syncStatus}
+        actionLoading={actionLoading}
+        canRollback={canRollback}
+        previewUrl={previewUrl}
+        onBack={() => navigate("/specialist/templates")}
+        onReload={loadData}
+        onSaveManual={handleSaveManual}
+        onUpdateTemplateName={handleUpdateTemplateName}
+        onOpenAddMainModal={() => setAddMainModalOpen(true)}
+        onOpenHeaderFooterModal={() => setHeaderFooterModalOpen(true)}
+        onOpenBulkSpacingModal={() => setBulkSpacingModalOpen(true)}
+        onRollbackBulkSpacing={handleRollbackBulkSpacing}
+        onOpenDocxPreview={handleOpenDocxPreviewModal}
+        onDownloadDocx={handleDownloadDocx}
+        onPublish={handlePublish}
+      />
+
+      <div className="max-w-5xl mx-auto">
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={sections.map((s) => s.id)} strategy={verticalListSortingStrategy}>
+            {sections.length === 0 ? (
+              <Empty description="Chưa có phần lớn nào. Hãy thêm phần lớn đầu tiên!" />
+            ) : (
+              sections.map((section, index) => (
+                <SortableMainSectionCard
+                  key={section.id}
+                  index={index}
+                  section={section}
+                  blockMap={blockMap}
+                  onUpdateSectionName={handleUpdateSectionName}
+                  onRemoveSection={handleRemoveMainSection}
+                  onOpenSectionStyleDrawer={handleOpenSectionStyleDrawer}
+                  onOpenAddSubModal={(secId) => {
+                    setActiveSectionIdForSub(secId);
+                    setAddSubModalOpen(true);
+                  }}
+                  onUpdateSubName={handleUpdateSubName}
+                  onOpenSubStyleDrawer={handleOpenSubStyleDrawer}
+                  onRemoveSub={handleRemoveSubSection}
+                />
+              ))
+            )}
+          </SortableContext>
+        </DndContext>
       </div>
 
-      <div className="max-w-4xl mx-auto space-y-6">
-        {sections.map((section, index) => (
-          <Card
-            key={section.id}
-            title={
-              <span className="font-bold text-lg">
-                Mục {index + 1}: {section.name}
-              </span>
-            }
-            extra={
-              <Popconfirm
-                title="Xóa toàn bộ mục này?"
-                onConfirm={() => removeMainSection(section.id)}
-              >
-                <Button danger icon={<DeleteOutlined />} type="text" />
-              </Popconfirm>
-            }
-          >
-            <DndContext
-              collisionDetection={closestCenter}
-              onDragEnd={(e) => handleDragEnd(e, section.id)}
-            >
-              <SortableContext
-                items={section.sub_sections.map((s) => s.id)}
-                strategy={verticalListSortingStrategy}
-              >
-                <div className="space-y-4">
-                  {section.sub_sections.map((sub) => (
-                    <SortableWrapper key={sub.id} id={sub.id}>
-                      <SubSectionCard
-                        sub={sub}
-                        sectionId={section.id}
-                        attributeGroups={attributeGroups}
-                        onUpdate={updateSubSectionField}
-                        onRemove={removeSubSection}
-                      />
-                    </SortableWrapper>
-                  ))}
-                </div>
-              </SortableContext>
-            </DndContext>
+      <BlockFormatDrawer
+        open={blockDrawerOpen}
+        onClose={() => setBlockDrawerOpen(false)}
+        block={selectedBlock}
+        templateId={id}
+        blockLayout={blockLayout}
+        customColumns={customColumns.filter(
+          (c) =>
+            c.table_code ===
+            (selectedBlock?.config?.table_code || selectedBlock?.code?.toLowerCase()),
+        )}
+        onCreateCustomColumn={handleCreateCustomColumn}
+        onDeleteCustomColumn={handleDeleteCustomColumn}
+        onSave={handleSaveBlockDrawer}
+        onPreview={handlePreviewFromDrawer}
+      />
 
-            <Divider dashed />
-            <div className="text-gray-400 text-sm text-center">
-              (Chỉ cho phép xóa hoặc đổi tên nhãn từ mẫu gốc. Không hỗ trợ thêm
-              Form tự do để đảm bảo đồng bộ hệ thống)
-            </div>
-            <Button
-              type="dashed"
-              block
-              onClick={() => handleOpenAddModal(section.id)}
-              className="mt-4 border-blue-300 text-blue-500 hover:bg-blue-50"
-            >
-              + Thêm tiểu mục tùy chỉnh
-            </Button>
-          </Card>
-        ))}
-      </div>
+      <MainSectionFormatDrawer
+        open={mainSectionDrawerOpen}
+        onClose={() => setMainSectionDrawerOpen(false)}
+        mainSection={selectedMainSection}
+        styleConfig={currentMainSectionStyle}
+        fallbackStyle={blockLayout?.named_styles?.SYLLABUS_HEADING_1}
+        onSave={handleSaveMainSectionStyle}
+        onPreview={(draft) => handlePreviewFromMainDrawer(draft, selectedMainSection)}
+      />
+
+      <Modal
+        title="Quản lý Header & Footer đề cương"
+        open={headerFooterModalOpen}
+        onCancel={() => setHeaderFooterModalOpen(false)}
+        footer={null}
+        width={950}
+        destroyOnClose
+      >
+        <HeaderFooterEditor templateId={id} onUpdated={handleHeaderFooterUpdated} />
+      </Modal>
+
+      <BulkSpacingModal
+        open={bulkSpacingModalOpen}
+        templateId={id}
+        mainSections={sections}
+        onApplied={handleBulkSpacingApplied}
+        onClose={() => setBulkSpacingModalOpen(false)}
+      />
+
+      <DocxPreviewModal
+        open={docxPreviewModalOpen}
+        onClose={() => setDocxPreviewModalOpen(false)}
+        previewUrl={previewUrl}
+        hasRendered={hasDocxRendered}
+        actionLoading={actionLoading}
+        onRenderDocx={handlePreviewDocx}
+        onDownloadDocx={handleDownloadDocx}
+        docxContainerRef={docxContainerRef}
+      />
+
+      <AddMainSectionModal
+        open={addMainModalOpen}
+        onClose={() => setAddMainModalOpen(false)}
+        onAddSection={handleAddMainSection}
+        nextPosition={sections.length + 1}
+      />
 
       <CustomSubSectionModal
-        isOpen={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
-        onAdd={handleAddSuccess}
-        sectionId={activeSectionId}
+        isOpen={addSubModalOpen}
+        onClose={() => setAddSubModalOpen(false)}
+        onAdd={handleAddSubSection}
         attributeGroups={attributeGroups}
+        sectionId={activeSectionIdForSub}
         currentLength={
-          sections.find((s) => s.id === activeSectionId)?.sub_sections
-            ?.length || 0
+          sections.find((s) => s.id === activeSectionIdForSub)?.sub_sections?.length || 0
         }
       />
     </div>

@@ -93,6 +93,7 @@ public class TemplateCloneService {
             newSyllabus.setLecturerId(oldSyllabus.getLecturerId());
             newSyllabus.setFacultyId(oldSyllabus.getFacultyId());
             newSyllabus.setVersion(currentTemplate.getVersion());
+            newSyllabus.setRevision(oldSyllabus.getRevision() != null ? oldSyllabus.getRevision() : 1);
             newSyllabus = this.syllabusRepo.save(newSyllabus);
 
             if (oldSyllabus.getSyllabusesTrainingprogramsyllabusSet() != null) {

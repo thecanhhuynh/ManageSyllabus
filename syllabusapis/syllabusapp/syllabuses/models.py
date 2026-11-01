@@ -7,13 +7,14 @@ from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
 from django.utils import timezone
 
-
 def template_upload_path(instance, filename):
     return os.path.join('templates', 'docx', filename)
 
-# =============================================================================
-# BASE MODEL
-# =============================================================================
+def template_clean_upload_path(instance, filename):
+    """Upload path riêng cho file DOCX đã được làm sạch (Chiến lược A)."""
+    base, ext = os.path.splitext(filename)
+    return os.path.join('templates', 'docx', f'{base}_clean{ext}')
+
 class BaseModel(models.Model):
     name = models.CharField(max_length=100)
     created_date = models.DateTimeField(auto_now_add=True)
@@ -24,22 +25,15 @@ class BaseModel(models.Model):
     def __str__(self):
         return self.name
 
-
-# =============================================================================
-# MODELS CHÍNH & PHỤ TRỢ
-# =============================================================================
 class AttributeGroup(BaseModel):
     pass
-
 
 class AttributeValue(models.Model):
     name_value = models.CharField(max_length=50)
     attribute_group = models.ForeignKey(AttributeGroup, on_delete=models.CASCADE, related_name='attribute_values')
 
-
 class Faculty(BaseModel):
     name = models.CharField(max_length=100, unique=True)
-
 
 class Lecturer(models.Model):
     created_date = models.DateTimeField(auto_now_add=True)
@@ -47,19 +41,16 @@ class Lecturer(models.Model):
     room = models.CharField(max_length=200, null=True, blank=True)
     faculty = models.ForeignKey(Faculty, on_delete=models.SET_NULL, null=True, blank=True, related_name='lecturers')
 
-
 class Major(BaseModel):
     name = models.CharField(max_length=150, unique=True)
     code = models.CharField(max_length=50, unique=True)
     faculty = models.ForeignKey(Faculty, on_delete=models.CASCADE, related_name='majors')
-
 
 class TrainingProgram(BaseModel):
     name = models.CharField(max_length=150)
     academic_year = models.IntegerField()
     major = models.ForeignKey(Major, on_delete=models.CASCADE, related_name='training_programs')
     syllabuses = models.ManyToManyField('Syllabus', through='TrainingProgramSyllabus', related_name='training_programs')
-
 
 class Credit(models.Model):
     number_theory = models.IntegerField()
@@ -72,7 +63,6 @@ class Credit(models.Model):
     def __str__(self):
         return f"TC: {self.get_total_credit()} (LT: {self.number_theory} - TH: {self.number_practice}) HOURS: {self.hour_self_study}"
 
-
 class Subject(models.Model):
     code = models.CharField(max_length=20, unique=True)
     name = models.CharField(max_length=100, unique=True)
@@ -81,20 +71,16 @@ class Subject(models.Model):
     def __str__(self):
         return self.name
 
-
 class TypeRequirement(BaseModel):
     name = models.CharField(max_length=30, unique=True)
-
 
 class RequirementSubject(models.Model):
     subject = models.ForeignKey(Subject, on_delete=models.CASCADE, related_name='required_by_relation')
     require_subject = models.ForeignKey(Subject, on_delete=models.CASCADE, related_name='required_relation')
     type_requirement = models.ForeignKey(TypeRequirement, on_delete=models.CASCADE, related_name='requirement_subjects')
 
-
 class ProgrammeLearningOutcome(BaseModel):
     description = models.TextField()
-
 
 class CourseObjective(models.Model):
     content = models.TextField()
@@ -107,7 +93,6 @@ class CourseObjective(models.Model):
     class Meta:
         ordering = ['position']
 
-
 class CourseLearningOutcome(models.Model):
     content = models.TextField()
     position = models.IntegerField()
@@ -115,25 +100,41 @@ class CourseLearningOutcome(models.Model):
                                          related_name='course_learning_outcomes')
     plos = models.ManyToManyField(ProgrammeLearningOutcome, through='CloPloAssociation', related_name='clos')
 
-
 class CloPloAssociation(models.Model):
     clo = models.ForeignKey(CourseLearningOutcome, on_delete=models.CASCADE, related_name='plo_association')
     plo = models.ForeignKey(ProgrammeLearningOutcome, on_delete=models.CASCADE, related_name='clo_association')
     rating = models.IntegerField()
 
-#=== TEMPLATE ===
-
 class TemplateSyllabus(BaseModel):
     name = models.CharField(max_length=100)
     version = models.CharField(max_length=20, default="v1.0")
     file = models.FileField(
-        upload_to=template_upload_path, verbose_name="File mẫu DOCX",null=True,
-        blank=True,
+        upload_to=template_upload_path, verbose_name="File mẫu DOCX",
+        null=True, blank=True,
+    )
+    file_clean = models.FileField(
+        upload_to=template_clean_upload_path,
+        verbose_name="File mẫu DOCX đã làm sạch (Chiến lược A)",
+        null=True, blank=True,
+    )
+    block_layout = models.JSONField(
+        verbose_name="Cấu hình Block Style (JSON)",
+        null=True, blank=True,
+        help_text=(
+            "Schema V3: named_styles, header_footer, label_overrides, "
+            "column_styles, table_types, table_structures. "
+            "Xem docs/spec/README.md §6.1 để biết cấu trúc đầy đủ."
+        ),
+    )
+    layout_published_at = models.DateTimeField(
+        verbose_name="Thời điểm Publish Block Layout gần nhất",
+        null=True, blank=True,
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     is_active = models.BooleanField(default=False)
     parent = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True)
+
     class Meta:
         unique_together = ('name', 'version')
 
@@ -142,6 +143,156 @@ class TemplateSyllabus(BaseModel):
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
+
+
+class TemplateBlock(BaseModel):
+    """
+    Lưu XML template cho từng mục trong template.
+    Mỗi block tương ứng với 1 sub-section trong Template Builder.
+    """
+
+    BLOCK_TYPE_CHOICES = [
+        ('text', 'Text'),
+        ('selection', 'Selection'),
+        ('table', 'Table'),
+        ('reference', 'Reference'),
+    ]
+
+    template = models.ForeignKey(
+        TemplateSyllabus,
+        on_delete=models.CASCADE,
+        related_name='blocks',
+    )
+    code = models.CharField(
+        max_length=50,
+        help_text="Mã block, auto-generate theo thứ tự: BLOCK_001",
+    )
+    name = models.CharField(
+        max_length=200,
+        help_text="Tên hiển thị (VD: 'Số tín chỉ')",
+    )
+    block_type = models.CharField(
+        max_length=20,
+        choices=BLOCK_TYPE_CHOICES,
+    )
+    xml_template = models.TextField(
+        help_text="XML snippet với {{VARIABLES}}",
+    )
+    style_config = models.JSONField(
+        default=dict,
+        help_text="Cấu hình style: font, size, align, bold...",
+    )
+    reference_class = models.CharField(
+        max_length=50,
+        null=True,
+        blank=True,
+        help_text="Class render cho reference (VD: 'CreditRenderer')",
+    )
+    config = models.JSONField(
+        default=dict,
+        help_text="Config riêng: display_type, symbol_style, table_code...",
+    )
+    position = models.IntegerField(default=1)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ['position']
+        unique_together = ('template', 'code')
+
+    def __str__(self):
+        return f"{self.template.name} — {self.code}: {self.name}"
+
+
+def generate_custom_column_key(template_id, table_code):
+    """
+    Sinh key duy nhất theo template và table.
+    Format: custom_{table_code}_{counter:03d}
+    Key KHÔNG BAO GIỜ thay đổi sau khi tạo.
+    """
+    count = CustomColumn.objects.filter(
+        template_id=template_id,
+        table_code=table_code,
+    ).count()
+    return f"custom_{table_code}_{count + 1:03d}"
+
+
+class CustomColumn(BaseModel):
+    """
+    Định nghĩa cột tùy biến do Chuyên viên tự tạo.
+    Chỉ lưu metadata, không lưu giá trị.
+    Giới hạn 10 custom column / bảng (BR-03).
+    """
+
+    COLUMN_TYPE_CHOICES = [
+        ('text', 'Text'),
+        ('int', 'Integer'),
+        ('decimal', 'Decimal'),
+    ]
+
+    template = models.ForeignKey(
+        TemplateSyllabus,
+        on_delete=models.CASCADE,
+        related_name='custom_columns',
+    )
+    table_code = models.CharField(
+        max_length=50,
+        help_text="Mã bảng: 'credit', 'requirement_subject', 'lecturer_info'",
+    )
+    level = models.CharField(
+        max_length=50,
+        default='root',
+        help_text="Tầng áp dụng: root | clos | methods",
+    )
+    column_key = models.CharField(
+        max_length=50,
+        help_text="Auto-generate: 'custom_credit_001'",
+    )
+    column_label = models.CharField(
+        max_length=100,
+        help_text="Tên hiển thị, user editable",
+    )
+    column_type = models.CharField(
+        max_length=20,
+        choices=COLUMN_TYPE_CHOICES,
+        default='text',
+    )
+    default_value = models.CharField(max_length=255, blank=True)
+    position = models.IntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        unique_together = ('template', 'table_code', 'column_key')
+        ordering = ['table_code', 'position']
+
+    def __str__(self):
+        return f"{self.template.name} / {self.table_code} / {self.column_key}: {self.column_label}"
+
+
+class CustomColumnValue(models.Model):
+    """
+    Lưu giá trị của custom column cho từng record cụ thể.
+    object_id lưu dạng string (không phải int) để hỗ trợ mọi loại PK.
+    """
+
+    column = models.ForeignKey(
+        CustomColumn,
+        on_delete=models.CASCADE,
+        related_name='values',
+    )
+    object_id = models.CharField(
+        max_length=50,
+        help_text="ID của record: credit.id, subject_id, clo.id... (lưu dạng string)",
+    )
+    value = models.TextField(blank=True)
+
+    class Meta:
+        unique_together = ('column', 'object_id')
+        indexes = [
+            models.Index(fields=['column', 'object_id']),
+        ]
+
+    def __str__(self):
+        return f"{self.column.column_key}[{self.object_id}] = {self.value}"
 
 
 class TemplateMainSection(BaseModel):
@@ -153,10 +304,9 @@ class TemplateMainSection(BaseModel):
         unique_together = ('template', 'code')
         ordering = ['position']
 
-
 class TemplateSubSection(BaseModel):
     main_section = models.ForeignKey(TemplateMainSection, on_delete=models.CASCADE, related_name='sub_sections')
-    type = models.CharField(max_length=50)  # text, selection, reference, table...
+    type = models.CharField(max_length=50)
     code = models.CharField(max_length=50)
     position = models.IntegerField(default=1)
 
@@ -174,53 +324,6 @@ class TemplateSelectionSubSection(TemplateSubSection):
     attribute_group_id = models.IntegerField(null=True, blank=True)
 
 
-class TemplateField(models.Model):
-    FIELD_TYPE_CHOICES = (
-        ('SCALAR', 'Scalar (Giá trị đơn)'),
-        ('TABLE_FIXED', 'Table Fixed (Bảng cố định)'),
-        ('TABLE_DYNAMIC', 'Table Dynamic (Bảng động)'),
-    )
-
-    template = models.ForeignKey(
-        TemplateSyllabus,
-        on_delete=models.CASCADE,
-        related_name='fields',
-        null=True,
-        blank=True
-    )
-    tag = models.CharField(
-        max_length=100,
-        unique=True,
-        help_text="Mã token, vd: SUBJECT_CODE, CUSTOM_TABLE_123"
-    )
-    friendly_label = models.CharField(
-        max_length=255,
-        help_text="Tên tiếng Việt, vd: Mã môn học"
-    )
-    field_type = models.CharField(
-        max_length=20,
-        choices=FIELD_TYPE_CHOICES,
-        default='SCALAR'
-    )
-    group = models.CharField(
-        max_length=100,
-        default='Thông tin chung'
-    )
-    schema = models.JSONField(
-        null=True,
-        blank=True,
-        help_text="Lưu cấu trúc cột của bảng (chỉ dùng cho TABLE_DYNAMIC)"
-    )
-    order = models.IntegerField(default=0)
-    is_active = models.BooleanField(default=True)
-
-    class Meta:
-        ordering = ['group', 'order']
-
-    def __str__(self):
-        return f"{self.template.name if self.template else 'Global'} - {self.friendly_label} ({self.tag})"
-
-#================
 
 class Syllabus(BaseModel):
     name = models.CharField(max_length=100, null=True, blank=True)
@@ -239,27 +342,19 @@ class Syllabus(BaseModel):
                                                     related_name='syllabuses_rel')
     revision = models.IntegerField(default=1)
 
-
 class TypeLearningMaterial(BaseModel):
     name = models.CharField(max_length=100, unique=True)
-
 
 class LearningMaterial(BaseModel):
     name = models.CharField(max_length=255, unique=True)
 
-
-# =============================================================================
-# CÁC MODEL BÀI ĐÁNH GIÁ...
-# =============================================================================
 class TypeAssessment(BaseModel):
     def __str__(self):
         return self.name
 
-
 class Assessment(models.Model):
     syllabus = models.ForeignKey(Syllabus, on_delete=models.CASCADE, related_name='assessments')
     type_assessment = models.ForeignKey(TypeAssessment, on_delete=models.CASCADE, related_name='assessments')
-
 
 class Method(BaseModel):
     assessment = models.ForeignKey(Assessment, on_delete=models.CASCADE, related_name='assessment_methods')
@@ -268,10 +363,6 @@ class Method(BaseModel):
     course_learning_outcomes = models.ManyToManyField(CourseLearningOutcome, through='MethodCourseLearningOutcome',
                                                       related_name='methods')
 
-
-# =============================================================================
-# CÁC MODEL TIỂU MỤC (Kế thừa đa hình trong Django)
-# =============================================================================
 class MainSection(BaseModel):
     code = models.CharField(max_length=50)
     position = models.IntegerField(default=1)
@@ -283,7 +374,6 @@ class MainSection(BaseModel):
         ]
         ordering = ['position']
 
-
 class SubSection(BaseModel):
     position = models.IntegerField(default=1)
     type = models.CharField(max_length=50)
@@ -293,32 +383,23 @@ class SubSection(BaseModel):
     class Meta:
         ordering = ['position']
 
-
 class TextSubSection(SubSection):
     content = models.TextField(null=True, blank=True)
     display_mode = models.CharField(max_length=50, default="input", null=True, blank=True)
     place_holder = models.CharField(max_length=100, null=True, blank=True)
 
-
 class SelectionSubSection(SubSection):
     attribute_group = models.ForeignKey(AttributeGroup, on_delete=models.CASCADE, related_name='selection_sub_sections')
     selected_values = models.ManyToManyField(AttributeValue, through='SubSectionAttributeValue')
 
-
 class ReferenceSubSection(SubSection):
     reference_code = models.CharField(max_length=50)
-
 
 class TableSubSection(SubSection):
     data = models.JSONField()
 
-
-# =============================================================================
-# CÁC MODEL KẾ HOẠCH GIẢNG DẠY
-# =============================================================================
 class ScheduleGroup(BaseModel):
     pass
-
 
 class TeachingSession(models.Model):
     syllabus = models.ForeignKey(Syllabus, on_delete=models.CASCADE, related_name='teaching_sessions')
@@ -343,10 +424,6 @@ class TeachingSession(models.Model):
     class Meta:
         ordering = ['session_no']
 
-
-# =============================================================================
-# BẢNG TRUNG GIAN (ASSOCIATION MODELS)
-# =============================================================================
 class SyllabusLearningMaterial(models.Model):
     syllabus = models.ForeignKey(Syllabus, on_delete=models.CASCADE)
     learning_material = models.ForeignKey(LearningMaterial, on_delete=models.CASCADE)
@@ -355,45 +432,33 @@ class SyllabusLearningMaterial(models.Model):
     class Meta:
         unique_together = ('syllabus', 'learning_material')
 
-
 class SubSectionAttributeValue(models.Model):
     subsection = models.ForeignKey(SelectionSubSection, on_delete=models.CASCADE)
     attribute_value = models.ForeignKey(AttributeValue, on_delete=models.CASCADE)
-
 
 class CourseObjectiveProgrammeLearningOutcome(models.Model):
     course_objective = models.ForeignKey(CourseObjective, on_delete=models.CASCADE)
     programme_learning_outcome = models.ForeignKey(ProgrammeLearningOutcome, on_delete=models.CASCADE)
 
-
 class TrainingProgramSyllabus(models.Model):
     training_program = models.ForeignKey(TrainingProgram, on_delete=models.CASCADE)
     syllabus = models.ForeignKey(Syllabus, on_delete=models.CASCADE)
-
 
 class MethodCourseLearningOutcome(models.Model):
     method = models.ForeignKey(Method, on_delete=models.CASCADE)
     clo = models.ForeignKey(CourseLearningOutcome, on_delete=models.CASCADE)
 
-
 class TeachingSessionCourseLearningOutcome(models.Model):
     teaching_session = models.ForeignKey(TeachingSession, on_delete=models.CASCADE)
     clo = models.ForeignKey(CourseLearningOutcome, on_delete=models.CASCADE)
-
 
 class TeachingSessionAssessment(models.Model):
     teaching_session = models.ForeignKey(TeachingSession, on_delete=models.CASCADE)
     assessment = models.ForeignKey(Assessment, on_delete=models.CASCADE)
 
-
 class TeachingSessionLearningMaterial(models.Model):
     teaching_session = models.ForeignKey(TeachingSession, on_delete=models.CASCADE)
     learning_material = models.ForeignKey(LearningMaterial, on_delete=models.CASCADE)
-
-
-# =============================================================================
-# USER & ROLE
-# =============================================================================
 
 class User(AbstractUser):
     class UserRole(models.TextChoices):
@@ -406,8 +471,6 @@ class User(AbstractUser):
     avatar = CloudinaryField('image', null=True)
     user_role = models.CharField(choices=UserRole.choices, max_length=20, default=UserRole.USER)
 
-
-# SIGNAL
 @receiver(post_delete, sender=CourseObjective)
 def reorder_objectives_on_delete(sender, instance, **kwargs):
     remaining_objectives = CourseObjective.objects.filter(syllabus=instance.syllabus).order_by('position')
@@ -415,7 +478,6 @@ def reorder_objectives_on_delete(sender, instance, **kwargs):
         if obj.position != index:
             obj.position = index
             obj.save(update_fields=['position'])
-
 
 @receiver(post_delete, sender=CourseLearningOutcome)
 def reorder_clos_on_delete(sender, instance, **kwargs):

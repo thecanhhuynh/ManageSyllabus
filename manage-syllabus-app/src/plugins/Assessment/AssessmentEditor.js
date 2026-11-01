@@ -37,78 +37,126 @@ const AssessmentMethodRow = ({
     });
   };
 
+  const labelOverrides = useSyllabusStore((state) => state.labelOverrides) || {};
+  const labels = labelOverrides.assessment_method || {};
+  const customColumns = useSyllabusStore((state) => state.customColumns) || EMPTY_ARRAY;
+  const customValues = useSyllabusStore((state) => state.customValues) || {};
+  const updateCustomValue = useSyllabusStore((state) => state.updateCustomValue);
+
+  const assessmentCustomCols = useMemo(() => {
+    return customColumns.filter(
+      (col) => col.table_code === "assessment_method" && col.is_active !== false,
+    );
+  }, [customColumns]);
+
   return (
-    <Row
-      gutter={12}
-      className="items-end bg-gray-50/50 p-3 rounded-lg border border-gray-100 group hover:border-blue-200 transition-colors"
-    >
-      <Col span={7}>
-        <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">
-          Phương pháp
-        </div>
-        <Input
-          placeholder="VD: Thi tự luận"
-          value={method.name ?? ""}
-          onChange={(e) => handleFieldChange("name", e.target.value)}
-          className="rounded-md text-[13px]"
-        />
-      </Col>
+    <div className="bg-gray-50/50 p-3 rounded-lg border border-gray-100 group hover:border-blue-200 transition-colors">
+      <Row gutter={12} className="items-end">
+        <Col span={7}>
+          <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">
+            {labels.col_method || "Phương pháp"}
+          </div>
+          <Input
+            placeholder="VD: Thi tự luận"
+            value={method.name ?? ""}
+            onChange={(e) => handleFieldChange("name", e.target.value)}
+            className="rounded-md text-[13px] font-normal text-gray-700"
+          />
+        </Col>
 
-      <Col span={5}>
-        <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">
-          Thời gian
-        </div>
-        <Input
-          prefix={<ClockCircleOutlined className="text-gray-400" />}
-          placeholder="VD: 60 phút"
-          value={method.time ?? ""}
-          onChange={(e) => handleFieldChange("time", e.target.value)}
-          className="rounded-md text-[13px]"
-        />
-      </Col>
+        <Col span={5}>
+          <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">
+            {labels.col_time || "Thời gian"}
+          </div>
+          <Input
+            prefix={<ClockCircleOutlined className="text-gray-400" />}
+            placeholder="VD: 60 phút"
+            value={method.time ?? ""}
+            onChange={(e) => handleFieldChange("time", e.target.value)}
+            className="rounded-md text-[13px] font-normal text-gray-700"
+          />
+        </Col>
 
-      <Col span={4}>
-        <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">
-          Trọng số
-        </div>
-        <InputNumber
-          min={0}
-          max={100}
-          addonAfter={<PercentageOutlined />}
-          placeholder="0"
-          value={method.weight ?? 0}
-          onChange={(val) => handleFieldChange("weight", Number(val || 0))}
-          className="w-full text-[13px] rounded-md"
-        />
-      </Col>
+        <Col span={4}>
+          <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">
+            {labels.col_weight || "Trọng số"}
+          </div>
+          <InputNumber
+            min={0}
+            max={100}
+            addonAfter={<PercentageOutlined />}
+            placeholder="0"
+            value={method.weight ?? 0}
+            onChange={(val) => handleFieldChange("weight", Number(val || 0))}
+            className="w-full text-[13px] rounded-md font-normal text-gray-700"
+          />
+        </Col>
 
-      <Col span={7}>
-        <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">
-          Đánh giá CLO
-        </div>
-        <Select
-          mode="multiple"
-          allowClear
-          placeholder="Chọn CLOs..."
-          options={cloOptions}
-          optionLabelProp="tagLabel"
-          maxTagCount="responsive"
-          value={selectedCloIds}
-          onChange={handleCloChange}
-          className="w-full rounded-md"
-        />
-      </Col>
+        <Col span={7}>
+          <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">
+            {labels.col_clo || "Đánh giá CLO"}
+          </div>
+          <Select
+            mode="multiple"
+            allowClear
+            placeholder="Chọn CLOs..."
+            options={cloOptions}
+            optionLabelProp="tagLabel"
+            maxTagCount="responsive"
+            value={selectedCloIds}
+            onChange={handleCloChange}
+            className="w-full rounded-md font-normal text-gray-700"
+          />
+        </Col>
 
-      <Col span={1} className="flex justify-center pb-1">
-        <Button
-          type="text"
-          danger
-          icon={<DeleteOutlined />}
-          onClick={onRemove}
-          className="opacity-40 group-hover:opacity-100 hover:bg-red-50"
-        />
-      </Col>
-    </Row>
+        <Col span={1} className="flex justify-center pb-1">
+          <Button
+            type="text"
+            danger
+            icon={<DeleteOutlined />}
+            onClick={onRemove}
+            className="opacity-40 group-hover:opacity-100 hover:bg-red-50"
+          />
+        </Col>
+      </Row>
+
+      {assessmentCustomCols.length > 0 && (
+        <div className="mt-2.5 pt-2 border-t border-dashed border-gray-200">
+          <Row gutter={12}>
+            {assessmentCustomCols.map((col) => {
+              const rowId = method.id || method.temp_id || `method_${methodIdx}`;
+              const valKey = `${col.id}_${rowId}`;
+              const val = customValues[valKey] ?? customValues[col.id] ?? col.default_value ?? "";
+
+              return (
+                <Col
+                  key={col.id}
+                  span={Math.max(6, Math.floor(24 / assessmentCustomCols.length))}
+                >
+                  <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">
+                    {col.column_label}
+                  </div>
+                  {col.column_type === "int" || col.column_type === "decimal" ? (
+                    <InputNumber
+                      className="w-full rounded-md text-sm font-normal text-gray-700"
+                      value={val !== "" ? Number(val) : 0}
+                      onChange={(numVal) => updateCustomValue(valKey, numVal ?? 0)}
+                    />
+                  ) : (
+                    <Input
+                      placeholder={`Nhập ${col.column_label}...`}
+                      className="w-full rounded-md text-sm font-normal text-gray-700"
+                      value={val}
+                      onChange={(e) => updateCustomValue(valKey, e.target.value)}
+                    />
+                  )}
+                </Col>
+              );
+            })}
+          </Row>
+        </div>
+      )}
+    </div>
   );
 };
 
@@ -126,6 +174,7 @@ const AssessmentGroupCard = ({group, groupIdx, cloOptions, onUpdateGroup}) => {
 
   const handleAddMethod = () => {
     const newMethod = {
+      temp_id: `temp_${Date.now()}_${Math.random()}`,
       name: "",
       time: "",
       weight: 0,

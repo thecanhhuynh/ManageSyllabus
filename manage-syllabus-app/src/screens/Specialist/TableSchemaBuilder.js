@@ -52,7 +52,7 @@ const CustomCell = (props) => {
       animationFrameId = requestAnimationFrame(() => {
         const delta = moveEvent.clientY - startY;
         node.setRowHeight(Math.max(42, startHeight + delta));
-        api.onRowHeightChanged(); // Render mượt lúc đang kéo
+        api.onRowHeightChanged();
       });
     };
 

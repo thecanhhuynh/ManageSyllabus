@@ -68,6 +68,9 @@ public class SyllabusesSyllabus implements Serializable {
     @Basic(optional = false)
     @Column(name = "version")
     private String version;
+    @Basic(optional = false)
+    @Column(name = "revision")
+    private Integer revision = 1;
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "syllabusId")
     private Set<SyllabusesCourseobjective> syllabusesCourseobjectiveSet;
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "syllabusId")
@@ -293,9 +296,16 @@ public class SyllabusesSyllabus implements Serializable {
         return true;
     }
 
+    public Integer getRevision() {
+        return revision;
+    }
+
+    public void setRevision(Integer revision) {
+        this.revision = revision;
+    }
+
     @Override
     public String toString() {
         return "com.htc.pojo.SyllabusesSyllabus[ id=" + id + " ]";
     }
-    
 }

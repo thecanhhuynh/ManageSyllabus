@@ -42,7 +42,7 @@ public class TextSubSectionStrategy implements CustomSubSectionStrategy {
         newText.setSubsectionPtrId(savedNewSub.getId());
         newText.setContent(oldText.getContent());
         newText.setDisplayMode(oldText.getDisplayMode() != null ? oldText.getDisplayMode() : "");
-        newText.setPlaceHolder(oldText.getPlaceHolder() != null ? oldText.getDisplayMode() : "");
+        newText.setPlaceHolder(oldText.getPlaceHolder() != null ? oldText.getPlaceHolder() : "");
 
         this.textSubSectionRepo.save(newText);
     }

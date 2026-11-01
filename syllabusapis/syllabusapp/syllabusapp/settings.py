@@ -13,24 +13,15 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 from pathlib import Path
 import os
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-# MEDIA_ROOT = '%s/syllabuses/static/' % BASE_DIR
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
-
-# SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure-xip=nlds614968_x=o4yy4i&w9zjkp*7)knb^67ux_td=3-1rh'
 
-# SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 CORS_ALLOWED_ORIGINS = ["http://localhost:3000", "http://127.0.0.1:3000",]
-
-# Application definition
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -85,9 +76,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'syllabusapp.wsgi.application'
 
-# Database
-# https://docs.djangoproject.com/en/6.0/ref/settings/#databases
-
 import pymysql
 
 pymysql.install_as_MySQLdb()
@@ -101,35 +89,10 @@ DATABASES = {
         'HOST': ''
     }
 }
-#
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.mysql',
-#         'NAME': os.environ.get('DATABASE_NAME', 'managesyllabusv2'),
-#         'USER': os.environ.get('DATABASE_USER', 'django_user'),
-#         'PASSWORD': os.environ.get('DATABASE_PASSWORD', '123456'),
-#         'HOST': os.environ.get('DATABASE_HOST', '127.0.0.1'),
-#         'PORT': os.environ.get('DATABASE_PORT', '3306'),
-#     }
-# }
-
-
-# DJANGO_INTERNAL_URL = os.environ.get('DJANGO_INTERNAL_URL', 'http://backend:8000')
-# ONLYOFFICE_DOCS_URL = os.environ.get('ONLYOFFICE_DOCS_URL', 'http://localhost:8080/')
-# ONLYOFFICE_JWT_SECRET = os.environ.get('ONLYOFFICE_JWT_SECRET', 'my_super_secret_jwt_key_syllabus_2026')
-
-
-# Cấu hình ONLYOFFICE
 ONLYOFFICE_DOCS_URL = 'http://localhost:8082/'
 ONLYOFFICE_JWT_SECRET = 'my_super_secret_jwt_key_syllabus_2026'
 
 DJANGO_INTERNAL_URL = 'http://host.docker.internal:8000'
-
-
-
-
-# Password validation
-# https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -146,9 +109,6 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-# Internationalization
-# https://docs.djangoproject.com/en/6.0/topics/i18n/
-
 LANGUAGE_CODE = 'en-us'
 
 TIME_ZONE = 'Asia/Ho_Chi_Minh'
@@ -157,16 +117,11 @@ USE_I18N = True
 
 USE_TZ = True
 
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/6.0/howto/static-files/
-
 STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# CKEditor
 CKEDITOR_UPLOAD_PATH = "images/ckeditors/"
 
-# REST Framework
 REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'DEFAULT_AUTHENTICATION_CLASSES': (
@@ -188,7 +143,6 @@ cloudinary.config(
 )
 CLIENT_ID = "ivb9uKsLIPFr5u9kRFSZYAG9xadcbKD9woDUXn3O"
 CLIENT_SECRET = "e3V5YCrisUHseVSgS5qkEjoGev7VDq3xGI2uVnQHENjWXAhthk7pTUdEYl8iUJLtghJRExGnnr9IxIzueo2yh6rm4opZ2BHVdPpOgiwhiNckBL7YWyLFHhKwOwUN9TUm"
-
 
 CACHES = {
     "default": {

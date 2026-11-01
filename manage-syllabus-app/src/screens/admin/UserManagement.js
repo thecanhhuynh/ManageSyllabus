@@ -168,7 +168,6 @@ const UserManagement = () => {
       const updatedData = res.data;
       const selectedFaculty = faculties.find((f) => f.id === payload.faculty);
 
-      // 1. Ghi đè mảng state users ngay lập tức để UI cập nhật tức thì
       setUsers((prevUsers) =>
         prevUsers.map((u) => {
           if (u.id !== editingUser.id) return u;
@@ -190,13 +189,11 @@ const UserManagement = () => {
         })
       );
 
-      // 2. Đóng modal và reset form ngay sau khi cập nhật thành công
       setEditModalVisible(false);
       setEditingUser(null);
       form.resetFields();
       message.success("Cập nhật thông tin người dùng thành công!");
 
-      // 3. Đồng bộ lại dữ liệu nền với server
       fetchUsers(pagination.current, filters);
     } catch (error) {
       console.error("Cập nhật thất bại:", error);
@@ -231,10 +228,8 @@ const UserManagement = () => {
     try {
       await UserService.deactivateUser(userRecord.id);
 
-      // 1. Loại bỏ ngay item vừa xóa khỏi mảng state để không để lại item "xác" trên UI
       setUsers((prevUsers) => prevUsers.filter((u) => u.id !== userRecord.id));
 
-      // 2. Giảm tổng số lượng hiển thị trong phân trang
       setPagination((prev) => ({
         ...prev,
         total: Math.max(0, prev.total - 1),
@@ -253,7 +248,6 @@ const UserManagement = () => {
     try {
       await UserService.activateUser(userRecord.id);
 
-      // Cập nhật trạng thái trực tiếp trên mảng state
       setUsers((prevUsers) =>
         prevUsers.map((u) => (u.id === userRecord.id ? {...u, is_active: true, active: true} : u))
       );

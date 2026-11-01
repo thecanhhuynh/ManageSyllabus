@@ -4,6 +4,31 @@ import {SaveOutlined} from "@ant-design/icons";
 import {authApis, endpoints} from "../../config/Apis";
 import SubSectionRenderer from "../../components/SubSectionRender";
 import {useSyllabusStore} from "../../store/useSyllabusStore";
+import CustomColumnService from "../../services/customColumnService";
+
+const savePendingCustomValues = async (syllabusId) => {
+  const customVals = useSyllabusStore.getState().customValues || {};
+  const entries = Object.entries(customVals);
+  if (entries.length === 0) return;
+
+  const payload = entries.map(([key, val]) => {
+    const hasRowKey = key.includes("_");
+    const colId = hasRowKey ? key.split("_")[0] : key;
+    const objectId = hasRowKey
+      ? key.split("_").slice(1).join("_")
+      : String(syllabusId);
+    return {
+      column_id: colId,
+      object_id: objectId,
+      value: String(val ?? ""),
+    };
+  });
+  try {
+    await CustomColumnService.saveCustomValues(syllabusId, payload);
+  } catch (err) {
+    console.warn("Lưu giá trị tùy biến ngầm thất bại:", err);
+  }
+};
 
 const MainSectionForm = ({syllabusId, mainSection}) => {
   const [form] = Form.useForm();
@@ -64,6 +89,7 @@ const MainSectionForm = ({syllabusId, mainSection}) => {
         const newRevision = res.data?.revision;
         const savedCodes = dirtyBlocksInCard.map((block) => block.data.code);
         markSaved(newRevision, savedCodes);
+        await savePendingCustomValues(syllabusId);
       }
     } catch (error) {
       if (error.response?.status === 409) {

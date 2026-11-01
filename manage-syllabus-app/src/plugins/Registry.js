@@ -1,5 +1,3 @@
-// Sau này import các Reference Plugins vào đây...
-
 import {
   CreditPlugin,
   LecturerInfoPlugin,
@@ -14,10 +12,7 @@ import {
   TablePlugin,
 } from ".";
 
-// Map các plugin lại với nhau
-const plugins = [
-  TextPlugin,
-  SelectionPlugin,
+const PLUGINS = [
   CreditPlugin,
   LecturerInfoPlugin,
   RequirementSubjectPlugin,
@@ -27,17 +22,14 @@ const plugins = [
   LearningMaterialPlugin,
   TeachingPlanPlugin,
   TablePlugin,
+  TextPlugin,
+  SelectionPlugin,
 ];
 
 export const getPlugin = (type, code) => {
-  // 1. Tìm theo CODE trước (Dành cho các Reference đặc thù như DANH_GIA, TIN_CHI)
-  let found = plugins.find((p) => p.code === code);
+  const matchByCode = PLUGINS.find((p) => p.code === code);
+  if (matchByCode) return matchByCode;
 
-  // 2. Nếu không có CODE, tìm theo TYPE (Dành cho text, selection chung)
-  if (!found) {
-    found = plugins.find((p) => p.type === type);
-  }
-
-  // 3. Fallback an toàn (tránh văng app nếu lỡ quên code)
-  return found || null;
+  const matchByType = PLUGINS.find((p) => p.type === type);
+  return matchByType || null;
 };

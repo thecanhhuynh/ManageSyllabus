@@ -22,6 +22,8 @@ routes.register('training-programs', views.TrainingProgramView)
 routes.register('majors', views.MajorView)
 routes.register('lecturers', views.LecturerView)
 routes.register('templates', views.TemplateSyllabusView)
+routes.register('blocks', views.TemplateBlockView)
+routes.register('custom-columns', views.CustomColumnView)
 
 urlpatterns = [
     path('', include(routes.urls)),
@@ -29,4 +31,6 @@ urlpatterns = [
     path('register/', views.RegisterView.as_view(), name='register'),
     path('export-syllabus/<int:syllabus_id>/', ExportSyllabusDocxView.as_view(), name='export-syllabus-docx'),
     path('sse/sync-stream/', sse_sync_stream, name='sse_sync_stream'),
+    path('templates/<int:template_id>/blocks/<int:pk>/preview-inline/', views.TemplateBlockView.as_view({'post': 'preview_inline'}), name='template-block-preview-inline'),
+    path('templates/<int:template_id>/blocks/<int:pk>/batch-save/', views.TemplateBlockView.as_view({'post': 'batch_save'}), name='template-block-batch-save'),
 ]

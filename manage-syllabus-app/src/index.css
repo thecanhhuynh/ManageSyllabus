@@ -15,3 +15,102 @@ code {
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ==========================================================================
+   DOCX Preview Styles (docx-preview library override)
+   ========================================================================== */
+
+/* Khung cuộn bao ngoài bản xem trước DOCX */
+.docx-preview-scroll-container {
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 750px;
+  max-height: 850px;
+  overflow: auto !important;
+  padding: 20px !important;
+  background-color: #f0f2f5 !important;
+  box-sizing: border-box !important;
+  position: relative !important;
+  border-radius: 8px;
+}
+
+/* Thẻ chứa trang DOCX: Căn giữa, reset transform/zoom */
+.docx-preview-container {
+  margin: 0 auto !important;
+  width: max-content !important;
+  min-width: 100% !important;
+  transform: none !important;
+  zoom: 1 !important;
+  box-sizing: border-box !important;
+}
+
+/* Ép buộc phông chữ Times New Roman cho toàn bộ nội dung preview */
+.docx-preview-container *,
+.docx-preview-scroll-container * {
+  font-family: 'Times New Roman', Times, serif !important;
+}
+
+/* Wrapper do thư viện docx-preview sinh ra */
+.docx-preview-container .docx-preview-wrapper,
+.docx-preview-container [class*="-wrapper"] {
+  background: transparent !important;
+  padding: 0 !important;
+  min-width: 100% !important;
+  width: max-content !important;
+  margin: 0 auto !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+}
+
+/* Từng trang A4 trong tài liệu Word do docx-preview render */
+.docx-preview-container section,
+.docx-preview-container [class*="section"],
+.docx-preview-container .docx-preview {
+  margin: 0 auto 24px auto !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15) !important;
+  background-color: #ffffff !important;
+  transform: none !important;
+  zoom: 1 !important;
+  overflow: visible !important;
+  overflow-x: visible !important;
+}
+
+/* Đảm bảo table border-collapse và spacing chuẩn Word */
+.docx-preview-container table {
+  border-collapse: collapse !important;
+}
+
+/* Modern Thin Scrollbar 5px (Tự động ẩn, bo góc tròn, xám tinh tế) */
+.custom-thin-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+  transition: scrollbar-color 0.3s ease;
+}
+
+.custom-thin-scrollbar:hover {
+  scrollbar-color: #cbd5e1 transparent;
+}
+
+.custom-thin-scrollbar::-webkit-scrollbar {
+  height: 5px;
+  width: 5px;
+}
+
+.custom-thin-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-thin-scrollbar::-webkit-scrollbar-thumb {
+  background-color: transparent;
+  border-radius: 9999px;
+  transition: background-color 0.25s ease-in-out;
+}
+
+.custom-thin-scrollbar:hover::-webkit-scrollbar-thumb {
+  background-color: #cbd5e1;
+}
+
+.custom-thin-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: #94a3b8;
+}

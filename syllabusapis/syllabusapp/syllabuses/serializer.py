@@ -8,9 +8,8 @@ from syllabuses.models import User, Lecturer, Faculty, Syllabus, Subject, SubSec
     TypeLearningMaterial, SyllabusLearningMaterial, CloPloAssociation, TypeAssessment, Assessment, Method, \
     ScheduleGroup, TeachingSession, Major, TrainingProgram, TemplateSubSection, TemplateSyllabus, TemplateMainSection, \
     TableSubSection, TemplateSelectionSubSection, TemplateTableSubSection, TemplateTextSubSection, \
-    TrainingProgramSyllabus
+    TrainingProgramSyllabus, TemplateBlock, CustomColumn, CustomColumnValue
 from syllabuses.strategies import SUB_SECTION_STRATEGIES, DefaultStrategy
-
 
 class FacultySerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(required=False)
@@ -22,14 +21,12 @@ class FacultySerializer(serializers.ModelSerializer):
             'name': {'validators': []}
         }
 
-
 class LecturerSerializer(serializers.ModelSerializer):
     faculty = FacultySerializer()
 
     class Meta:
         model = Lecturer
         fields = ['room', 'faculty']
-
 
 class LecturerBasicSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(source='user.id', read_only=True)
@@ -40,7 +37,6 @@ class LecturerBasicSerializer(serializers.ModelSerializer):
     class Meta:
         model = Lecturer
         fields = ['id', 'first_name', 'last_name', 'room', 'faculty_name']
-
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -67,7 +63,6 @@ class UserSerializer(serializers.ModelSerializer):
 
             Lecturer.objects.create(user=user)
             return user
-
 
 class UserDetailSerializer(UserSerializer):
     lecturer = LecturerSerializer(source='lecturer_profile', read_only=True)
@@ -105,12 +100,10 @@ class UserDetailSerializer(UserSerializer):
             instance.refresh_from_db()
             return instance
 
-
 class CreditSerializer(serializers.ModelSerializer):
     class Meta:
         model = Credit
         fields = ['id', 'number_theory', 'number_practice', 'hour_self_study']
-
 
 class SubjectSerializer(serializers.ModelSerializer):
     credit = CreditSerializer(required=True)
@@ -145,7 +138,6 @@ class SubjectSerializer(serializers.ModelSerializer):
 
     def delete(self, instance, validated_data):
         pass
-
 
 class SyllabusSerializer(serializers.ModelSerializer):
     subject = SubjectSerializer(read_only=True)
@@ -204,12 +196,10 @@ class SyllabusSerializer(serializers.ModelSerializer):
 
         return syllabus
 
-
 class AttributeGroupSerializer(serializers.ModelSerializer):
     class Meta:
         model = AttributeGroup
         fields = ['id']
-
 
 class AttributeValueSerializer(serializers.ModelSerializer):
     attribute_group = AttributeGroupSerializer(read_only=True)
@@ -218,12 +208,10 @@ class AttributeValueSerializer(serializers.ModelSerializer):
         model = AttributeValue
         fields = ['id', 'name_value', 'attribute_group']
 
-
 class SimpleAttributeValueSerializer(serializers.ModelSerializer):
     class Meta:
         model = AttributeValue
         fields = ['id', 'name_value']
-
 
 class AttributeGroupListSerializer(serializers.ModelSerializer):
     attribute_values = SimpleAttributeValueSerializer(many=True, read_only=True)
@@ -237,12 +225,10 @@ class BaseSubSectionSerializer(serializers.ModelSerializer):
         model = SubSection
         fields = ['id', 'name', 'position', 'type', 'code', 'requires_update']
 
-
 class TextSubSectionSerializer(BaseSubSectionSerializer):
     class Meta(BaseSubSectionSerializer.Meta):
         model = TextSubSection
         fields = BaseSubSectionSerializer.Meta.fields + ['content', 'display_mode', 'place_holder']
-
 
 class SelectionSubSectionSerializer(BaseSubSectionSerializer):
     selected_values = AttributeValueSerializer(many=True, read_only=True)
@@ -250,7 +236,6 @@ class SelectionSubSectionSerializer(BaseSubSectionSerializer):
     class Meta(BaseSubSectionSerializer.Meta):
         model = SelectionSubSection
         fields = BaseSubSectionSerializer.Meta.fields + ['attribute_group_id','selected_values']
-
 
 class ReferenceSubSectionSerializer(BaseSubSectionSerializer):
     reference_data = serializers.SerializerMethodField()
@@ -291,8 +276,6 @@ class TableSubSectionSerializer(serializers.ModelSerializer):
         model = TableSubSection
         fields = BaseSubSectionSerializer.Meta.fields + ['table_schema']
 
-
-
 class SubSectionSerializer(BaseSubSectionSerializer):
     class Meta:
         model = SubSection
@@ -318,7 +301,6 @@ class SubSectionSerializer(BaseSubSectionSerializer):
 
         return super().to_representation(instance)
 
-
 class SectionSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(required=False)
     sub_sections = SubSectionSerializer(many=True, required=False)
@@ -327,14 +309,22 @@ class SectionSerializer(serializers.ModelSerializer):
         model = MainSection
         fields = ['id', 'name', 'code', 'position', 'sub_sections']
 
-
 class SyllabusDetailSerializer(serializers.ModelSerializer):
     main_sections = SectionSerializer(many=True, required=False)
+    label_overrides = serializers.SerializerMethodField()
 
     class Meta:
         model = Syllabus
-        fields = ['id', 'name', 'status', 'main_sections', 'start_date_edition',
-                  'end_date_edition', 'revision']
+        fields = ['id', 'name', 'template', 'status', 'main_sections', 'start_date_edition',
+                  'end_date_edition', 'revision', 'label_overrides']
+
+    def get_label_overrides(self, obj):
+        if not obj or not getattr(obj, 'template', None):
+            return {}
+        block_layout = getattr(obj.template, 'block_layout', None)
+        if not isinstance(block_layout, dict):
+            return {}
+        return block_layout.get('label_overrides', {})
 
     def update(self, instance, validated_data):
         client_revision = self.initial_data.get('revision')
@@ -342,7 +332,6 @@ class SyllabusDetailSerializer(serializers.ModelSerializer):
         if client_revision is not None and int(client_revision) != instance.revision:
             raise ValidationError(
                 {"err_msg": "Cấu trúc đã thay đổi, vui lòng sao chép dữ liệu và tải lại."})
-
 
         validated_data.pop('main_sections', None)
         instance = super().update(instance, validated_data)
@@ -729,7 +718,6 @@ class SyllabusDetailSerializer(serializers.ModelSerializer):
 
         TeachingSession.objects.filter(syllabus=instance).exclude(id__in=incoming_session_ids).delete()
 
-
 class LecturerInfoSerializer(serializers.ModelSerializer):
     first_name = serializers.CharField(source='user.first_name', read_only=True)
     last_name = serializers.CharField(source='user.last_name', read_only=True)
@@ -740,12 +728,10 @@ class LecturerInfoSerializer(serializers.ModelSerializer):
         model = Lecturer
         fields = ['first_name', 'last_name', 'email', 'room', 'faculty']
 
-
 class TypeRequirementSerializer(serializers.ModelSerializer):
     class Meta:
         model = TypeRequirement
         fields = ['id', 'name']
-
 
 class RequirementSubjectSerializer(serializers.ModelSerializer):
     subject_id = serializers.CharField(source='require_subject.id', read_only=True)
@@ -757,12 +743,10 @@ class RequirementSubjectSerializer(serializers.ModelSerializer):
         model = RequirementSubject
         fields = ['subject_id', 'subject_name', 'requirement_type', 'subject_code']
 
-
 class ProgrammeLearningOutcomeSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProgrammeLearningOutcome
         fields = ['id', 'name', 'description']
-
 
 class CourseObjectiveSerializer(serializers.ModelSerializer):
     programme_learning_outcomes = ProgrammeLearningOutcomeSerializer(many=True, read_only=True)
@@ -771,14 +755,12 @@ class CourseObjectiveSerializer(serializers.ModelSerializer):
         model = CourseObjective
         fields = ['id', 'content', 'programme_learning_outcomes']
 
-
 class CloPloAssociationSerializer(serializers.ModelSerializer):
     plo_id = serializers.IntegerField(source='plo.id', read_only=True)
 
     class Meta:
         model = CloPloAssociation
         fields = ['plo_id', 'rating']
-
 
 class CourseLearningOutcomeSerializer(serializers.ModelSerializer):
     plos = CloPloAssociationSerializer(source='plo_association', many=True, read_only=True)
@@ -787,7 +769,6 @@ class CourseLearningOutcomeSerializer(serializers.ModelSerializer):
         model = CourseLearningOutcome
         fields = ['id', 'content', 'position', 'plos']
 
-
 class COwithCLOSerializer(serializers.ModelSerializer):
     clos = CourseLearningOutcomeSerializer(source='course_learning_outcomes', many=True, read_only=True)
 
@@ -795,18 +776,15 @@ class COwithCLOSerializer(serializers.ModelSerializer):
         model = CourseObjective
         fields = ['id', 'position', 'clos']
 
-
 class TypeLearningMaterialSerializer(serializers.ModelSerializer):
     class Meta:
         model = TypeLearningMaterial
         fields = ['id', 'name']
 
-
 class LearningMaterialSerializer(serializers.ModelSerializer):
     class Meta:
         model = LearningMaterial
         fields = ['id', 'name']
-
 
 class SyllabusLearningMaterialSerializer(serializers.ModelSerializer):
     type_material = TypeLearningMaterialSerializer(read_only=True)
@@ -817,12 +795,10 @@ class SyllabusLearningMaterialSerializer(serializers.ModelSerializer):
         model = SyllabusLearningMaterial
         fields = ['id', 'name', 'type_material']
 
-
 class TypeAssessmentSerializer(serializers.ModelSerializer):
     class Meta:
         model = TypeAssessment
         fields = ['id', 'name']
-
 
 class MethodAssessmentSerializer(serializers.ModelSerializer):
     course_learning_outcomes = CourseLearningOutcomeSerializer(many=True, read_only=True)
@@ -830,7 +806,6 @@ class MethodAssessmentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Method
         fields = ['id', 'name', 'time', 'weight', 'course_learning_outcomes']
-
 
 class AssessmentSerializer(serializers.ModelSerializer):
     type_assessment = TypeAssessmentSerializer(read_only=True)
@@ -840,18 +815,15 @@ class AssessmentSerializer(serializers.ModelSerializer):
         model = Assessment
         fields = ['id', 'type_assessment', 'assessment_methods']
 
-
 class ScheduleGroupSerializer(serializers.ModelSerializer):
     class Meta:
         model = ScheduleGroup
         fields = ['id', 'name']
 
-
 class SlimCLOSerializer(serializers.ModelSerializer):
     class Meta:
         model = CourseLearningOutcome
         fields = ['id']
-
 
 class SlimAssessmentSerializer(serializers.ModelSerializer):
     name = serializers.CharField(source='type_assessment.name', read_only=True)
@@ -860,12 +832,10 @@ class SlimAssessmentSerializer(serializers.ModelSerializer):
         model = Assessment
         fields = ['id', 'name']
 
-
 class SlimLearningMaterialSerializer(serializers.ModelSerializer):
     class Meta:
         model = LearningMaterial
         fields = ['id', 'name']
-
 
 class TeachingSessionSerializer(serializers.ModelSerializer):
     schedule_group = ScheduleGroupSerializer(read_only=True)
@@ -878,7 +848,6 @@ class TeachingSessionSerializer(serializers.ModelSerializer):
         fields = ['id', 'session_no', 'content', 'offline_activity', 'offline_hours', 'online_activity', 'online_hours',
                   'self_study_activity', 'self_study_hours', 'course_learning_outcomes', 'assessments',
                   'learning_materials', 'schedule_group']
-
 
 class MajorSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(required=False)
@@ -921,7 +890,6 @@ class MajorSerializer(serializers.ModelSerializer):
 
         return Major.objects.create(faculty=faculty_instance, **validated_data)
 
-
 class SyllabusSimpleSerializer(serializers.ModelSerializer):
     subject_name = serializers.CharField(source='subject.name', read_only=True)
     lecturer_id = serializers.IntegerField()
@@ -942,7 +910,6 @@ class SyllabusSimpleSerializer(serializers.ModelSerializer):
         if obj.lecturer and obj.lecturer.user:
             return obj.lecturer.user.id
         return "N/A"
-
 
 class TrainingProgramSerializer(serializers.ModelSerializer):
     major = MajorSerializer(required=True)
@@ -997,7 +964,6 @@ class TrainingProgramSerializer(serializers.ModelSerializer):
 
         return program
 
-
 class TemplateSubSectionSerializer(serializers.ModelSerializer):
     id = serializers.CharField(required=False, allow_null=True, allow_blank=True)
     display_mode = serializers.CharField(required=False, allow_null=True, allow_blank=True)
@@ -1030,7 +996,6 @@ class TemplateSubSectionSerializer(serializers.ModelSerializer):
             ret['attribute_group_id'] = instance.templateselectionsubsection.attribute_group_id
 
         return ret
-
 
 class TemplateMainSectionSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(required=False)
@@ -1074,6 +1039,8 @@ class TemplateSyllabusSerializer(serializers.ModelSerializer):
             for sub_data in sub_sections_data:
                 self._upsert_sub_section(main_sec, sub_data, {})
 
+        from services.template_block_sync_service import TemplateBlockSyncService
+        TemplateBlockSyncService.sync_blocks_for_template(template)
         return template
 
     @transaction.atomic
@@ -1106,6 +1073,66 @@ class TemplateSyllabusSerializer(serializers.ModelSerializer):
                 TemplateSubSection.objects.filter(main_section=main_sec).exclude(id__in=incoming_sub_ids).delete()
 
             TemplateMainSection.objects.filter(template=instance).exclude(id__in=incoming_main_ids).delete()
-        instance.save()  # signal sync template
+            from services.template_block_sync_service import TemplateBlockSyncService
+            TemplateBlockSyncService.sync_blocks_for_template(instance)
+        instance.save()
         return instance
+
+
+class TemplateBlockSerializer(serializers.ModelSerializer):
+    template = serializers.PrimaryKeyRelatedField(
+        queryset=TemplateSyllabus.objects.all(),
+        required=False
+    )
+    table_schema = serializers.SerializerMethodField(read_only=True)
+
+    class Meta:
+        model = TemplateBlock
+        fields = [
+            'id', 'template', 'code', 'name', 'block_type',
+            'xml_template', 'style_config', 'reference_class',
+            'config', 'position', 'is_active', 'table_schema',
+        ]
+        read_only_fields = ['id', 'table_schema']
+
+    def get_table_schema(self, obj):
+        if obj.block_type != 'table':
+            return None
+        cfg = obj.config or {}
+        code = cfg.get('table_code') or cfg.get('code') or obj.code
+        from syllabuses.models import TemplateTableSubSection
+        tpl_sub = TemplateTableSubSection.objects.filter(
+            main_section__template_id=obj.template_id,
+            code=code,
+        ).first()
+        if tpl_sub and tpl_sub.table_schema:
+            return tpl_sub.table_schema
+        return cfg.get('table_schema')
+
+
+class CustomColumnSerializer(serializers.ModelSerializer):
+    template = serializers.PrimaryKeyRelatedField(
+        queryset=TemplateSyllabus.objects.all(),
+        required=False
+    )
+
+    class Meta:
+        model = CustomColumn
+        fields = [
+            'id', 'template', 'table_code', 'level', 'column_key',
+            'column_label', 'column_type', 'default_value',
+            'position', 'is_active',
+        ]
+        read_only_fields = ['id', 'column_key']
+
+
+class CustomColumnValueSerializer(serializers.ModelSerializer):
+    column_key = serializers.CharField(source='column.column_key', read_only=True)
+    table_code = serializers.CharField(source='column.table_code', read_only=True)
+
+    class Meta:
+        model = CustomColumnValue
+        fields = ['id', 'column', 'column_key', 'table_code', 'object_id', 'value']
+        read_only_fields = ['id', 'column_key', 'table_code']
+
 

@@ -39,6 +39,40 @@ const SessionContent = ({
   materialOptions,
   onChange,
 }) => {
+  const labelOverrides = useSyllabusStore((state) => state.labelOverrides) || {};
+  const scheduleLabels = labelOverrides.teaching_schedule || {};
+  const customColumns = useSyllabusStore((state) => state.customColumns) || [];
+  const customValues = useSyllabusStore((state) => state.customValues) || {};
+  const updateCustomValue = useSyllabusStore((state) => state.updateCustomValue);
+
+  const scheduleCustomCols = customColumns.filter(
+    (c) => c.table_code === "teaching_schedule" && c.is_active !== false,
+  );
+
+  const activityFields = [
+    {
+      key: "offline",
+      title: scheduleLabels.col_offline || "HĐ trên lớp (Offline)",
+      titleColor: "text-blue-600",
+      activityField: "offline_activity",
+      hoursField: "offline_hours",
+    },
+    {
+      key: "online",
+      title: scheduleLabels.col_online || "HĐ trực tuyến (Online)",
+      titleColor: "text-green-600",
+      activityField: "online_activity",
+      hoursField: "online_hours",
+    },
+    {
+      key: "self_study",
+      title: scheduleLabels.col_self || "Tự học",
+      titleColor: "text-purple-600",
+      activityField: "self_study_activity",
+      hoursField: "self_study_hours",
+    },
+  ];
+
   const handleFieldChange = (field, val) => {
     onChange({
       ...session,
@@ -80,7 +114,7 @@ const SessionContent = ({
       <Row gutter={16}>
         <Col span={3}>
           <div className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1">
-            Buổi số
+            {scheduleLabels.col_session || "Buổi số"}
           </div>
           <InputNumber
             min={1}
@@ -94,7 +128,7 @@ const SessionContent = ({
         </Col>
         <Col span={21}>
           <div className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1">
-            Nội dung giảng dạy
+            {scheduleLabels.col_content || "Nội dung giảng dạy"}
           </div>
           <TextArea
             autoSize={{minRows: 3, maxRows: 15}}
@@ -107,7 +141,7 @@ const SessionContent = ({
       </Row>
 
       <Row gutter={16} className="mt-4">
-        {ACTIVITY_FIELDS.map((item) => (
+        {activityFields.map((item) => (
           <Col span={8} key={item.key}>
             <div className="bg-white border border-gray-200 p-3 rounded-lg shadow-sm">
               <div
@@ -148,7 +182,7 @@ const SessionContent = ({
         <Row gutter={16}>
           <Col span={8}>
             <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">
-              Đáp ứng CLOs
+              {scheduleLabels.col_clo || "Đáp ứng CLOs"}
             </div>
             <Select
               mode="multiple"
@@ -178,7 +212,7 @@ const SessionContent = ({
           </Col>
           <Col span={8}>
             <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">
-              Tài liệu học tập
+              {scheduleLabels.col_material || "Tài liệu học tập"}
             </div>
             <Select
               mode="multiple"
@@ -194,6 +228,30 @@ const SessionContent = ({
           </Col>
         </Row>
       </div>
+
+      {scheduleCustomCols.length > 0 && (
+        <div className="border-t border-gray-100 mt-4 pt-3">
+          <Row gutter={16}>
+            {scheduleCustomCols.map((col) => {
+              const valKey = `${col.id}_${session.session_no || session.id || 0}`;
+              const val = customValues[valKey] ?? customValues[col.id] ?? col.default_value ?? "";
+              return (
+                <Col span={Math.max(6, Math.floor(24 / scheduleCustomCols.length))} key={col.id || col.column_key}>
+                  <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">
+                    {col.column_label}
+                  </div>
+                  <Input
+                    placeholder={`Nhập ${col.column_label}...`}
+                    className="w-full rounded-md text-sm font-normal text-gray-700"
+                    value={val}
+                    onChange={(e) => updateCustomValue(valKey, e.target.value)}
+                  />
+                </Col>
+              );
+            })}
+          </Row>
+        </div>
+      )}
     </>
   );
 };

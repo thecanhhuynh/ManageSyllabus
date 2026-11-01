@@ -135,6 +135,8 @@ const LearningMaterialEditor = ({item, basePath}) => {
       state.localBlocks[item.code]?.data?.reference_data || EMPTY_ARRAY,
   );
   const updateLocalBlock = useSyllabusStore((state) => state.updateLocalBlock);
+  const labelOverrides = useSyllabusStore((state) => state.labelOverrides) || {};
+  const labels = labelOverrides.learning_material || {};
 
   const [materialOptions, setMaterialOptions] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -258,7 +260,7 @@ const LearningMaterialEditor = ({item, basePath}) => {
           >
             <div className="px-4 py-2 border-b border-gray-100 bg-gray-50/80">
               <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">
-                {matType.name}
+                {labels.col_type ? `${labels.col_type}: ${matType.name}` : matType.name}
               </span>
             </div>
 

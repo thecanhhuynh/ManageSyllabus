@@ -1,4 +1,3 @@
-# File: syllabuses/synchronize_service.py
 import json
 
 import redis
@@ -66,13 +65,12 @@ SYNC_STRATEGIES = {
     'table': TableSyncStrategy(),
 }
 
-
 redis_client = redis.StrictRedis(host='localhost', port=6379, db=0)
 
 class TemplateSyncService:
     @classmethod
     def sync(cls, template_instance):
-        print(f"--- Bắt đầu đồng bộ Template ID: {template_instance.id} ---")
+        print(f"--- Start sync Template ID: {template_instance.id} ---")
         syllabuses = Syllabus.objects.filter(template=template_instance)
         tpl_mains = list(TemplateMainSection.objects.filter(template=template_instance))
         tpl_subs = list(TemplateSubSection.objects.filter(main_section__in=tpl_mains))
@@ -116,7 +114,7 @@ class TemplateSyncService:
             SubSection.objects.filter(main_section__in=existing_mains.values()).exclude(
                 code__in=valid_sub_codes).delete()
 
-        print("--- Hoàn tất đồng bộ ---")
+        print("--- Sync completed ---")
         redis_client.publish('syllabus_sync_channel', json.dumps({
             'action': 'sync_completed',
             'template_id': template_instance.id

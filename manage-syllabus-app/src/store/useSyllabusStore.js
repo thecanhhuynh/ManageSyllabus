@@ -1,5 +1,5 @@
 import {create} from "zustand";
-// Import thư viện để clone/merge object sâu (deep merge), tránh lỗi shallow merge ở các mục 34, 35
+
 import {cloneDeep, isEqual, merge, mergeWith} from "lodash";
 
 export const useSyllabusStore = create((set, get) => ({
@@ -7,6 +7,17 @@ export const useSyllabusStore = create((set, get) => ({
   serverSnapshot: {},
   localBlocks: {},
   conflicts: [],
+  labelOverrides: {},
+  customColumns: [],
+  customValues: {},
+
+  setLabelOverrides: (overrides) => set({ labelOverrides: overrides || {} }),
+  setCustomColumns: (columns) => set({ customColumns: columns || [] }),
+  setCustomValues: (values) => set({ customValues: values || {} }),
+  updateCustomValue: (columnId, val) =>
+    set((state) => ({
+      customValues: { ...state.customValues, [columnId]: val },
+    })),
 
   initData: (serverRevision, mainSections) => {
     const snapshots = {};

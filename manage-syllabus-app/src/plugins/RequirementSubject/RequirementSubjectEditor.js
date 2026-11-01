@@ -178,6 +178,15 @@ const RequirementSubjectEditor = ({item, basePath}) => {
       state.localBlocks[item.code]?.data?.reference_data || EMPTY_ARRAY,
   );
   const updateLocalBlock = useSyllabusStore((state) => state.updateLocalBlock);
+  const labelOverrides = useSyllabusStore((state) => state.labelOverrides) || {};
+  const labels = labelOverrides.requirement_subject || {};
+  const customColumns = useSyllabusStore((state) => state.customColumns) || [];
+  const customValues = useSyllabusStore((state) => state.customValues) || {};
+  const updateCustomValue = useSyllabusStore((state) => state.updateCustomValue);
+
+  const reqCustomCols = customColumns.filter(
+    (col) => col.table_code === "requirement_subject" && col.is_active !== false,
+  );
 
   useEffect(() => {
     const loadTypes = async () => {
@@ -270,6 +279,32 @@ const RequirementSubjectEditor = ({item, basePath}) => {
           />
         );
       })}
+
+      {reqCustomCols.length > 0 && (
+        <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+          <div className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-2">
+            Thông tin bổ sung
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {reqCustomCols.map((col) => {
+              const val = customValues[col.id] ?? col.default_value ?? "";
+              return (
+                <div key={col.id}>
+                  <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">
+                    {col.column_label}
+                  </div>
+                  <input
+                    placeholder={`Nhập ${col.column_label}...`}
+                    className="w-full rounded-md border border-gray-300 px-3 py-1.5 text-sm font-normal text-gray-700 outline-none focus:border-blue-500"
+                    value={val}
+                    onChange={(e) => updateCustomValue(col.id, e.target.value)}
+                  />
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

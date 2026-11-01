@@ -70,7 +70,7 @@ const TextEditor = ({item, basePath}) => {
         );
     }
   };
-  // console.log("Trạng thái update:", item.requires_update);
+
   return (
     <UpdateRequireWrapper isRequired={item.requires_update}>
       {renderFormItem()}

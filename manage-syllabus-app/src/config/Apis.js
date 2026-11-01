@@ -32,6 +32,23 @@ export const endpoints = {
   templates: "/templates/",
   "clone-templates": (templateId) => `/templates/${templateId}/clone/`,
   "publish-template": (templateId) => `/publish-template/${templateId}`,
+  "template-style-config": (templateId) => `/templates/${templateId}/style-config/`,
+  "template-publish-style": (templateId) => `/templates/${templateId}/publish-style/`,
+  "template-upload-docx": (templateId) => `/templates/${templateId}/upload-docx/`,
+  "template-preview": (templateId) => `/templates/${templateId}/preview/`,
+  "template-blocks": (templateId) => `/templates/${templateId}/blocks/`,
+  blocks: "/blocks/",
+  "block-detail": (blockId) => `/blocks/${blockId}/`,
+  "template-custom-columns": (templateId) => `/templates/${templateId}/custom-columns/`,
+  "custom-columns": "/custom-columns/",
+  "custom-column-detail": (columnId) => `/custom-columns/${columnId}/`,
+  "template-header-footer": (templateId) => `/templates/${templateId}/header-footer/`,
+  "template-upload-logo": (templateId) => `/templates/${templateId}/upload-logo/`,
+  "template-delete-logo": (templateId) => `/templates/${templateId}/delete-logo/`,
+  "template-main-section-style": (templateId, msId) => `/templates/${templateId}/main-sections/${msId}/style/`,
+  "template-bulk-spacing": (templateId) => `/templates/${templateId}/bulk-spacing/`,
+  "template-rollback-bulk-spacing": (templateId) => `/templates/${templateId}/rollback-bulk-spacing/`,
+  "syllabus-custom-values": (syllabusId) => `/syllabuses/${syllabusId}/custom-values/`,
   "export-docx": (syllabusId) => `/export-syllabus/${syllabusId}/`,
   "sse/sync-stream/": "/sse/sync-stream/",
   "admin-users": "/admin/users/",
@@ -46,51 +63,70 @@ export default axios.create({
 
 export const authApis = () => {
   const token = cookies.load("token");
+  const headers = {};
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
   const instance = axios.create({
     baseURL: process.env.REACT_APP_BASE_URL,
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
+    headers,
   });
 
   instance.interceptors.response.use(
     (response) => response,
     async (error) => {
       const originalRequest = error.config;
+      const is401 = error?.response?.status === 401;
 
-      if (
-        error.response &&
-        error.response.status === 401 &&
-        !originalRequest._retry
-      ) {
-        originalRequest._retry = true;
-
-        try {
-          const refreshToken = cookies.load("refreshToken");
-          if (refreshToken) {
-            const res = await axios.post(
-              `${process.env.REACT_APP_BASE_URL}/refresh-token`,
-              {
-                refreshToken,
-              },
-            );
-            if (res.status === 200 && res.data.accessToken) {
-              const newToken = res.data.accessToken;
-              cookies.save("token", newToken, {path: "/"});
-              cookies.save("refreshToken", res.data.refreshToken, {path: "/"});
-              originalRequest.headers.Authorization = `Bearer ${newToken}`;
-              return instance(originalRequest);
-            }
-          }
-        } catch (refreshErr) {
-          console.error("Refresh token expired or failed", refreshErr);
-          cookies.remove("token");
-          cookies.remove("refreshToken");
-          window.location.href = "/login";
-        }
+      if (!is401 || originalRequest?._retry) {
+        return Promise.reject(error);
       }
 
-      return Promise.reject(error);
+      originalRequest._retry = true;
+      const refreshToken = cookies.load("refreshToken");
+
+      if (!refreshToken) {
+        cookies.remove("token", {path: "/"});
+        cookies.remove("refreshToken", {path: "/"});
+        window.location.href = "/login";
+        return Promise.reject(error);
+      }
+
+      try {
+        const res = await axios.post(
+          `${process.env.REACT_APP_BASE_URL}/o/token/`,
+          new URLSearchParams({
+            grant_type: "refresh_token",
+            refresh_token: refreshToken,
+            client_id: CLIENT_ID,
+            client_secret: CLIENT_SECRET,
+          }),
+          {
+            headers: {
+              "Content-Type": "application/x-www-form-urlencoded",
+            },
+          },
+        );
+
+        const newToken = res?.data?.access_token;
+        if (!newToken) {
+          throw new Error("No access token returned from refresh");
+        }
+
+        cookies.save("token", newToken, {path: "/"});
+        if (res.data?.refresh_token) {
+          cookies.save("refreshToken", res.data.refresh_token, {path: "/"});
+        }
+        originalRequest.headers.Authorization = `Bearer ${newToken}`;
+        return instance(originalRequest);
+      } catch (refreshErr) {
+        console.error("Refresh token expired or failed", refreshErr);
+        cookies.remove("token", {path: "/"});
+        cookies.remove("refreshToken", {path: "/"});
+        window.location.href = "/login";
+        return Promise.reject(refreshErr);
+      }
     },
   );
 
