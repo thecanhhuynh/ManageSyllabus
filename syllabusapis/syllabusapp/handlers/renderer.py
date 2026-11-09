@@ -6,10 +6,10 @@ from django.conf import settings
 from docx import Document
 from docx.enum.table import WD_TABLE_ALIGNMENT
 from docx.enum.text import WD_ALIGN_PARAGRAPH
-from docx.shared import Pt
+from docx.shared import Pt, Cm, Inches
 from docxtpl import DocxTemplate
 
-from handlers.base import TextRenderer, TableRenderer, SelectionRenderer, ReferenceRenderer
+from handlers.base import TextRenderer, TableRenderer, SelectionRenderer, ReferenceRenderer, set_table_borders
 from handlers.data_mapper import SyllabusDataMapper
 from handlers.table_renderer import render_dynamic_tables
 from syllabuses.models import Syllabus
@@ -35,11 +35,12 @@ class SyllabusDocxRenderer:
             settings.BASE_DIR,
             'templates', 'exports', 'styles_blank.docx'
         )
-        self.doc = Document(template_path)
+        self.doc = Document(template_path) if os.path.exists(template_path) else Document()
 
-        style = self.doc.styles['Normal']
-        style.font.name = 'Times New Roman'
-        style.font.size = Pt(13)
+        if 'Normal' in self.doc.styles:
+            style = self.doc.styles['Normal']
+            style.font.name = 'Times New Roman'
+            style.font.size = Pt(13)
 
         self.renderers = {
             'text': TextRenderer(self.doc),
@@ -99,55 +100,94 @@ class SyllabusDocxRenderer:
         run_title_en.font.bold = True
         run_title_en.font.size = Pt(14)
 
+    @staticmethod
+    def _format_user_name(user, default: str) -> str:
+        if not user:
+            return default
+        last = (getattr(user, "last_name", "") or "").strip()
+        first = (getattr(user, "first_name", "") or "").strip()
+        name = f"{last} {first}".strip()
+        return name or (getattr(user, "username", "") or default)
+
+    @staticmethod
+    def _insert_sig_or_spaces(paragraph, cell, sig_path: str | None):
+        if sig_path and os.path.exists(sig_path):
+            p_img = cell.add_paragraph()
+            p_img.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            p_img.paragraph_format.space_before = Pt(4)
+            p_img.paragraph_format.space_after = Pt(4)
+            p_img.add_run().add_picture(sig_path, height=Pt(40))
+            return
+        paragraph.add_run("\n\n\n\n\n")
+
     def _render_document_footer(self):
         self.doc.add_paragraph()
+        d_text = "Thành phố Hồ Chí Minh, ngày ... tháng ... năm 202..."
+        appr_date = getattr(self.syllabus, "approved_date", None)
+        if appr_date:
+            d_text = f"Thành phố Hồ Chí Minh, ngày {appr_date.day:02d} tháng {appr_date.month:02d} năm {appr_date.year}"
 
         p_date = self.doc.add_paragraph()
         p_date.alignment = WD_ALIGN_PARAGRAPH.RIGHT
-        run_date = p_date.add_run("Thành phố Hồ Chí Minh, ngày ... tháng ... năm 202...")
+        run_date = p_date.add_run(d_text)
         run_date.font.name = 'Times New Roman'
         run_date.font.italic = True
         run_date.font.size = Pt(13)
 
         table = self.doc.add_table(rows=1, cols=2)
+        self._render_footer_cells(table)
 
-        cell_left = table.cell(0, 0)
-        p_left = cell_left.paragraphs[0]
-        p_left.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    def _render_footer_cells(self, table):
+        from syllabuses.models import Lecturer
+        leader = None
+        if self.syllabus.approved_by and hasattr(self.syllabus.approved_by, 'lecturer_profile'):
+            leader = self.syllabus.approved_by.lecturer_profile
+        elif self.syllabus.faculty:
+            leader = Lecturer.objects.filter(
+                faculty=self.syllabus.faculty,
+                faculty_role__in=['dean', 'vice_dean']
+            ).first()
 
-        run_left_title = p_left.add_run("PHỤ TRÁCH KHOA CNTT\nDEPUTY DEAN\n")
-        run_left_title.font.name = 'Times New Roman'
-        run_left_title.font.bold = True
-        run_left_title.font.size = Pt(13)
+        fac_name = getattr(self.syllabus.faculty, 'name', 'Công nghệ Thông tin') if self.syllabus.faculty else 'Công nghệ Thông tin'
+        clean_fac = fac_name[5:].strip() if fac_name.lower().startswith('khoa ') else fac_name.strip()
+        role = getattr(leader, 'faculty_role', 'dean')
+        is_dean = role == 'dean'
 
-        run_left_note = p_left.add_run("(Ký và ghi rõ họ tên-Signed with fullname)\n\n\n\n\n")
-        run_left_note.font.name = 'Times New Roman'
-        run_left_note.font.italic = True
-        run_left_note.font.size = Pt(13)
+        left_title = f"TRƯỞNG KHOA {clean_fac.upper()}\nDEAN\n" if is_dean else f"PHÓ TRƯỞNG KHOA {clean_fac.upper()}\nDEPUTY DEAN\n"
+        leader_user = getattr(leader, 'user', None) or getattr(self.syllabus, 'approved_by', None)
+        left_name = self._format_user_name(leader_user, "TS. Trương Hoàng Vinh")
+        leader_sig = leader.signature_image.path if (leader and getattr(leader, 'signature_image', None) and self.syllabus.is_approved) else None
 
-        run_left_name = p_left.add_run("TS. Trương Hoàng Vinh")
-        run_left_name.font.name = 'Times New Roman'
-        run_left_name.font.bold = True
-        run_left_name.font.size = Pt(13)
+        lec = getattr(self.syllabus, 'lecturer', None)
+        lec_user = getattr(lec, 'user', None) if lec else None
+        right_name = self._format_user_name(lec_user, "ThS. Dương Hữu Thành")
+        lec_sig = lec.signature_image.path if (lec and getattr(lec, 'signature_image', None)) else None
 
-        cell_right = table.cell(0, 1)
-        p_right = cell_right.paragraphs[0]
-        p_right.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        self._populate_legacy_cell(table.cell(0, 0), left_title, left_name, leader_sig)
+        self._populate_legacy_cell(table.cell(0, 1), "GIẢNG VIÊN BIÊN SOẠN\nACADEMIC\n", right_name, lec_sig)
 
-        run_right_title = p_right.add_run("GIẢNG VIÊN BIÊN SOẠN\nACADEMIC\n")
-        run_right_title.font.name = 'Times New Roman'
-        run_right_title.font.bold = True
-        run_right_title.font.size = Pt(13)
+    def _populate_legacy_cell(self, cell, title, name, sig_path):
+        p = cell.paragraphs[0]
+        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        r_title = p.add_run(title)
+        r_title.font.name = 'Times New Roman'
+        r_title.font.bold = True
+        r_title.font.size = Pt(13)
 
-        run_right_note = p_right.add_run("(Ký và ghi rõ họ tên- Signed with fullname)\n\n\n\n\n")
-        run_right_note.font.name = 'Times New Roman'
-        run_right_note.font.italic = True
-        run_right_note.font.size = Pt(13)
+        r_note = p.add_run("(Ký và ghi rõ họ tên-Signed with fullname)\n")
+        r_note.font.name = 'Times New Roman'
+        r_note.font.italic = True
+        r_note.font.size = Pt(13)
 
-        run_right_name = p_right.add_run("ThS. Dương Hữu Thành")
-        run_right_name.font.name = 'Times New Roman'
-        run_right_name.font.bold = True
-        run_right_name.font.size = Pt(13)
+        self._insert_sig_or_spaces(p, cell, sig_path)
+
+        p_name = cell.add_paragraph() if sig_path and os.path.exists(sig_path) else p
+        r_name = p_name.add_run(name)
+        r_name.font.name = 'Times New Roman'
+        r_name.font.bold = True
+        r_name.font.size = Pt(13)
+        if p_name != p:
+            p_name.alignment = WD_ALIGN_PARAGRAPH.CENTER
 
     def render(self):
         self._render_document_header()

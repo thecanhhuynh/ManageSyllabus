@@ -274,7 +274,7 @@ class ReferenceRenderer(BaseSubSectionRenderer):
 
         for r_idx, req_type in enumerate(all_req_types):
             cells = table.rows[r_idx + 1].cells
-            self._write_cell(cells[0], f"{r_idx + 1}.", WD_ALIGN_PARAGRAPH.CENTER)
+            self._write_cell(cells[0], str(r_idx + 1), WD_ALIGN_PARAGRAPH.CENTER)
             p_name = self._write_cell(cells[1], f"{req_type}\n")
             p_code = self._write_cell(cells[2], h_align=WD_ALIGN_PARAGRAPH.CENTER)
 

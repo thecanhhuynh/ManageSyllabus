@@ -50,7 +50,7 @@ class StyleManager:
                 
             for r in p.runs:
                 run_style = dict(effective)
-                if r.bold and not (content_style or {}).get("bold"):
+                if r.bold and (content_style or {}).get("bold") is None:
                     run_style["bold"] = True
                 _apply_run_style(r._r, run_style)
 
@@ -136,8 +136,8 @@ class StyleManager:
             _, content_style = _extract_styles(block.style_config)
 
         named_styles = (block_layout or {}).get("named_styles", {})
-        header_style = dict(named_styles.get("SYLLABUS_TABLE_HEADER", {}))
-        header_style.update({k: v for k, v in content_style.items() if v is not None})
+        header_style = dict(content_style)
+        header_style.update({k: v for k, v in named_styles.get("SYLLABUS_TABLE_HEADER", {}).items() if v is not None})
         
         body_style = dict(named_styles.get("SYLLABUS_TABLE_BODY", {}))
         body_style.update({k: v for k, v in content_style.items() if v is not None})

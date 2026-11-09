@@ -57,6 +57,9 @@ export const TableRowsRenderer = ({
   onCellClick,
   onSelectAlign,
   onClearAlign,
+  columnsMetadata,
+  onUpdateColumnLabel,
+  onResetColumnLabel,
 }) => (
   <>
     {rows.map((row, ri) => (
@@ -84,6 +87,9 @@ export const TableRowsRenderer = ({
               onCellClick={onCellClick}
               onSelectAlign={onSelectAlign}
               onClearAlign={onClearAlign}
+              columnsMetadata={columnsMetadata}
+              onUpdateColumnLabel={onUpdateColumnLabel}
+              onResetColumnLabel={onResetColumnLabel}
             />
           );
         })}
@@ -98,6 +104,9 @@ export const TableRenderer = ({
   interactiveCellAlign = false,
   cellAlignments = {},
   onCellAlignmentChange,
+  columnsMetadata = null,
+  onUpdateColumnLabel = null,
+  onResetColumnLabel = null,
 }) => {
   const { selectedCells, setSelectedCells, singlePopoverCell, setSinglePopoverCell, handleCellClick, handleBatchAlign, handleBatchClear } =
     useTableSelection(cellAlignments, onCellAlignmentChange);
@@ -168,6 +177,9 @@ export const TableRenderer = ({
               onCellAlignmentChange(next);
               setSinglePopoverCell(null);
             }}
+            columnsMetadata={columnsMetadata}
+            onUpdateColumnLabel={onUpdateColumnLabel}
+            onResetColumnLabel={onResetColumnLabel}
           />
         </tbody>
       </table>

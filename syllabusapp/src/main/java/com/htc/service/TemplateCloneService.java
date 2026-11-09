@@ -74,6 +74,12 @@ public class TemplateCloneService {
         SyllabusesTemplatesyllabus currentTemplate = this.templateRepo.findById(templateId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy Template hiện tại"));
         currentTemplate.setIsActive(true);
+        this.templateRepo.save(currentTemplate);
+
+        if (currentTemplate.getParentId() == null) {
+            return;
+        }
+
         SyllabusesTemplatesyllabus oldTemplate = this.templateRepo.findById(currentTemplate.getParentId().getId())
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy Template cũ"));
 
@@ -87,7 +93,7 @@ public class TemplateCloneService {
             newSyllabus.setStartDateEdition(new Date());
             newSyllabus.setEndDateEdition(new Date());
             newSyllabus.setEditDate("Ban hành mẫu mới");
-            newSyllabus.setStatus("Active");
+            newSyllabus.setStatus("Draft");
             newSyllabus.setTemplateId(currentTemplate);
             newSyllabus.setSubjectId(oldSyllabus.getSubjectId());
             newSyllabus.setLecturerId(oldSyllabus.getLecturerId());

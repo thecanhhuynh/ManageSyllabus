@@ -40,7 +40,31 @@ const SubjectManagement = () => {
     loadSubjects();
   }, []);
 
+  const handleCreditChange = (changedValues, allValues) => {
+    if (!changedValues.credit) return;
+    if (
+      changedValues.credit.number_theory === undefined &&
+      changedValues.credit.number_practice === undefined
+    ) {
+      return;
+    }
+    const theory = Number(allValues?.credit?.number_theory || 0);
+    const practice = Number(allValues?.credit?.number_practice || 0);
+    form.setFieldsValue({
+      credit: {
+        hour_self_study: theory * 30 + practice * 15,
+      },
+    });
+  };
+
   const handleSave = async (values) => {
+    const theory = Number(values?.credit?.number_theory || 0);
+    const practice = Number(values?.credit?.number_practice || 0);
+    if (theory + practice <= 0) {
+      message.error("Tổng số tín chỉ lý thuyết và thực hành phải lớn hơn 0!");
+      return;
+    }
+
     try {
       if (values.id) {
         await authApis().patch(endpoints["update-subject"](values.id), values);
@@ -52,7 +76,8 @@ const SubjectManagement = () => {
       setIsModalVisible(false);
       loadSubjects();
     } catch (err) {
-      message.error("Có lỗi xảy ra!");
+      const errMsg = err?.response?.data?.credit || err?.response?.data?.code || "Có lỗi xảy ra!";
+      message.error(typeof errMsg === "string" ? errMsg : "Có lỗi xảy ra!");
     }
   };
 
@@ -136,7 +161,12 @@ const SubjectManagement = () => {
         onOk={() => form.submit()}
         width={600}
       >
-        <Form form={form} layout="vertical" onFinish={handleSave}>
+        <Form
+          form={form}
+          layout="vertical"
+          onFinish={handleSave}
+          onValuesChange={handleCreditChange}
+        >
           <Form.Item name="id" hidden>
             <Input />
           </Form.Item>
@@ -148,9 +178,15 @@ const SubjectManagement = () => {
             <Form.Item
               name="code"
               label="Mã môn học"
-              rules={[{required: true, message: "Vui lòng nhập mã môn học"}]}
+              rules={[
+                {required: true, message: "Vui lòng nhập mã môn học"},
+                {
+                  pattern: /^[A-Z0-9_-]{2,20}$/,
+                  message: "Mã môn chỉ gồm chữ in hoa, số, dấu gạch nối hoặc gạch dưới (2-20 ký tự)",
+                },
+              ]}
             >
-              <Input placeholder="Nhập mã môn" />
+              <Input placeholder="VD: CS101, MATH_01" />
             </Form.Item>
 
             <Form.Item
@@ -178,7 +214,20 @@ const SubjectManagement = () => {
               <Form.Item
                 name={["credit", "number_practice"]}
                 label="Thực hành"
-                rules={[{required: true, message: "Nhập số TC"}]}
+                dependencies={[["credit", "number_theory"]]}
+                rules={[
+                  {required: true, message: "Nhập số TC"},
+                  ({getFieldValue}) => ({
+                    validator() {
+                      const t = Number(getFieldValue(["credit", "number_theory"]) || 0);
+                      const p = Number(getFieldValue(["credit", "number_practice"]) || 0);
+                      if (t + p <= 0) {
+                        return Promise.reject(new Error("Tổng số TC phải > 0"));
+                      }
+                      return Promise.resolve();
+                    },
+                  }),
+                ]}
               >
                 <InputNumber className="w-full" min={0} placeholder="VD: 1" />
               </Form.Item>

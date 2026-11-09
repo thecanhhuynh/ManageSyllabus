@@ -14,8 +14,15 @@ import {
   Checkbox,
   Form,
   Select,
+  Tooltip,
 } from "antd";
-import {ArrowLeftOutlined, PlusOutlined, SaveOutlined} from "@ant-design/icons";
+import {
+  ArrowLeftOutlined,
+  PlusOutlined,
+  SaveOutlined,
+  CheckCircleOutlined,
+  ClockCircleOutlined,
+} from "@ant-design/icons";
 import dayjs from "dayjs";
 import {Option} from "antd/es/mentions";
 
@@ -160,6 +167,14 @@ const SyllabusesProgram = () => {
       const payload = {};
       if (changes.lecturer_id) payload.lecturer_id = changes.lecturer_id;
       if (changes.dates && changes.dates.length === 2) {
+        if (changes.dates[1].isBefore(dayjs())) {
+          return message.error("Hạn kết thúc không được nằm trong quá khứ!");
+        }
+        if (changes.dates[1].diff(changes.dates[0], "day") < 3) {
+          return message.error(
+            "Thời hạn kết thúc phải cách thời gian bắt đầu tối thiểu 3 ngày theo quy định BR-03!",
+          );
+        }
         payload.start_date_edition = changes.dates[0].format(
           "YYYY-MM-DDTHH:mm:ss",
         );
@@ -191,6 +206,26 @@ const SyllabusesProgram = () => {
   };
 
   const handleCreateSyllabus = async (values) => {
+    const isSubjectDuplicate = syllabuses.some(
+      (s) => s.subject_id === values.subject_obj || s.subject?.id === values.subject_obj,
+    );
+    if (isSubjectDuplicate) {
+      return message.error("Môn học này đã có đề cương trong chương trình đào tạo hiện tại!");
+    }
+
+    const assignedLecturer = lecturers.find(
+      (l) => l.user_id === values.lecturer_obj || l.id === values.lecturer_obj,
+    );
+    if (
+      assignedLecturer?.faculty_id &&
+      values.faculty_obj &&
+      assignedLecturer.faculty_id !== values.faculty_obj
+    ) {
+      message.warning(
+        "Lưu ý: Giảng viên được phân công thuộc Khoa khác với Khoa quản lý môn học này (Phân công liên khoa).",
+      );
+    }
+
     setCreating(true);
     try {
       const payload = {
@@ -255,6 +290,16 @@ const SyllabusesProgram = () => {
     if (!bulkDates || bulkDates.length < 2)
       return message.warning("Vui lòng chọn ngày");
 
+    if (bulkDates[1].isBefore(dayjs())) {
+      return message.error("Hạn kết thúc không được nằm trong quá khứ!");
+    }
+
+    if (bulkDates[1].diff(bulkDates[0], "day") < 3) {
+      return message.error(
+        "Thời hạn kết thúc phải cách thời gian bắt đầu tối thiểu 3 ngày theo quy định BR-03!",
+      );
+    }
+
     let finalIds = selectedRowKeys;
     if (!overwrite) {
       finalIds = selectedRowKeys.filter((id) => {
@@ -305,20 +350,26 @@ const SyllabusesProgram = () => {
     {
       title: "Trạng thái",
       dataIndex: "status",
-      width: 120,
-      render: (status) => (
-        <Tag
-          color={
-            status === "Approved"
-              ? "green"
-              : status === "Pending"
-                ? "blue"
-                : "orange"
-          }
-        >
-          {status || "Draft"}
-        </Tag>
-      ),
+      width: 150,
+      render: (status, record) => {
+        const isApproved = (status === "Approved" || record?.is_approved) && record?.approved_by;
+        if (isApproved) {
+          const approverInfo = record?.approved_by_name
+            ? `Được phê duyệt bởi ${record.approved_by_name}${record.approved_date ? ` lúc ${record.approved_date}` : ""}`
+            : "Đề cương đã được phê duyệt";
+          return (
+            <Tooltip title={approverInfo}>
+              <Tag color="green" icon={<CheckCircleOutlined />}>
+                Đã phê duyệt
+              </Tag>
+            </Tooltip>
+          );
+        }
+        if (status === "Submitted") {
+          return <Tag color="blue" icon={<ClockCircleOutlined />}>Chờ phê duyệt</Tag>;
+        }
+        return <Tag color="orange" icon={<ClockCircleOutlined />}>Bản nháp</Tag>;
+      },
     },
     {
       title: "Giảng viên phụ trách",
@@ -577,6 +628,7 @@ const SyllabusesProgram = () => {
             <RangePicker
               className="w-full"
               showTime
+              disabledDate={(current) => current && current < dayjs().startOf("day")}
               onChange={(dates) => setBulkDates(dates)}
             />
           </div>

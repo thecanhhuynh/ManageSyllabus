@@ -39,6 +39,14 @@ const ProgrammeLearningOutcomeManagement = () => {
   }, [page]);
 
   const handleSave = async (values) => {
+    const cleanName = (values.name || "").trim().toLowerCase();
+    const isDuplicate = plos.some(
+      (item) => item.id !== values.id && (item.name || "").trim().toLowerCase() === cleanName
+    );
+    if (isDuplicate) {
+      return message.error(`Chuẩn đầu ra "${values.name}" đã tồn tại trong danh sách!`);
+    }
+
     try {
       if (values.id) {
         await authApis().patch(
@@ -157,9 +165,15 @@ const ProgrammeLearningOutcomeManagement = () => {
           <Form.Item
             name="name"
             label="Tên PLO"
-            rules={[{required: true, message: "Vui lòng nhập tên PLO"}]}
+            rules={[
+              {required: true, message: "Vui lòng nhập tên PLO"},
+              {
+                pattern: /^[A-Za-z0-9._-]+$/,
+                message: "Tên PLO chỉ gồm chữ, số, dấu chấm, gạch nối hoặc gạch dưới (VD: PLO1, PLO1.1)",
+              },
+            ]}
           >
-            <Input placeholder="VD: PLO1" />
+            <Input placeholder="VD: PLO1 hoặc PLO1.1" />
           </Form.Item>
           <Form.Item
             name="description"

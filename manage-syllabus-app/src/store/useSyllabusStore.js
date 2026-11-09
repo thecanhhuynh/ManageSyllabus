@@ -10,7 +10,9 @@ export const useSyllabusStore = create((set, get) => ({
   labelOverrides: {},
   customColumns: [],
   customValues: {},
+  currentSyllabus: null,
 
+  setCurrentSyllabus: (s) => set({ currentSyllabus: s || null }),
   setLabelOverrides: (overrides) => set({ labelOverrides: overrides || {} }),
   setCustomColumns: (columns) => set({ customColumns: columns || [] }),
   setCustomValues: (values) => set({ customValues: values || {} }),

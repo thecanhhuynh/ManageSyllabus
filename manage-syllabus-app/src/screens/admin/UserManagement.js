@@ -138,6 +138,7 @@ const UserManagement = () => {
       last_name: editingUser.last_name || "",
       email: editingUser.email || "",
       user_role: editingUser.user_role || "user",
+      faculty_role: editingUser.lecturer?.faculty_role || "lecturer",
       room: editingUser.lecturer?.room || "",
       faculty: initialFacultyId,
     });
@@ -146,75 +147,98 @@ const UserManagement = () => {
   const handleUpdateSubmit = async (values) => {
     if (!editingUser) return;
 
-    try {
-      setUpdating(true);
+    const executeUpdate = async () => {
+      try {
+        setUpdating(true);
 
-      const payload = {
-        first_name: values.first_name !== undefined ? values.first_name.trim() : "",
-        last_name: values.last_name !== undefined ? values.last_name.trim() : "",
-        email: values.email !== undefined ? values.email.trim() : "",
-        user_role: values.user_role,
-        room: values.room !== undefined ? values.room.trim() : "",
-        faculty: values.faculty ? Number(values.faculty) : null,
-      };
+        const payload = {
+          first_name: values.first_name !== undefined ? values.first_name.trim() : "",
+          last_name: values.last_name !== undefined ? values.last_name.trim() : "",
+          email: values.email !== undefined ? values.email.trim() : "",
+          user_role: values.user_role,
+          faculty_role: values.faculty_role || "lecturer",
+          room: values.room !== undefined ? values.room.trim() : "",
+          faculty: values.faculty ? Number(values.faculty) : null,
+        };
 
-      const res = await UserService.updateUser(editingUser.id, payload);
+        const res = await UserService.updateUser(editingUser.id, payload);
 
-      if (res.status !== 200) {
-        message.error(`Cập nhật thất bại. Mã trạng thái: ${res.status}`);
-        return;
-      }
-
-      const updatedData = res.data;
-      const selectedFaculty = faculties.find((f) => f.id === payload.faculty);
-
-      setUsers((prevUsers) =>
-        prevUsers.map((u) => {
-          if (u.id !== editingUser.id) return u;
-
-          const updatedFaculty = payload.faculty
-            ? (updatedData.lecturer?.faculty || selectedFaculty || { id: payload.faculty })
-            : null;
-
-          return {
-            ...u,
-            ...updatedData,
-            lecturer: {
-              ...(u.lecturer || {}),
-              ...(updatedData.lecturer || {}),
-              room: payload.room,
-              faculty: updatedFaculty,
-            },
-          };
-        })
-      );
-
-      setEditModalVisible(false);
-      setEditingUser(null);
-      form.resetFields();
-      message.success("Cập nhật thông tin người dùng thành công!");
-
-      fetchUsers(pagination.current, filters);
-    } catch (error) {
-      console.error("Cập nhật thất bại:", error);
-      const errorData = error.response?.data;
-      let errorMsg = "Cập nhật người dùng thất bại!";
-
-      if (typeof errorData === "string") {
-        errorMsg = errorData;
-      } else if (errorData && typeof errorData === "object") {
-        const details = Object.entries(errorData)
-          .map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(", ") : v}`)
-          .join(" | ");
-        if (details) {
-          errorMsg = details;
+        if (res.status !== 200) {
+          message.error(`Cập nhật thất bại. Mã trạng thái: ${res.status}`);
+          return;
         }
-      }
 
-      message.error(errorMsg);
-    } finally {
-      setUpdating(false);
+        const updatedData = res.data;
+        const selectedFaculty = faculties.find((f) => f.id === payload.faculty);
+
+        setUsers((prevUsers) =>
+          prevUsers.map((u) => {
+            if (u.id !== editingUser.id) return u;
+
+            const updatedFaculty = payload.faculty
+              ? (updatedData.lecturer?.faculty || selectedFaculty || { id: payload.faculty })
+              : null;
+
+            return {
+              ...u,
+              ...updatedData,
+              lecturer: {
+                ...(u.lecturer || {}),
+                ...(updatedData.lecturer || {}),
+                room: payload.room,
+                faculty: updatedFaculty,
+              },
+            };
+          })
+        );
+
+        setEditModalVisible(false);
+        setEditingUser(null);
+        form.resetFields();
+        message.success("Cập nhật thông tin người dùng thành công!");
+
+        fetchUsers(pagination.current, filters);
+      } catch (error) {
+        console.error("Cập nhật thất bại:", error);
+        const errorData = error.response?.data;
+        let errorMsg = "Cập nhật người dùng thất bại!";
+
+        if (typeof errorData === "string") {
+          errorMsg = errorData;
+        } else if (errorData && typeof errorData === "object") {
+          const details = Object.entries(errorData)
+            .map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(", ") : v}`)
+            .join(" | ");
+          if (details) {
+            errorMsg = details;
+          }
+        }
+
+        message.error(errorMsg);
+      } finally {
+        setUpdating(false);
+      }
+    };
+
+    const oldRole = editingUser.lecturer?.faculty_role || "lecturer";
+    const isDemotingLeader =
+      (oldRole === "dean" || oldRole === "vice_dean") &&
+      values.faculty_role !== "dean" &&
+      values.faculty_role !== "vice_dean";
+
+    if (isDemotingLeader) {
+      Modal.confirm({
+        title: "Xác nhận hạ quyền Lãnh đạo Khoa",
+        content: `Người dùng ${editingUser.last_name} ${editingUser.first_name} đang giữ chức vụ Lãnh đạo Khoa. Việc hạ quyền có thể làm gián đoạn quyền duyệt các đề cương đang chờ phê duyệt. Bạn có chắc chắn muốn hạ quyền?`,
+        okText: "Tiếp tục hạ quyền",
+        okType: "danger",
+        cancelText: "Hủy",
+        onOk: () => executeUpdate(),
+      });
+      return;
     }
+
+    await executeUpdate();
   };
 
   const handleDeactivate = async (userRecord) => {
@@ -299,6 +323,25 @@ const UserManagement = () => {
       dataIndex: "user_role",
       key: "user_role",
       render: (role) => roleTags[role] || <Tag>{role}</Tag>,
+    },
+    {
+      title: "Chức vụ",
+      key: "faculty_role",
+      render: (_, record) => {
+        const role = record.lecturer?.faculty_role || "lecturer";
+        const map = {
+          dean: { text: "Trưởng khoa", color: "volcano" },
+          vice_dean: { text: "Phó trưởng khoa", color: "orange" },
+          head_of_dept: { text: "Trưởng bộ môn", color: "cyan" },
+          lecturer: { text: "Giảng viên", color: "blue" },
+        };
+        const info = map[role] || map.lecturer;
+        return (
+          <Tag color={info.color} style={{ fontWeight: 500 }}>
+            {info.text}
+          </Tag>
+        );
+      },
     },
     {
       title: "Khoa & Phòng",
@@ -448,12 +491,20 @@ const UserManagement = () => {
         <Form form={form} layout="vertical" onFinish={handleUpdateSubmit} className="mt-4">
           <Row gutter={12}>
             <Col span={12}>
-              <Form.Item label="Họ & Tên đệm" name="last_name">
+              <Form.Item
+                label="Họ & Tên đệm"
+                name="last_name"
+                rules={[{required: true, message: "Vui lòng nhập họ & tên đệm!"}]}
+              >
                 <Input placeholder="Nguyễn Văn" />
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item label="Tên" name="first_name">
+              <Form.Item
+                label="Tên"
+                name="first_name"
+                rules={[{required: true, message: "Vui lòng nhập tên!"}]}
+              >
                 <Input placeholder="An" />
               </Form.Item>
             </Col>
@@ -479,7 +530,33 @@ const UserManagement = () => {
             </Select>
           </Form.Item>
 
-          <Form.Item label="Khoa" name="faculty">
+          <Form.Item label="Chức vụ trong Khoa" name="faculty_role">
+            <Select placeholder="Chọn chức vụ">
+              <Option value="dean">Trưởng khoa (Có quyền phê duyệt)</Option>
+              <Option value="vice_dean">Phó trưởng khoa (Có quyền phê duyệt)</Option>
+              <Option value="head_of_dept">Trưởng bộ môn</Option>
+              <Option value="lecturer">Giảng viên biên soạn</Option>
+            </Select>
+          </Form.Item>
+
+          <Form.Item
+            label="Khoa"
+            name="faculty"
+            dependencies={["faculty_role"]}
+            rules={[
+              ({getFieldValue}) => ({
+                validator(_, value) {
+                  const role = getFieldValue("faculty_role");
+                  if (["dean", "vice_dean"].includes(role) && !value) {
+                    return Promise.reject(
+                      new Error("Lãnh đạo Khoa (Trưởng/Phó khoa) bắt buộc phải chọn Khoa trực thuộc!"),
+                    );
+                  }
+                  return Promise.resolve();
+                },
+              }),
+            ]}
+          >
             <Select placeholder="Chọn khoa trực thuộc" allowClear>
               {faculties.map((f) => (
                 <Option key={f.id} value={f.id}>

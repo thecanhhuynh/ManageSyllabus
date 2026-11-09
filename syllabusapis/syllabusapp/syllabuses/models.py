@@ -36,10 +36,31 @@ class Faculty(BaseModel):
     name = models.CharField(max_length=100, unique=True)
 
 class Lecturer(models.Model):
+    class FacultyRole(models.TextChoices):
+        LECTURER = 'lecturer', 'Giảng viên'
+        DEAN = 'dean', 'Trưởng khoa'
+        VICE_DEAN = 'vice_dean', 'Phó trưởng khoa'
+        HEAD_OF_DEPT = 'head_of_dept', 'Trưởng bộ môn'
     created_date = models.DateTimeField(auto_now_add=True)
     user = models.OneToOneField('User', on_delete=models.CASCADE, related_name='lecturer_profile')
     room = models.CharField(max_length=200, null=True, blank=True)
     faculty = models.ForeignKey(Faculty, on_delete=models.SET_NULL, null=True, blank=True, related_name='lecturers')
+    faculty_role = models.CharField(
+        max_length=30,
+        choices=FacultyRole.choices,
+        default=FacultyRole.LECTURER,
+        verbose_name="Vai trò trong Khoa",
+    )
+    signature_image = models.ImageField(
+        upload_to='signatures/profiles/',
+        null=True,
+        blank=True,
+        verbose_name="Ảnh chữ ký cá nhân",
+    )
+
+    @property
+    def is_leader(self):
+        return self.faculty_role in [self.FacultyRole.DEAN, self.FacultyRole.VICE_DEAN]
 
 class Major(BaseModel):
     name = models.CharField(max_length=150, unique=True)
@@ -326,10 +347,16 @@ class TemplateSelectionSubSection(TemplateSubSection):
 
 
 class Syllabus(BaseModel):
+    class Status(models.TextChoices):
+        DRAFT = 'Draft', 'Bản nháp'
+        SUBMITTED = 'Submitted', 'Chờ phê duyệt'
+        APPROVED = 'Approved', 'Đã phê duyệt'
+        REJECTED = 'Rejected', 'Từ chối'
+
     name = models.CharField(max_length=100, null=True, blank=True)
     version = models.CharField(max_length=20, default="v1.0")
     parent = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='clones')
-    status = models.CharField(max_length=100, null=True, blank=True)
+    status = models.CharField(max_length=100, choices=Status.choices, default=Status.DRAFT, null=True, blank=True)
     created_date = models.DateTimeField(default=timezone.now)
     subject = models.ForeignKey(Subject, on_delete=models.CASCADE, related_name='syllabuses')
     faculty = models.ForeignKey(Faculty, on_delete=models.CASCADE, related_name='syllabuses')
@@ -341,6 +368,41 @@ class Syllabus(BaseModel):
     learning_materials_rel = models.ManyToManyField('LearningMaterial', through='SyllabusLearningMaterial',
                                                     related_name='syllabuses_rel')
     revision = models.IntegerField(default=1)
+    approved_by = models.ForeignKey('User', on_delete=models.SET_NULL, null=True, blank=True, related_name='approved_syllabuses')
+    approved_date = models.DateTimeField(null=True, blank=True)
+
+    @property
+    def is_approved(self) -> bool:
+        return bool(self.status in [self.Status.APPROVED, 'Approved'] and self.approved_by_id)
+
+
+class SyllabusSignature(models.Model):
+    class SignatureRole(models.TextChoices):
+        LECTURER = 'lecturer', 'Giảng viên biên soạn'
+        FACULTY_DEAN = 'faculty_dean', 'Phụ trách khoa'
+
+    class SignatureStatus(models.TextChoices):
+        PENDING = 'pending', 'Chờ ký'
+        SIGNED = 'signed', 'Đã ký'
+        REJECTED = 'rejected', 'Từ chối'
+
+    syllabus = models.ForeignKey(Syllabus, on_delete=models.CASCADE, related_name='signatures')
+    signer = models.ForeignKey('User', on_delete=models.CASCADE, related_name='syllabus_signatures')
+    role = models.CharField(max_length=30, choices=SignatureRole.choices)
+    signature_image = models.ImageField(upload_to='signatures/syllabuses/', null=True, blank=True)
+    signer_name = models.CharField(max_length=150)
+    signer_title = models.CharField(max_length=150)
+    status = models.CharField(max_length=20, choices=SignatureStatus.choices, default=SignatureStatus.SIGNED)
+    signed_at = models.DateTimeField(auto_now_add=True)
+    comments = models.TextField(null=True, blank=True)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        unique_together = ('syllabus', 'role')
+        ordering = ['signed_at']
+
+    def __str__(self):
+        return f"{self.syllabus_id} - {self.get_role_display()}: {self.signer_name} ({self.status})"
 
 class TypeLearningMaterial(BaseModel):
     name = models.CharField(max_length=100, unique=True)

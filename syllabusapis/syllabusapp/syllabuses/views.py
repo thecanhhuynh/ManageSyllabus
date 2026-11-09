@@ -96,7 +96,7 @@ class UserView(mixins.ListModelMixin,
         return UserDetailSerializer
 
     def get_permissions(self):
-        if self.action == 'current_user':
+        if self.action in ['current_user', 'user_signature', 'change_password']:
             return [permissions.IsAuthenticated()]
         return [perms.IsAdmin()]
 
@@ -112,6 +112,45 @@ class UserView(mixins.ListModelMixin,
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         self.perform_update(serializer)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['get', 'post', 'delete'], url_path='signature',
+            permission_classes=[permissions.IsAuthenticated])
+    def user_signature(self, request):
+        lecturer = getattr(request.user, 'lecturer_profile', None)
+        if not lecturer:
+            lecturer, _ = Lecturer.objects.get_or_create(user=request.user)
+
+        if request.method == 'GET':
+            sig_url = self._build_absolute_sig_url(request, lecturer)
+            return Response({'signature_url': sig_url, 'faculty_role': lecturer.faculty_role})
+
+        if request.method == 'DELETE':
+            if lecturer.signature_image:
+                lecturer.signature_image.delete(save=False)
+                lecturer.signature_image = None
+                lecturer.save(update_fields=['signature_image'])
+            return Response({'signature_url': None}, status=status.HTTP_200_OK)
+
+        image_data = request.data.get('signature_image') or request.FILES.get('signature_image')
+        from services.signature_service import SignatureService
+        resolved = SignatureService.process_signature_image(image_data)
+        if not resolved:
+            return Response({'error': 'Dữ liệu chữ ký không hợp lệ.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if lecturer.signature_image:
+            lecturer.signature_image.delete(save=False)
+        lecturer.signature_image = resolved
+        lecturer.save(update_fields=['signature_image'])
+        sig_url = self._build_absolute_sig_url(request, lecturer)
+        return Response({'signature_url': sig_url}, status=status.HTTP_200_OK)
+
+    def _build_absolute_sig_url(self, request, lecturer) -> str | None:
+        if not lecturer or not lecturer.signature_image:
+            return None
+        try:
+            return request.build_absolute_uri(lecturer.signature_image.url)
+        except Exception:
+            return lecturer.signature_image.url
 
     def partial_update(self, request, *args, **kwargs):
         kwargs['partial'] = True
@@ -156,6 +195,42 @@ class UserView(mixins.ListModelMixin,
         serializer = self.get_serializer(u)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+    @action(detail=False, methods=['post'], url_path='change-password',
+            permission_classes=[permissions.IsAuthenticated])
+    def change_password(self, request):
+        user = request.user
+        old_password = request.data.get('old_password')
+        new_password = request.data.get('new_password')
+
+        if not old_password or not new_password:
+            return Response(
+                {"error": "Vui lòng cung cấp mật khẩu cũ và mật khẩu mới."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        if not user.check_password(old_password):
+            return Response(
+                {"error": "Mật khẩu hiện tại không chính xác."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        if old_password == new_password:
+            return Response(
+                {"error": "Mật khẩu mới không được trùng với mật khẩu hiện tại."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        from django.contrib.auth.password_validation import validate_password
+        try:
+            validate_password(new_password, user=user)
+        except Exception as e:
+            msg = list(e.messages)[0] if hasattr(e, 'messages') and e.messages else str(e)
+            return Response({"error": msg}, status=status.HTTP_400_BAD_REQUEST)
+
+        user.set_password(new_password)
+        user.save()
+        return Response({"message": "Đổi mật khẩu thành công."}, status=status.HTTP_200_OK)
+
+
+
 class LecturerView(viewsets.ReadOnlyModelViewSet):
     queryset = Lecturer.objects.select_related('user', 'faculty').filter(user__is_active=True)
     serializer_class = LecturerBasicSerializer
@@ -177,6 +252,8 @@ class SyllabusView(viewsets.ModelViewSet):
     def get_permissions(self):
         if self.action == 'create':
             return [perms.IsAdmin()]
+        if self.action == 'bulk_update_deadlines':
+            return [(perms.IsAdmin | perms.IsSpecialist)()]
         return [permissions.IsAuthenticated()]
 
     def get_queryset(self):
@@ -186,14 +263,30 @@ class SyllabusView(viewsets.ModelViewSet):
             return query.none()
         if user.is_superuser or getattr(user, 'user_role', None) in ['admin', 'specialist']:
             return query
+        lecturer = getattr(user, 'lecturer_profile', None)
+        if lecturer and lecturer.is_leader and lecturer.faculty_id:
+            return query.filter(Q(lecturer__user=user) | Q(faculty_id=lecturer.faculty_id))
         return query.filter(lecturer__user=user)
 
     def perform_update(self, serializer):
+        instance = serializer.instance
+        if instance and instance.is_approved:
+            from rest_framework.exceptions import ValidationError
+            raise ValidationError(
+                {"err_msg": "Đề cương đã được phê duyệt. Vui lòng liên hệ Lãnh đạo Khoa hủy duyệt trước khi chỉnh sửa."}
+            )
+
+        start_dt = serializer.validated_data.get('start_date_edition')
+        end_dt = serializer.validated_data.get('end_date_edition')
+        if start_dt and end_dt and (end_dt - start_dt).total_seconds() < 3 * 86400:
+            from rest_framework.exceptions import ValidationError
+            raise ValidationError(
+                {"err_msg": "Thời hạn kết thúc phải cách thời gian bắt đầu tối thiểu 3 ngày theo quy định BR-03."}
+            )
+
         user = self.request.user
         time_str = timezone.localtime().strftime('%H:%M %d/%m/%Y')
-
         edit_msg = f"{user.last_name} {user.first_name} đã chỉnh sửa lúc {time_str}"
-
         serializer.save(edit_date=edit_msg)
 
     @action(detail=False, methods=['patch'], url_path='bulk-update-deadlines')
@@ -206,7 +299,22 @@ class SyllabusView(viewsets.ModelViewSet):
         if not start_date:
             return Response({"err_msg": "Thiếu ngày bắt đầu."}, status=status.HTTP_400_BAD_REQUEST)
         if not end_date:
-            return Response({'err_msg': 'Thiếu ngày kết thúc'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'err_msg': 'Thiếu ngày kết thúc.'}, status=status.HTTP_400_BAD_REQUEST)
+        if str(start_date) >= str(end_date):
+            return Response({'err_msg': 'Ngày kết thúc phải sau ngày bắt đầu.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        from datetime import datetime
+        try:
+            s_dt = datetime.fromisoformat(str(start_date).replace('Z', '+00:00'))
+            e_dt = datetime.fromisoformat(str(end_date).replace('Z', '+00:00'))
+            if (e_dt - s_dt).total_seconds() < 3 * 86400:
+                return Response(
+                    {"err_msg": "Thời hạn kết thúc phải cách thời gian bắt đầu tối thiểu 3 ngày theo quy định BR-03."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        except (ValueError, TypeError):
+            pass
+
         user = self.request.user
         time_str = timezone.localtime().strftime('%H:%M %d/%m/%Y')
 
@@ -298,6 +406,136 @@ class SyllabusView(viewsets.ModelViewSet):
             'message': f'Đã lưu {len(saved)} giá trị tùy biến.',
             'values': CustomColumnValueSerializer(saved, many=True).data,
         }, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['get'], url_path='signatures',
+            permission_classes=[permissions.IsAuthenticated])
+    def get_signatures(self, request, pk=None):
+        syllabus = self.get_object()
+        from syllabuses.serializer import SyllabusSignatureSerializer
+        sigs = syllabus.signatures.filter(is_active=True).order_by('signed_at')
+        return Response(SyllabusSignatureSerializer(sigs, many=True).data)
+
+    @action(detail=True, methods=['post'], url_path='sign',
+            permission_classes=[permissions.IsAuthenticated])
+    def sign_syllabus(self, request, pk=None):
+        syllabus = self.get_object()
+        role = request.data.get('role')
+        image_data = request.data.get('signature_image') or request.FILES.get('signature_image')
+        title = request.data.get('title')
+
+        from services.signature_service import SignatureService
+        sig, err = SignatureService.sign_syllabus(
+            user=request.user,
+            syllabus=syllabus,
+            role=role,
+            image_raw=image_data,
+            title=title,
+        )
+        if not sig:
+            return Response({'error': err}, status=status.HTTP_400_BAD_REQUEST)
+
+        from syllabuses.serializer import SyllabusSignatureSerializer
+        return Response(SyllabusSignatureSerializer(sig).data, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['post'], url_path='approve',
+            permission_classes=[permissions.IsAuthenticated])
+    def approve_syllabus(self, request, pk=None):
+        syllabus = self.get_object()
+        if not self._can_approve_syllabus(request.user, syllabus):
+            return Response(
+                {"error": "Chỉ Lãnh đạo Khoa phụ trách hoặc Quản trị viên mới có quyền phê duyệt đề cương."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        is_admin = request.user.is_superuser or getattr(request.user, 'user_role', None) in ['admin', 'specialist']
+        if not is_admin and syllabus.lecturer and syllabus.lecturer.user_id == request.user.id:
+            return Response(
+                {"error": "Bạn là giảng viên biên soạn đề cương này nên không thể tự phê duyệt theo quy định BR-04. Vui lòng chuyển cho Lãnh đạo khác của Khoa phê duyệt."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        from syllabuses.models import TeachingSession, Assessment, Method, SyllabusSignature
+        if not TeachingSession.objects.filter(syllabus=syllabus).exists():
+            return Response(
+                {"error": "Đề cương chưa có Kế hoạch giảng dạy. Không thể phê duyệt."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        if not Assessment.objects.filter(syllabus=syllabus).exists():
+            return Response(
+                {"error": "Đề cương chưa có Phương pháp đánh giá. Không thể phê duyệt."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        methods = Method.objects.filter(assessment__syllabus=syllabus)
+        total_weight = sum(m.weight for m in methods if m.weight is not None)
+        if not methods.exists() or total_weight != 100:
+            return Response(
+                {"error": f"Tổng trọng số các phương pháp đánh giá phải bằng đúng 100% theo quy định BR-02 (hiện tại: {total_weight}%). Không thể phê duyệt."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        has_lec_sig = SyllabusSignature.objects.filter(
+            syllabus=syllabus,
+            role=SyllabusSignature.SignatureRole.LECTURER,
+            is_active=True
+        ).exists()
+        if not has_lec_sig:
+            return Response(
+                {"error": "Giảng viên biên soạn chưa ký số xác nhận đề cương. Vui lòng yêu cầu giảng viên ký số trước khi phê duyệt."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        syllabus.status = Syllabus.Status.APPROVED
+        syllabus.approved_by = request.user
+        syllabus.approved_date = timezone.now()
+        syllabus.save(update_fields=['status', 'approved_by', 'approved_date'])
+        return Response({
+            "message": "Phê duyệt đề cương thành công.",
+            "status": syllabus.status,
+            "approved_by": request.user.get_full_name() or request.user.username,
+            "approved_date": syllabus.approved_date.strftime("%d/%m/%Y %H:%M")
+        }, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['post'], url_path='unapprove',
+            permission_classes=[permissions.IsAuthenticated])
+    def unapprove_syllabus(self, request, pk=None):
+        syllabus = self.get_object()
+        if not self._can_approve_syllabus(request.user, syllabus):
+            return Response(
+                {"error": "Chỉ Lãnh đạo Khoa phụ trách hoặc Quản trị viên mới có quyền hủy phê duyệt đề cương."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        reason = str(request.data.get('reason') or '').strip()
+        syllabus.status = Syllabus.Status.DRAFT
+        syllabus.approved_by = None
+        syllabus.approved_date = None
+        syllabus.save(update_fields=['status', 'approved_by', 'approved_date'])
+
+        from syllabuses.models import SyllabusSignature
+        SyllabusSignature.objects.filter(
+            syllabus=syllabus,
+            role=SyllabusSignature.SignatureRole.FACULTY_DEAN
+        ).update(
+            status=SyllabusSignature.SignatureStatus.REJECTED,
+            comments=reason if reason else "Lãnh đạo Khoa yêu cầu chỉnh sửa lại nội dung."
+        )
+
+        return Response({
+            "message": "Đã hủy phê duyệt, đề cương đã chuyển về trạng thái Bản nháp.",
+            "status": syllabus.status,
+            "reason": reason
+        }, status=status.HTTP_200_OK)
+
+    def _can_approve_syllabus(self, user, syllabus) -> bool:
+        if user.is_superuser or getattr(user, 'user_role', None) in ['admin', 'specialist']:
+            return True
+        lecturer = getattr(user, 'lecturer_profile', None)
+        if not lecturer or not lecturer.is_leader:
+            return False
+        if not syllabus.faculty_id or lecturer.faculty_id != syllabus.faculty_id:
+            return False
+        return True
+
 
 from handlers.block_style_validator import (
     get_default_block_layout as _default_block_layout,
@@ -549,7 +787,27 @@ class TemplateSyllabusView(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
+        if uploaded_file.size > 20 * 1024 * 1024:
+            return Response(
+                {'error': 'Dung lượng file vượt quá giới hạn tối đa cho phép (20MB).'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
         file_bytes = uploaded_file.read()
+
+        import zipfile
+        try:
+            with zipfile.ZipFile(io.BytesIO(file_bytes)) as zf:
+                if 'word/document.xml' not in zf.namelist():
+                    return Response(
+                        {'error': 'File DOCX không đúng cấu trúc OpenXML (thiếu word/document.xml).'},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+        except zipfile.BadZipFile:
+            return Response(
+                {'error': 'Tệp tải lên không phải là file DOCX hợp lệ hoặc cấu trúc file zip bị hỏng.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
         cleaned_buffer, report = DocxCleanerService.clean(file_bytes)
 
         template.file.save(uploaded_file.name, ContentFile(file_bytes), save=False)
@@ -1266,6 +1524,8 @@ class TrainingProgramView(mixins.ListModelMixin,
         serializer = SyllabusSimpleSerializer(syllabuses, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+
+
 class AttributeGroupView(viewsets.ViewSet, generics.ListAPIView, generics.RetrieveAPIView):
     queryset = AttributeGroup.objects.all()
     serializer_class = AttributeGroupListSerializer
@@ -1322,6 +1582,13 @@ class ExportSyllabusDocxView(APIView):
         syllabus = Syllabus.objects.filter(id=syllabus_id).first()
         if not syllabus:
             return HttpResponse("Không tìm thấy đề cương.", status=404)
+
+        if not syllabus.is_approved:
+            return HttpResponse(
+                "Đề cương chưa được Lãnh đạo Khoa phê duyệt. Không thể xuất file ban hành chính thức.",
+                status=400,
+                content_type="text/plain; charset=utf-8"
+            )
 
         try:
             buffer = self._render_docx(syllabus)

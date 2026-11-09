@@ -72,6 +72,9 @@ const BlockInlinePreview = ({
   interactiveCellAlign = false,
   cellAlignments = {},
   onCellAlignmentChange = null,
+  columnsMetadata = null,
+  onUpdateColumnLabel = null,
+  onResetColumnLabel = null,
 }) => {
   const { previewData, loading, error } = useBlockPreview(
     templateId,
@@ -150,6 +153,9 @@ const BlockInlinePreview = ({
                     interactiveCellAlign={interactiveCellAlign}
                     cellAlignments={cellAlignments}
                     onCellAlignmentChange={onCellAlignmentChange}
+                    columnsMetadata={columnsMetadata}
+                    onUpdateColumnLabel={onUpdateColumnLabel}
+                    onResetColumnLabel={onResetColumnLabel}
                   />
                 );
               }

@@ -138,8 +138,10 @@ class LecturerManager:
         label_overrides: dict | None = None,
     ) -> tuple[list, list]:
         cfg = block.config or {}
-        disp_type = str(cfg.get("display_type", "TABLE")).upper()
-        strategy = cls._STRATEGIES.get(disp_type, cls._STRATEGIES["TABLE"])
+        disp_type = cfg.get("display_type")
+        if disp_type is None and new_paras and not new_tables:
+            return new_paras, new_tables
+        strategy = cls._STRATEGIES.get(str(disp_type or "TABLE").upper(), cls._STRATEGIES["TABLE"])
         return strategy.render(
             doc,
             sub_section,

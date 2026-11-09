@@ -13,6 +13,7 @@ const DEFAULT_MAIN_SECTION_STYLE = {
   line_spacing: 1.15,
   space_before_pt: 12,
   space_after_pt: 6,
+  color: "#000000",
 };
 
 const toRoman = (num) => {

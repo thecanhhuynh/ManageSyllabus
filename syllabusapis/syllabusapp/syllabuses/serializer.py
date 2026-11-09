@@ -8,7 +8,7 @@ from syllabuses.models import User, Lecturer, Faculty, Syllabus, Subject, SubSec
     TypeLearningMaterial, SyllabusLearningMaterial, CloPloAssociation, TypeAssessment, Assessment, Method, \
     ScheduleGroup, TeachingSession, Major, TrainingProgram, TemplateSubSection, TemplateSyllabus, TemplateMainSection, \
     TableSubSection, TemplateSelectionSubSection, TemplateTableSubSection, TemplateTextSubSection, \
-    TrainingProgramSyllabus, TemplateBlock, CustomColumn, CustomColumnValue
+    TrainingProgramSyllabus, TemplateBlock, CustomColumn, CustomColumnValue, SyllabusSignature
 from syllabuses.strategies import SUB_SECTION_STRATEGIES, DefaultStrategy
 
 class FacultySerializer(serializers.ModelSerializer):
@@ -23,20 +23,57 @@ class FacultySerializer(serializers.ModelSerializer):
 
 class LecturerSerializer(serializers.ModelSerializer):
     faculty = FacultySerializer()
+    signature_image = serializers.SerializerMethodField()
 
     class Meta:
         model = Lecturer
-        fields = ['room', 'faculty']
+        fields = ['room', 'faculty', 'faculty_role', 'signature_image', 'is_leader']
+
+    def get_signature_image(self, obj):
+        if not obj or not obj.signature_image:
+            return None
+        request = self.context.get('request')
+        if request:
+            try:
+                return request.build_absolute_uri(obj.signature_image.url)
+            except Exception:
+                pass
+        return obj.signature_image.url
 
 class LecturerBasicSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(source='user.id', read_only=True)
     first_name = serializers.CharField(source='user.first_name')
     last_name = serializers.CharField(source='user.last_name')
     faculty_name = serializers.CharField(source='faculty.name', read_only=True, default="Chưa có khoa")
+    has_signature = serializers.SerializerMethodField()
 
     class Meta:
         model = Lecturer
-        fields = ['id', 'first_name', 'last_name', 'room', 'faculty_name']
+        fields = ['id', 'first_name', 'last_name', 'room', 'faculty_name', 'has_signature']
+
+    def get_has_signature(self, obj):
+        return bool(getattr(obj, 'signature_image', None))
+
+class SyllabusSignatureSerializer(serializers.ModelSerializer):
+    signature_image = serializers.SerializerMethodField()
+
+    class Meta:
+        model = SyllabusSignature
+        fields = [
+            'id', 'syllabus', 'signer', 'signer_name', 'signer_title', 'role',
+            'signature_image', 'status', 'signed_at', 'comments', 'is_active'
+        ]
+
+    def get_signature_image(self, obj):
+        if not obj or not obj.signature_image:
+            return None
+        request = self.context.get('request')
+        if request:
+            try:
+                return request.build_absolute_uri(obj.signature_image.url)
+            except Exception:
+                pass
+        return obj.signature_image.url
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -47,6 +84,28 @@ class UserSerializer(serializers.ModelSerializer):
                 'write_only': True,
             }
         }
+
+    def validate_password(self, value):
+        from django.contrib.auth.password_validation import validate_password
+        validate_password(value)
+        return value
+
+    def validate_username(self, value):
+        import re
+        if not re.match(r'^[a-zA-Z0-9_]{3,30}$', value):
+            raise serializers.ValidationError("Tên đăng nhập chỉ được chứa chữ cái, chữ số và dấu gạch dưới (3-30 ký tự).")
+        return value
+
+    def validate_email(self, value):
+        if not value:
+            return value
+        clean_email = value.strip().lower()
+        query = User.objects.filter(email__iexact=clean_email)
+        if self.instance:
+            query = query.exclude(id=self.instance.id)
+        if query.exists():
+            raise serializers.ValidationError("Địa chỉ email này đã được sử dụng bởi một tài khoản khác.")
+        return clean_email
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
@@ -76,15 +135,43 @@ class UserDetailSerializer(UserSerializer):
         required=False,
         allow_null=True
     )
+    faculty_role = serializers.ChoiceField(
+        choices=Lecturer.FacultyRole.choices,
+        write_only=True,
+        required=False,
+        allow_null=True
+    )
 
     class Meta(UserSerializer.Meta):
-        fields = [f for f in UserSerializer.Meta.fields if f != 'password'] + ['lecturer', 'room', 'faculty']
+        fields = [f for f in UserSerializer.Meta.fields if f != 'password'] + [
+            'lecturer', 'room', 'faculty', 'faculty_role'
+        ]
+
+    def validate(self, attrs):
+        request = self.context.get('request')
+        user_role = attrs.get('user_role')
+        if user_role and request and request.user:
+            is_admin = request.user.is_superuser or getattr(request.user, 'user_role', None) == 'admin'
+            if not is_admin and user_role != getattr(self.instance, 'user_role', None):
+                raise serializers.ValidationError({"user_role": "Bạn không có quyền thay đổi vai trò tài khoản."})
+
+        faculty_role = attrs.get('faculty_role')
+        faculty = attrs.get('faculty')
+        if faculty_role in [Lecturer.FacultyRole.DEAN, Lecturer.FacultyRole.VICE_DEAN]:
+            current_faculty = faculty
+            if not current_faculty and self.instance and hasattr(self.instance, 'lecturer_profile'):
+                current_faculty = self.instance.lecturer_profile.faculty
+            if not current_faculty:
+                raise serializers.ValidationError({"faculty": "Lãnh đạo Khoa (Trưởng/Phó khoa) bắt buộc phải chọn Khoa trực thuộc."})
+        return attrs
 
     def update(self, instance, validated_data):
         has_room = 'room' in validated_data
         has_faculty = 'faculty' in validated_data
+        has_faculty_role = 'faculty_role' in validated_data
         room = validated_data.pop('room', None)
         faculty = validated_data.pop('faculty', None)
+        faculty_role = validated_data.pop('faculty_role', None)
 
         with transaction.atomic():
             instance = super().update(instance, validated_data)
@@ -95,6 +182,9 @@ class UserDetailSerializer(UserSerializer):
 
             if has_faculty:
                 lecturer.faculty = faculty
+
+            if has_faculty_role and faculty_role:
+                lecturer.faculty_role = faculty_role
 
             lecturer.save()
             instance.refresh_from_db()
@@ -112,6 +202,21 @@ class SubjectSerializer(serializers.ModelSerializer):
         model = Subject
         fields = ['id', 'name', 'code', 'credit']
 
+    def validate(self, attrs):
+        code = attrs.get('code')
+        if code:
+            import re
+            if not re.match(r'^[A-Z0-9_-]{2,20}$', code.strip()):
+                raise serializers.ValidationError({"code": "Mã môn học chỉ được chứa chữ in hoa, số, dấu gạch nối hoặc gạch dưới (2-20 ký tự)."})
+
+        credit_data = attrs.get('credit')
+        if credit_data:
+            theory = max(0, int(credit_data.get('number_theory', 0)))
+            practice = max(0, int(credit_data.get('number_practice', 0)))
+            if theory + practice <= 0:
+                raise serializers.ValidationError({"credit": "Tổng số tín chỉ lý thuyết và thực hành phải lớn hơn 0."})
+        return attrs
+
     def create(self, validated_data):
         credit_data = validated_data.pop('credit')
         credit_instance = Credit.objects.create(**credit_data)
@@ -120,7 +225,6 @@ class SubjectSerializer(serializers.ModelSerializer):
         return subject
 
     def update(self, instance, validated_data):
-        print("DEBUG VALIDATED DATA:", validated_data)
         credit_data = validated_data.pop('credit', None)
 
         instance.code = validated_data.get('code', instance.code)
@@ -129,9 +233,9 @@ class SubjectSerializer(serializers.ModelSerializer):
 
         if credit_data and instance.credit:
             credit_instance = instance.credit
-            credit_instance.number_theory = credit_data.get('number_theory', credit_instance.number_theory)
-            credit_instance.number_practice = credit_data.get('number_practice', credit_instance.number_practice)
-            credit_instance.hour_self_study = credit_data.get('hour_self_study', credit_instance.hour_self_study)
+            credit_instance.number_theory = max(0, int(credit_data.get('number_theory', credit_instance.number_theory)))
+            credit_instance.number_practice = max(0, int(credit_data.get('number_practice', credit_instance.number_practice)))
+            credit_instance.hour_self_study = max(0, int(credit_data.get('hour_self_study', credit_instance.hour_self_study)))
             credit_instance.save()
 
         return instance
@@ -169,6 +273,16 @@ class SyllabusSerializer(serializers.ModelSerializer):
             'subject', 'lecturer',
             'subject_obj', 'template_obj', 'faculty_obj', 'lecturer_obj', 'training_program_obj'
         ]
+
+    def validate(self, attrs):
+        subject = attrs.get('subject')
+        tp = attrs.get('training_program_obj')
+        if subject and tp and not self.instance:
+            if Syllabus.objects.filter(training_programs=tp, subject=subject).exists():
+                raise serializers.ValidationError({
+                    "err_msg": f"Môn học '{subject.name}' đã có đề cương trong chương trình đào tạo '{tp.name}'."
+                })
+        return attrs
 
     @transaction.atomic
     def create(self, validated_data):
@@ -310,13 +424,35 @@ class SectionSerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'code', 'position', 'sub_sections']
 
 class SyllabusDetailSerializer(serializers.ModelSerializer):
+    subject = SubjectSerializer(read_only=True)
     main_sections = SectionSerializer(many=True, required=False)
     label_overrides = serializers.SerializerMethodField()
+    signatures = SyllabusSignatureSerializer(many=True, read_only=True)
+    is_approved = serializers.BooleanField(read_only=True)
+    approved_by_name = serializers.SerializerMethodField()
+    approved_date = serializers.DateTimeField(format="%d/%m/%Y %H:%M", read_only=True)
+    faculty_name = serializers.CharField(source='faculty.name', read_only=True, default="N/A")
+    lecturer_name = serializers.SerializerMethodField()
 
     class Meta:
         model = Syllabus
-        fields = ['id', 'name', 'template', 'status', 'main_sections', 'start_date_edition',
-                  'end_date_edition', 'revision', 'label_overrides']
+        fields = [
+            'id', 'name', 'template', 'subject', 'status', 'is_approved', 'approved_by',
+            'approved_by_name', 'approved_date', 'faculty_name', 'lecturer_name',
+            'signatures', 'main_sections', 'start_date_edition', 'end_date_edition',
+            'revision', 'label_overrides'
+        ]
+
+    def get_lecturer_name(self, obj):
+        if not obj.lecturer or not obj.lecturer.user:
+            return "N/A"
+        return f"{obj.lecturer.user.last_name} {obj.lecturer.user.first_name}"
+
+    def get_approved_by_name(self, obj):
+        if not obj or not obj.approved_by:
+            return ""
+        name = f"{obj.approved_by.last_name} {obj.approved_by.first_name}".strip()
+        return name if name else obj.approved_by.username
 
     def get_label_overrides(self, obj):
         if not obj or not getattr(obj, 'template', None):
@@ -537,6 +673,17 @@ class SyllabusDetailSerializer(serializers.ModelSerializer):
                             "err_msg": f"Không tìm thấy PLO (ID: {plo_id})."
                         })
 
+                    try:
+                        rating_num = int(rating)
+                        if rating_num < 1 or rating_num > 5:
+                            raise ValidationError({
+                                "err_msg": f"Mức độ liên kết PLO (rating) phải từ 1 đến 5 (giá trị: {rating})."
+                            })
+                    except (ValueError, TypeError):
+                        raise ValidationError({
+                            "err_msg": f"Mức độ liên kết PLO (rating) không hợp lệ ({rating})."
+                        })
+
                     CloPloAssociation.objects.update_or_create(
                         clo=clo_obj,
                         plo=plo_obj,
@@ -616,7 +763,17 @@ class SyllabusDetailSerializer(serializers.ModelSerializer):
         for item in ref_data:
             for method in item.get('assessment_methods', []):
                 has_method = True
-                total_weight += int(method.get('weight', 0))
+                try:
+                    w = int(method.get('weight', 0))
+                except (ValueError, TypeError):
+                    raise serializers.ValidationError({
+                        "err_msg": f"Trọng số phương pháp đánh giá '{method.get('name', '')}' không hợp lệ."
+                    })
+                if w < 0 or w > 100:
+                    raise serializers.ValidationError({
+                        "err_msg": f"Trọng số của từng phương pháp đánh giá phải từ 0% đến 100% (ghi nhận: {w}%)."
+                    })
+                total_weight += w
 
         if has_method and total_weight != 100:
             raise serializers.ValidationError({
@@ -664,6 +821,24 @@ class SyllabusDetailSerializer(serializers.ModelSerializer):
                 method.course_learning_outcomes.set(clo_ids)
 
     def _update_teaching_schedule(self, instance, ref_data):
+        seen_sessions = set()
+        duplicate_sessions = set()
+        for group_data in ref_data:
+            for session_item in group_data.get('teaching_sessions', []):
+                s_no = session_item.get('session_no')
+                if s_no is not None and str(s_no).strip():
+                    try:
+                        s_no_int = int(s_no)
+                        if s_no_int in seen_sessions:
+                            duplicate_sessions.add(str(s_no_int))
+                        seen_sessions.add(s_no_int)
+                    except (ValueError, TypeError):
+                        pass
+
+        if duplicate_sessions:
+            raise serializers.ValidationError({
+                "err_msg": f"Kế hoạch giảng dạy có số buổi bị trùng lặp: Buổi {', '.join(sorted(duplicate_sessions, key=int))}."
+            })
 
         incoming_session_ids = []
 
@@ -676,6 +851,16 @@ class SyllabusDetailSerializer(serializers.ModelSerializer):
 
             for session_item in sessions_data:
                 session_id = session_item.get('id')
+                content = session_item.get('content')
+                session_no = session_item.get('session_no', 1)
+                if not session_id and (not content or not str(content).strip()):
+                    raise serializers.ValidationError({
+                        "err_msg": f"Nội dung giảng dạy của Buổi {session_no} không được để trống."
+                    })
+                if session_id and content is not None and not str(content).strip():
+                    raise serializers.ValidationError({
+                        "err_msg": f"Nội dung giảng dạy của Buổi {session_no} không được để trống."
+                    })
 
                 clo_ids = [c['id'] if isinstance(c, dict) else c for c in
                            session_item.get('course_learning_outcomes', [])]
@@ -687,27 +872,27 @@ class SyllabusDetailSerializer(serializers.ModelSerializer):
                 if session:
                     session = TeachingSession.objects.get(id=session_id, syllabus=instance)
                     session.schedule_group_id = schedule_group_id
-                    session.session_no = session_item.get('session_no', session.session_no)
+                    session.session_no = max(1, int(session_item.get('session_no', session.session_no) or 1))
                     session.content = session_item.get('content', session.content)
                     session.offline_activity = session_item.get('offline_activity', '')
-                    session.offline_hours = float(session_item.get('offline_hours') or 0)
+                    session.offline_hours = max(0.0, float(session_item.get('offline_hours') or 0))
                     session.online_activity = session_item.get('online_activity', '')
-                    session.online_hours = float(session_item.get('online_hours') or 0)
+                    session.online_hours = max(0.0, float(session_item.get('online_hours') or 0))
                     session.self_study_activity = session_item.get('self_study_activity', '')
-                    session.self_study_hours = float(session_item.get('self_study_hours') or 0)
+                    session.self_study_hours = max(0.0, float(session_item.get('self_study_hours') or 0))
                     session.save()
                 else:
                     session = TeachingSession.objects.create(
                         syllabus=instance,
                         schedule_group_id=schedule_group_id,
-                        session_no=session_item.get('session_no', 1),
+                        session_no=max(1, int(session_item.get('session_no', 1) or 1)),
                         content=session_item.get('content', ''),
                         offline_activity=session_item.get('offline_activity', ''),
-                        offline_hours=float(session_item.get('offline_hours') or 0),
+                        offline_hours=max(0.0, float(session_item.get('offline_hours') or 0)),
                         online_activity=session_item.get('online_activity', ''),
-                        online_hours=float(session_item.get('online_hours') or 0),
+                        online_hours=max(0.0, float(session_item.get('online_hours') or 0)),
                         self_study_activity=session_item.get('self_study_activity', ''),
-                        self_study_hours=float(session_item.get('self_study_hours') or 0),
+                        self_study_hours=max(0.0, float(session_item.get('self_study_hours') or 0)),
                     )
 
                 incoming_session_ids.append(session.id)
@@ -861,6 +1046,14 @@ class MajorSerializer(serializers.ModelSerializer):
             'name': {'validators': []}
         }
 
+    def validate(self, attrs):
+        code = attrs.get('code')
+        if code:
+            import re
+            if not re.match(r'^[A-Z0-9_-]{2,20}$', code.strip()):
+                raise serializers.ValidationError({"code": "Mã chuyên ngành chỉ gồm chữ in hoa, số, gạch nối hoặc gạch dưới (2-20 ký tự)."})
+        return attrs
+
     def update(self, instance, validated_data):
         faculty_data = validated_data.pop('faculty', None)
 
@@ -894,22 +1087,33 @@ class SyllabusSimpleSerializer(serializers.ModelSerializer):
     subject_name = serializers.CharField(source='subject.name', read_only=True)
     lecturer_id = serializers.IntegerField()
     lecturer_name = serializers.SerializerMethodField()
+    is_approved = serializers.BooleanField(read_only=True)
+    approved_by_name = serializers.SerializerMethodField()
+    approved_date = serializers.DateTimeField(format="%d/%m/%Y %H:%M", read_only=True)
 
     class Meta:
         model = Syllabus
-        fields = ['id', 'name', 'subject_name', 'lecturer_id', 'lecturer_name', 'created_date', 'start_date_edition',
-                  'end_date_edition',
-                  'edit_date']
+        fields = [
+            'id', 'name', 'status', 'is_approved', 'approved_by', 'approved_by_name',
+            'approved_date', 'subject_name', 'lecturer_id', 'lecturer_name', 'created_date',
+            'start_date_edition', 'end_date_edition', 'edit_date'
+        ]
 
     def get_lecturer_name(self, obj):
-        if obj.lecturer and obj.lecturer.user:
-            return f"{obj.lecturer.user.last_name} {obj.lecturer.user.first_name}"
-        return "N/A"
+        if not obj.lecturer or not obj.lecturer.user:
+            return "N/A"
+        return f"{obj.lecturer.user.last_name} {obj.lecturer.user.first_name}"
 
     def get_lecturer_id(self, obj):
-        if obj.lecturer and obj.lecturer.user:
-            return obj.lecturer.user.id
-        return "N/A"
+        if not obj.lecturer or not obj.lecturer.user:
+            return "N/A"
+        return obj.lecturer.user.id
+
+    def get_approved_by_name(self, obj):
+        if not obj or not obj.approved_by:
+            return ""
+        name = f"{obj.approved_by.last_name} {obj.approved_by.first_name}".strip()
+        return name if name else obj.approved_by.username
 
 class TrainingProgramSerializer(serializers.ModelSerializer):
     major = MajorSerializer(required=True)
@@ -918,6 +1122,13 @@ class TrainingProgramSerializer(serializers.ModelSerializer):
     class Meta:
         model = TrainingProgram
         fields = ['id', 'name', 'academic_year', 'major', 'inherit_from_id']
+
+    def validate(self, attrs):
+        academic_year = attrs.get('academic_year')
+        if academic_year is not None:
+            if academic_year < 2000 or academic_year > 2100:
+                raise serializers.ValidationError({"academic_year": "Năm học phải nằm trong khoảng từ năm 2000 đến 2100."})
+        return attrs
 
     def update(self, instance, validated_data):
         major_data = validated_data.pop('major', None)
@@ -1124,6 +1335,19 @@ class CustomColumnSerializer(serializers.ModelSerializer):
             'position', 'is_active',
         ]
         read_only_fields = ['id', 'column_key']
+
+    def validate(self, attrs):
+        template = attrs.get('template') or (self.instance.template if self.instance else None)
+        table_code = attrs.get('table_code') or (self.instance.table_code if self.instance else None)
+        is_active = attrs.get('is_active', True)
+
+        if not self.instance and is_active and template and table_code:
+            active_count = CustomColumn.objects.filter(
+                template=template, table_code=table_code, is_active=True
+            ).count()
+            if active_count >= 10:
+                raise serializers.ValidationError("Mỗi bảng chỉ được phép cấu hình tối đa 10 cột tùy biến theo Golden Rule #5.")
+        return attrs
 
 
 class CustomColumnValueSerializer(serializers.ModelSerializer):

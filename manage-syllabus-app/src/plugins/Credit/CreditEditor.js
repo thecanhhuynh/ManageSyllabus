@@ -146,6 +146,11 @@ const CreditEditor = ({item}) => {
         {STANDARD_FIELDS.map(renderStandardField)}
         {creditCustomCols.map(renderCustomField)}
       </Row>
+      {totalCredits <= 0 && (
+        <div className="text-[11px] text-amber-600 mt-3 text-center italic font-medium">
+          * Lưu ý: Tổng số tín chỉ học phần cần lớn hơn 0 theo quy định đào tạo.
+        </div>
+      )}
     </div>
   );
 };

@@ -33,8 +33,13 @@ const Register = () => {
       return false;
     }
 
-    if (values.password.length < 6) {
-      message.error("Mật khẩu phải có ít nhất 6 ký tự!");
+    if (values.password.length < 8) {
+      message.error("Mật khẩu phải có ít nhất 8 ký tự!");
+      return false;
+    }
+
+    if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(values.password)) {
+      message.error("Mật khẩu phải chứa ít nhất một chữ hoa, một chữ thường và một chữ số!");
       return false;
     }
 
@@ -144,6 +149,7 @@ const Register = () => {
                 <Form.Item
                   label={<span style={{fontSize: 13, fontWeight: 600}}>Họ & Tên đệm</span>}
                   name="last_name"
+                  rules={[{required: true, message: "Vui lòng nhập họ & tên đệm"}]}
                 >
                   <Input placeholder="Nguyễn Văn" style={{borderRadius: 8, fontSize: 14}} />
                 </Form.Item>
@@ -152,6 +158,7 @@ const Register = () => {
                 <Form.Item
                   label={<span style={{fontSize: 13, fontWeight: 600}}>Tên</span>}
                   name="first_name"
+                  rules={[{required: true, message: "Vui lòng nhập tên"}]}
                 >
                   <Input placeholder="An" style={{borderRadius: 8, fontSize: 14}} />
                 </Form.Item>
@@ -161,7 +168,13 @@ const Register = () => {
             <Form.Item
               label={<span style={{fontSize: 13, fontWeight: 600}}>Tên đăng nhập</span>}
               name="username"
-              rules={[{required: true, message: "Vui lòng nhập tên đăng nhập"}]}
+              rules={[
+                {required: true, message: "Vui lòng nhập tên đăng nhập"},
+                {
+                  pattern: /^[a-zA-Z0-9_]{3,30}$/,
+                  message: "Tên đăng nhập từ 3-30 ký tự, chỉ gồm chữ, số và dấu gạch dưới",
+                },
+              ]}
             >
               <Input
                 prefix={<UserOutlined style={{color: "#9ca3af", marginRight: 6}} />}
@@ -188,11 +201,23 @@ const Register = () => {
             <Form.Item
               label={<span style={{fontSize: 13, fontWeight: 600}}>Mật khẩu</span>}
               name="password"
-              rules={[{required: true, message: "Vui lòng nhập mật khẩu"}]}
+              rules={[
+                {required: true, message: "Vui lòng nhập mật khẩu"},
+                {
+                  validator(_, value) {
+                    if (!value) return Promise.resolve();
+                    if (value.length < 8) return Promise.reject(new Error("Mật khẩu tối thiểu 8 ký tự"));
+                    if (!/[A-Z]/.test(value)) return Promise.reject(new Error("Mật khẩu phải có ít nhất 1 chữ in hoa"));
+                    if (!/[a-z]/.test(value)) return Promise.reject(new Error("Mật khẩu phải có ít nhất 1 chữ thường"));
+                    if (!/[0-9]/.test(value)) return Promise.reject(new Error("Mật khẩu phải có ít nhất 1 chữ số"));
+                    return Promise.resolve();
+                  },
+                },
+              ]}
             >
               <Input.Password
                 prefix={<LockOutlined style={{color: "#9ca3af", marginRight: 6}} />}
-                placeholder="Tối thiểu 6 ký tự"
+                placeholder="Tối thiểu 8 ký tự, có chữ hoa, thường & số"
                 style={{borderRadius: 8, fontSize: 14}}
               />
             </Form.Item>
@@ -200,7 +225,18 @@ const Register = () => {
             <Form.Item
               label={<span style={{fontSize: 13, fontWeight: 600}}>Xác nhận mật khẩu</span>}
               name="confirmPassword"
-              rules={[{required: true, message: "Vui lòng xác nhận mật khẩu"}]}
+              dependencies={["password"]}
+              rules={[
+                {required: true, message: "Vui lòng xác nhận mật khẩu"},
+                ({getFieldValue}) => ({
+                  validator(_, value) {
+                    if (!value || getFieldValue("password") === value) {
+                      return Promise.resolve();
+                    }
+                    return Promise.reject(new Error("Mật khẩu xác nhận không khớp!"));
+                  },
+                }),
+              ]}
             >
               <Input.Password
                 prefix={<LockOutlined style={{color: "#9ca3af", marginRight: 6}} />}

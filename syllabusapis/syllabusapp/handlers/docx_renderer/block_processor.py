@@ -17,6 +17,7 @@ from .xml_helpers import (
 from .style_manager import StyleManager
 from .table_manager import TableManager
 from .lecturer_manager import LecturerManager
+from .credit_manager import CreditManager
 
 
 class BlockProcessor:
@@ -203,13 +204,20 @@ class BlockProcessor:
                 custom_columns=custom_columns, syllabus=syllabus,
                 label_overrides=label_overrides,
             )
+        elif code == "credit":
+            new_paras, new_tables = CreditManager.render(
+                doc, block, sub_section, new_paras, new_tables,
+                custom_columns=custom_columns, syllabus=syllabus,
+                label_overrides=label_overrides,
+            )
         if custom_columns and new_tables:
             TableManager._apply_custom_columns(
                 new_tables, custom_columns, block, syllabus,
                 object_ids, target_table_index, resolved_table_code,
             )
         target_tables = new_tables
-        if not target_tables and code == "credit" and target_table_index < len(doc.tables):
+        is_credit_table = str((block.config or {}).get("display_type", "TABLE")).upper() == "TABLE"
+        if not target_tables and code == "credit" and target_table_index < len(doc.tables) and is_credit_table:
             target_tables = [doc.tables[target_table_index]]
 
         if label_overrides and target_tables:

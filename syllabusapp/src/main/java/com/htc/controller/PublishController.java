@@ -20,7 +20,14 @@ public class PublishController {
 
     @PostMapping("/publish-template/{id}")
     public ResponseEntity<String> receivePublishRequest(@PathVariable(value = "id") Long id) {
-        this.cloneService.cloneOutlinesToNewTemplate(id);
-        return new ResponseEntity<>("Nhân bản đề cương thành công", HttpStatus.OK);
+        if (id == null || id <= 0) {
+            return new ResponseEntity<>("ID Template không hợp lệ", HttpStatus.BAD_REQUEST);
+        }
+        try {
+            this.cloneService.cloneOutlinesToNewTemplate(id);
+            return new ResponseEntity<>("Nhân bản đề cương thành công", HttpStatus.OK);
+        } catch (RuntimeException e) {
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
+        }
     }
 }

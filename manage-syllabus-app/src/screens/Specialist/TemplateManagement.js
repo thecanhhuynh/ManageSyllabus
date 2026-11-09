@@ -102,15 +102,36 @@ const TemplateManagement = () => {
     }
   };
 
-  const handlePublish = async (id) => {
-    try {
-      const res = await springApi().post(endpoints["publish-template"](id));
-      if (res.status === 200) message.success("Đã ban hành Template!");
-      setPage(1);
-    } catch (err) {
-      console.log(err);
-      message.error("Lỗi khi ban hành!");
-    }
+  const handlePublish = (id, record) => {
+    Modal.confirm({
+      title: "Xác nhận Ban hành Mẫu Đề cương",
+      content: (
+        <div className="py-2">
+          <p>
+            Bạn đang chuẩn bị ban hành Mẫu:{" "}
+            <strong>{record?.name} ({record?.version})</strong>.
+          </p>
+          <p className="text-amber-600 font-medium text-xs mt-2">
+            ⚠️ Lưu ý quan trọng: Khi ban hành, hệ thống sẽ kích hoạt nhân bản đề cương cho toàn bộ các môn học thuộc mẫu cha tương ứng sang mẫu mới này. Tiến trình này không thể hoàn tác.
+          </p>
+          <p className="mt-2 text-xs text-gray-500">Bạn có chắc chắn muốn tiếp tục ban hành?</p>
+        </div>
+      ),
+      okText: "Xác nhận Ban hành",
+      okType: "primary",
+      cancelText: "Hủy",
+      onOk: async () => {
+        try {
+          const res = await springApi().post(endpoints["publish-template"](id));
+          if (res.status === 200) message.success("Đã ban hành Template thành công!");
+          setPage(1);
+          loadTemplates();
+        } catch (err) {
+          console.log(err);
+          message.error("Lỗi khi ban hành!");
+        }
+      },
+    });
   };
 
   const columns = [
@@ -192,7 +213,7 @@ const TemplateManagement = () => {
               className="text-green-600"
               icon={<CheckCircleOutlined />}
               title="Ban hành"
-              onClick={() => handlePublish(record.id)}
+              onClick={() => handlePublish(record.id, record)}
             />
           )}
           <Button
@@ -302,7 +323,13 @@ const TemplateManagement = () => {
           <Form.Item
             name="version"
             label="Phiên bản (Version)"
-            rules={[{required: true, message: "Vui lòng nhập version"}]}
+            rules={[
+              {required: true, message: "Vui lòng nhập version"},
+              {
+                pattern: /^v\d+(\.\d+)?$/,
+                message: "Phiên bản phải có định dạng vX hoặc vX.Y (VD: v1.0, v2.1)",
+              },
+            ]}
           >
             <Input placeholder="VD: v1.0" />
           </Form.Item>

@@ -85,7 +85,7 @@ const MajorManagement = () => {
 
   const columns = [
     {title: "ID", dataIndex: "id", key: "id", width: 80},
-    {title: "Tên môn học", dataIndex: "name", key: "name"},
+    {title: "Tên chuyên ngành", dataIndex: "name", key: "name"},
     {title: "Mã chuyên ngành", dataIndex: "code", key: "code"},
     {
       title: "Khoa",
@@ -168,9 +168,15 @@ const MajorManagement = () => {
           <Form.Item
             name="code"
             label="Mã chuyên ngành"
-            rules={[{required: true, message: "Vui lòng nhập mã chuyên ngành"}]}
+            rules={[
+              {required: true, message: "Vui lòng nhập mã chuyên ngành"},
+              {
+                pattern: /^[A-Z0-9_-]{2,20}$/,
+                message: "Mã chuyên ngành chỉ gồm chữ in hoa, số, gạch nối hoặc gạch dưới (2-20 ký tự)",
+              },
+            ]}
           >
-            <Input placeholder="Nhập mã chuyên ngành" />
+            <Input placeholder="VD: CNTT, KHMT, HTTT" />
           </Form.Item>
           <Form.Item
             name="name"

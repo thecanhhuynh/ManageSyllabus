@@ -77,7 +77,16 @@ Cụ thể, Agent phải trả lời được các câu hỏi sau:
 4. **Ảnh hưởng đến UI/UX (Frontend Impact):** Component React này có được tái sử dụng ở nhiều màn hình khác nhau không? Nếu sửa props, có làm vỡ giao diện ở màn hình khác không?
 5. **Đề xuất giải pháp:** Nếu phát hiện code xung quanh bị ảnh hưởng, hãy liệt kê danh sách các file cần sửa đổi kèm theo lý do, và đợi tôi xác nhận trước khi thực thi.
 
-## 10. QUY TẮC LÀM VIỆC VỚI AI AGENT
+## 10. QUY TẮC DỌN DẸP CODE CHẾT (DEAD CODE CLEANUP)
+
+Khi viết hoặc refactor bất kỳ module nào, Agent **BẮT BUỘC** phải tuân thủ:
+
+1. **Xóa hàm/biến không sử dụng:** Nếu một hàm, class, biến, hoặc import không còn được gọi ở bất kỳ đâu trong dự án, hãy xóa nó đi. Không để lại code "comment out" hoặc code "dự phòng".
+2. **Xóa file không sử dụng:** Nếu một file (ví dụ: `old_renderer.py`, `api_views_backup.py`) không còn được import ở bất kỳ đâu, hãy xóa nó.
+3. **Kiểm tra trước khi xóa:** Trước khi xóa, hãy dùng lệnh tìm kiếm (ví dụ: `grep -r "ten_ham" .`) để đảm bảo hàm đó thực sự không được dùng ở đâu. Nếu có rủi ro, hãy hỏi tôi trước.
+4. **Báo cáo kết quả:** Sau khi dọn dẹp, liệt kê danh sách các hàm/file đã xóa và lý do xóa.
+
+## 11. QUY TẮC LÀM VIỆC VỚI AI AGENT
 - **Plan trước, Code sau:** Với mọi tác vụ phức tạp, hãy đưa ra kế hoạch từng bước (Plan) và đợi tôi xác nhận (Approve) trước khi viết code.
 - **Không tự ý sửa file ngoài phạm vi:** Nếu cần thay đổi file khác, phải hỏi ý kiến tôi trước.
 - **Viết Unit Test:** Mọi logic nghiệp vụ mới đều phải đi kèm với unit test tương ứng.

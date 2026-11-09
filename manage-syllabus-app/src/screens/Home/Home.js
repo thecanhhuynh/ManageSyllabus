@@ -8,8 +8,8 @@ import {
   Space,
   Tag,
   Tooltip,
-  Divider,
   Tabs,
+  Modal,
 } from "antd";
 import {useContext, useEffect, useState} from "react";
 import {authApis, endpoints} from "../../config/Apis";
@@ -21,16 +21,25 @@ import {
   UserOutlined,
   CalendarOutlined,
   DownloadOutlined,
+  CheckCircleOutlined,
+  ClockCircleOutlined,
 } from "@ant-design/icons";
 import MySpinner from "../../components/MySpinner";
 import {useNavigate} from "react-router-dom";
 import cookies from "react-cookies";
 import {MyUserContext} from "../../config/contexts/MyContext";
+import SignatureService from "../../services/signatureService";
 
 const Home = () => {
   const [user] = useContext(MyUserContext);
   const [loading, setLoading] = useState(false);
   const [exportingId, setExportingId] = useState(null);
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [quickApproveModal, setQuickApproveModal] = useState({
+    open: false,
+    item: null,
+    loading: false,
+  });
   const [faculties, setFaculties] = useState([]);
   const [facultyId, setFacultyId] = useState(null);
   const [facultyPage, setFacultyPage] = useState(1);
@@ -165,7 +174,19 @@ const Home = () => {
     }
   };
 
-  const handleExportDocx = async (syllabusId) => {
+  const handleExportDocx = async (itemOrId) => {
+    const syllabusId = typeof itemOrId === "object" ? itemOrId.id : itemOrId;
+    const isApproved = typeof itemOrId === "object"
+      ? Boolean((itemOrId.is_approved || itemOrId.status === "Approved") && itemOrId.approved_by)
+      : true;
+
+    if (typeof itemOrId === "object" && !isApproved) {
+      message.warning(
+        "Đề cương chưa được Lãnh đạo Khoa phê duyệt. Không thể xuất file chính thức.",
+      );
+      return;
+    }
+
     try {
       setExportingId(syllabusId);
       message.loading({
@@ -202,12 +223,54 @@ const Home = () => {
       });
     } catch (error) {
       console.error(error);
+      if (error?.response?.data instanceof Blob) {
+        try {
+          const text = await error.response.data.text();
+          message.warning({
+            content: text || "Đề cương chưa được Lãnh đạo Khoa phê duyệt.",
+            key: `export_${syllabusId}`,
+          });
+          return;
+        } catch {
+          // fallback
+        }
+      }
       message.error({
         content: "Lỗi khi xuất file docx",
         key: `export_${syllabusId}`,
       });
     } finally {
       setExportingId(null);
+    }
+  };
+
+  const isFacultyLeader = Boolean(
+    user?.lecturer?.is_leader ||
+    user?.is_superuser ||
+    user?.user_role === "admin",
+  );
+
+  const handleQuickApprove = (item) => {
+    setQuickApproveModal({open: true, item, loading: false});
+  };
+
+  const handleConfirmQuickApprove = async () => {
+    const item = quickApproveModal.item;
+    if (!item) return;
+    try {
+      setQuickApproveModal((prev) => ({...prev, loading: true}));
+      await SignatureService.approveSyllabus(item.id);
+      message.success(`Đã phê duyệt thành công đề cương "${item.name}"!`);
+      setQuickApproveModal({open: false, item: null, loading: false});
+      if (activeTab) {
+        loadSyllabuses(activeTab, 1);
+      }
+    } catch (err) {
+      console.error(err);
+      message.error(
+        err?.response?.data?.error || "Lỗi khi phê duyệt đề cương!",
+      );
+      setQuickApproveModal((prev) => ({...prev, loading: false}));
     }
   };
 
@@ -296,6 +359,19 @@ const Home = () => {
               </Select.Option>
             ))}
           </Select>
+
+          <Select
+            placeholder="Lọc trạng thái"
+            style={{width: 170}}
+            allowClear
+            value={statusFilter}
+            onChange={(val) => setStatusFilter(val || "all")}
+          >
+            <Select.Option value="all">Tất cả trạng thái</Select.Option>
+            <Select.Option value="Approved">Đã phê duyệt</Select.Option>
+            <Select.Option value="Submitted">Chờ phê duyệt</Select.Option>
+            <Select.Option value="Draft">Bản nháp</Select.Option>
+          </Select>
         </div>
 
         <Tabs
@@ -315,6 +391,19 @@ const Home = () => {
             const isLoading = currentCache.loading;
             const isFirstLoad = isLoading && currentCache.page === 1;
 
+            const displayItems = items.filter((item) => {
+              if (!statusFilter || statusFilter === "all") return true;
+              if (statusFilter === "Approved")
+                return item.status === "Approved" || item.is_approved;
+              if (statusFilter === "Submitted")
+                return item.status === "Submitted" && !item.is_approved;
+              if (statusFilter === "Draft")
+                return (
+                  (!item.status || item.status === "Draft") && !item.is_approved
+                );
+              return true;
+            });
+
             return {
               label: prog.name + "-" + prog.academic_year,
               key: prog.id.toString(),
@@ -324,7 +413,7 @@ const Home = () => {
                     <MySpinner />
                   ) : (
                     <>
-                      {items.length === 0 ? (
+                      {displayItems.length === 0 ? (
                         <div
                           style={{
                             textAlign: "center",
@@ -332,7 +421,7 @@ const Home = () => {
                             marginTop: 40,
                           }}
                         >
-                          Không có đề cương nào trong chương trình này.
+                          Không có đề cương nào phù hợp.
                         </div>
                       ) : (
                         <List
@@ -345,7 +434,7 @@ const Home = () => {
                             xl: 3,
                             xxl: 4,
                           }}
-                          dataSource={items}
+                          dataSource={displayItems}
                           renderItem={(item) => (
                             <List.Item>
                               <Card
@@ -355,6 +444,33 @@ const Home = () => {
                                   overflow: "hidden",
                                   border: "1px solid #e8e8e8",
                                 }}
+                                extra={
+                                  (item.status === "Approved" || item.is_approved) && item.approved_by ? (
+                                    <Tooltip
+                                      title={
+                                        item.approved_by_name
+                                          ? `Được phê duyệt bởi ${item.approved_by_name}${item.approved_date ? ` lúc ${item.approved_date}` : ""}`
+                                          : "Đề cương đã được Lãnh đạo Khoa phê duyệt"
+                                      }
+                                    >
+                                      <Tag
+                                        color="success"
+                                        icon={<CheckCircleOutlined />}
+                                      >
+                                        Đã phê duyệt
+                                      </Tag>
+                                    </Tooltip>
+                                  ) : (
+                                    <Tag
+                                      color="warning"
+                                      icon={<ClockCircleOutlined />}
+                                    >
+                                      {item.status === "Submitted"
+                                        ? "Chờ phê duyệt"
+                                        : "Bản nháp"}
+                                    </Tag>
+                                  )
+                                }
                                 title={
                                   <Text
                                     strong
@@ -371,23 +487,52 @@ const Home = () => {
                                   </Text>
                                 }
                                 actions={[
-                                  <Button
-                                    type="text"
-                                    icon={<EditOutlined />}
-                                    style={{color: "#1890ff"}}
-                                    onClick={() =>
-                                      nav(`/syllabuses/${item.id}`)
+                                  <Tooltip title="Chỉnh sửa đề cương">
+                                    <Button
+                                      type="text"
+                                      icon={<EditOutlined />}
+                                      style={{color: "#1890ff"}}
+                                      onClick={() =>
+                                        nav(`/syllabuses/${item.id}`)
+                                      }
+                                    >
+                                      Chỉnh sửa
+                                    </Button>
+                                  </Tooltip>,
+                                  ...(isFacultyLeader &&
+                                  !((item.status === "Approved" || item.is_approved) && item.approved_by)
+                                    ? [
+                                        <Tooltip title="Phê duyệt đề cương">
+                                          <Button
+                                            type="text"
+                                            icon={<CheckCircleOutlined />}
+                                            style={{
+                                              color: "#16a34a",
+                                              fontWeight: 600,
+                                            }}
+                                            onClick={() =>
+                                              handleQuickApprove(item)
+                                            }
+                                          >
+                                            Phê duyệt
+                                          </Button>
+                                        </Tooltip>,
+                                      ]
+                                    : []),
+                                  <Tooltip
+                                    title={
+                                      item.status === "Approved" ||
+                                      item.is_approved
+                                        ? "Tải xuống file Word"
+                                        : "Đề cương chưa được phê duyệt"
                                     }
                                   >
-                                    Chỉnh sửa
-                                  </Button>,
-                                  <Tooltip title="Tải xuống file Word">
                                     <Button
                                       type="text"
                                       icon={<DownloadOutlined />}
                                       loading={exportingId === item.id}
                                       style={{color: "#52c41a"}}
-                                      onClick={() => handleExportDocx(item.id)}
+                                      onClick={() => handleExportDocx(item)}
                                     >
                                       Xuất file
                                     </Button>
@@ -426,6 +571,31 @@ const Home = () => {
                                       Giảng viên: {item.lecturer_name}
                                     </Text>
                                   </div>
+
+                                  {Boolean(
+                                    (item.status === "Approved" ||
+                                      item.is_approved) &&
+                                      item.approved_by &&
+                                      item.approved_by_name,
+                                  ) && (
+                                    <div
+                                      style={{
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: 8,
+                                        fontSize: 13,
+                                        color: "#16a34a",
+                                      }}
+                                    >
+                                      <CheckCircleOutlined
+                                        style={{color: "#16a34a"}}
+                                      />
+                                      <span>
+                                        Phê duyệt bởi:{" "}
+                                        <strong>{item.approved_by_name}</strong>
+                                      </span>
+                                    </div>
+                                  )}
 
                                   <div
                                     style={{
@@ -495,6 +665,44 @@ const Home = () => {
             };
           })}
         />
+
+        <Modal
+          title={<span>🛡️ Xác nhận Phê duyệt nhanh đề cương</span>}
+          open={quickApproveModal.open}
+          onCancel={() =>
+            setQuickApproveModal({open: false, item: null, loading: false})
+          }
+          onOk={handleConfirmQuickApprove}
+          confirmLoading={quickApproveModal.loading}
+          okText="Xác nhận duyệt"
+          cancelText="Đóng"
+        >
+          <div style={{lineHeight: 1.8}}>
+            <p style={{margin: "0 0 8px 0"}}>
+              Bạn có chắc muốn phê duyệt đề cương:{" "}
+              <strong>{quickApproveModal.item?.name}</strong>?
+            </p>
+            <p style={{margin: "0 0 12px 0", color: "#6b7280", fontSize: 13}}>
+              Giảng viên biên soạn:{" "}
+              <strong>{quickApproveModal.item?.lecturer_name}</strong> | Môn:{" "}
+              <strong>{quickApproveModal.item?.subject_name}</strong>
+            </p>
+            <div
+              style={{
+                background: "#f0fdf4",
+                border: "1px solid #bbf7d0",
+                padding: 12,
+                borderRadius: 8,
+                fontSize: 13,
+                color: "#166534",
+              }}
+            >
+              Chữ ký cá nhân trong hồ sơ của bạn ({user?.last_name}{" "}
+              {user?.first_name}) sẽ được tự động đóng dấu vào bảng chữ ký ở
+              chân trang khi xuất file Word.
+            </div>
+          </div>
+        </Modal>
       </Space>
     </div>
   );

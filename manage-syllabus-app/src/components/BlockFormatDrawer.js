@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { Drawer, Tag, Button, Collapse, Radio, Divider, message } from "antd";
 import { BlockInlinePreview } from "./block_preview";
 import TableColumnWidthControl from "./TableColumnWidthControl";
-import TableCellAlignmentControl from "./TableCellAlignmentControl";
 import CustomColumnService from "../services/customColumnService";
 import { EyeOutlined } from "@ant-design/icons";
 import {
@@ -12,7 +11,6 @@ import {
   NESTED_TABLE_LEVELS,
   UNSUPPORTED_CUSTOM_COLUMN,
   StyleControls,
-  ColumnLabelsSection,
   CustomColumnSection,
   CustomColumnModal,
   DrawerFooterActions,
@@ -36,6 +34,7 @@ const BlockFormatDrawer = ({
   const [titleStyle, setTitleStyle] = useState({});
   const [contentStyle, setContentStyle] = useState({});
   const [displayType, setDisplayType] = useState("TABLE");
+  const [textFormat, setTextFormat] = useState("INLINE");
   const [columnOverrides, setColumnOverrides] = useState({});
   const [columnWidthFormula, setColumnWidthFormula] = useState("");
   const [cellAlignments, setCellAlignments] = useState({});
@@ -70,6 +69,7 @@ const BlockFormatDrawer = ({
       setContentStyle(rawCfg);
     }
     setDisplayType((block.config || {}).display_type || "TABLE");
+    setTextFormat((block.config || {}).text_format || "INLINE");
     setColumnOverrides((block.config || {}).column_overrides || {});
     setColumnWidthFormula((block.config || {}).column_widths_formula || "");
     setCellAlignments((block.config || {}).cell_alignments || {});
@@ -114,6 +114,55 @@ const BlockFormatDrawer = ({
     }
     return TABLE_DEFAULT_COLUMNS[tableCode] || ["Cột 1", "Cột 2", "Cột 3"];
   })();
+
+  const defaultCols = DEFAULT_COLUMN_LABELS[tableCode] || [];
+  const tableCustomCols = (draftCustomColumns || []).filter(
+    (col) => !col.table_code || col.table_code === tableCode
+  );
+
+  const columnsMetadata = [
+    ...defaultCols.map((col, idx) => ({
+      ci: idx,
+      key: col.key,
+      defaultLabel: col.defaultLabel,
+      currentLabel: tableLabelOverrides[col.key] || col.defaultLabel,
+      isModified: Boolean(tableLabelOverrides[col.key] && tableLabelOverrides[col.key].trim()),
+      isCustom: false,
+    })),
+    ...tableCustomCols.map((col, idx) => ({
+      ci: defaultCols.length + idx,
+      key: col.column_key || `custom_${col.id}`,
+      id: col.id,
+      column_type: col.column_type || "text",
+      defaultLabel: col.column_label || "Cột tùy biến",
+      currentLabel: col.column_label || "",
+      isModified: false,
+      isCustom: true,
+    })),
+  ];
+
+  const handleUpdateColumnLabel = (colMeta, newLabel) => {
+    if (!colMeta.isCustom) {
+      const next = { ...tableLabelOverrides };
+      if (!newLabel || !newLabel.trim()) {
+        delete next[colMeta.key];
+      } else {
+        next[colMeta.key] = newLabel;
+      }
+      setTableLabelOverrides(next);
+      return;
+    }
+    handleUpdateCustomColumnLabel(colMeta.id || colMeta.key, newLabel);
+  };
+
+  const handleResetColumnLabel = (colMeta) => {
+    if (colMeta.isCustom) return;
+    const next = { ...tableLabelOverrides };
+    delete next[colMeta.key];
+    setTableLabelOverrides(next);
+    message.info(`Đã khôi phục tiêu đề cột "${colMeta.defaultLabel}" về mặc định.`);
+  };
+
   const effectiveTableCols = tableCode === "lecturer_info"
     ? baseCols
     : [...baseCols, ...draftCustomColumns.map((c) => c.column_label || "Cột mới")];
@@ -131,6 +180,7 @@ const BlockFormatDrawer = ({
           [block.code]: {
             ...(block.config || {}),
             display_type: displayType,
+            text_format: textFormat,
             column_overrides: columnOverrides,
             column_widths_formula: columnWidthFormula,
             cell_alignments: cellAlignments,
@@ -152,6 +202,7 @@ const BlockFormatDrawer = ({
       config: {
         ...(block.config || {}),
         display_type: displayType,
+        text_format: textFormat,
         column_overrides: columnOverrides,
         column_widths_formula: columnWidthFormula,
         cell_alignments: cellAlignments,
@@ -330,16 +381,6 @@ const BlockFormatDrawer = ({
           <Collapse defaultActiveKey={["title", "content"]} items={collapseItems} />
 
           {isTableBlock && (
-            <ColumnLabelsSection
-              tableCode={tableCode}
-              tableLabelOverrides={tableLabelOverrides}
-              customColumns={draftCustomColumns}
-              onChange={setTableLabelOverrides}
-              onUpdateCustomColumnLabel={handleUpdateCustomColumnLabel}
-            />
-          )}
-
-          {isTableBlock && (
             <CustomColumnSection
               tableCode={tableCode}
               supportsCustomColumn={supportsCustomColumn}
@@ -360,6 +401,32 @@ const BlockFormatDrawer = ({
                 <Radio value="TABLE">Bảng</Radio>
                 <Radio value="TEXT">Văn bản</Radio>
               </Radio.Group>
+
+              {tableCode === "credit" && displayType === "TEXT" && (
+                <div className="mt-3 bg-slate-50 p-2.5 rounded border border-slate-200">
+                  <span className="text-[11px] font-semibold text-gray-700 block mb-1.5">
+                    Định dạng câu văn bản:
+                  </span>
+                  <Radio.Group
+                    value={textFormat}
+                    onChange={(e) => setTextFormat(e.target.value)}
+                    className="flex flex-col gap-2"
+                  >
+                    <Radio value="INLINE" className="text-xs">
+                      <span className="font-medium">Mẫu 1: Dòng câu tóm tắt</span>
+                      <span className="block text-[10px] text-gray-400">
+                        Tổng số: 3 tín chỉ (Lý thuyết: 2, Thực hành: 1, Tự học: 90 giờ)
+                      </span>
+                    </Radio>
+                    <Radio value="BULLET" className="text-xs">
+                      <span className="font-medium">Mẫu 2: Danh sách gạch đầu dòng</span>
+                      <span className="block text-[10px] text-gray-400">
+                        • Tổng số: 3 tín chỉ • Lý thuyết: 2 tín chỉ...
+                      </span>
+                    </Radio>
+                  </Radio.Group>
+                </div>
+              )}
             </div>
           )}
 
@@ -370,12 +437,6 @@ const BlockFormatDrawer = ({
                 columns={effectiveTableCols}
                 value={columnWidthFormula}
                 onChange={setColumnWidthFormula}
-              />
-              <Divider className="my-3" />
-              <TableCellAlignmentControl
-                columns={effectiveTableCols}
-                value={cellAlignments}
-                onChange={setCellAlignments}
               />
             </div>
           )}
@@ -389,7 +450,7 @@ const BlockFormatDrawer = ({
             <div className="flex items-center gap-1.5">
               {isTableBlock && displayType === "TABLE" && (
                 <Tag color="cyan" className="mr-0 text-[10px]">
-                  💡 Click ô để căn lề trực tiếp
+                  💡 Click ô tiêu đề để sửa tên, ô thân bảng để căn lề
                 </Tag>
               )}
               <Tag color="blue" className="mr-0 text-[10px]">Realtime 300ms</Tag>
@@ -406,9 +467,13 @@ const BlockFormatDrawer = ({
               interactiveCellAlign={isTableBlock && displayType === "TABLE"}
               cellAlignments={cellAlignments}
               onCellAlignmentChange={setCellAlignments}
+              columnsMetadata={columnsMetadata}
+              onUpdateColumnLabel={handleUpdateColumnLabel}
+              onResetColumnLabel={handleResetColumnLabel}
               blockConfig={{
                 ...(block.config || {}),
                 display_type: displayType,
+                text_format: textFormat,
                 column_widths_formula: columnWidthFormula,
                 cell_alignments: cellAlignments,
                 label_overrides: tableLabelOverrides,

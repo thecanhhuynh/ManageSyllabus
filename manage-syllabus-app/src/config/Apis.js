@@ -4,6 +4,7 @@ export const endpoints = {
   login: "/o/token/",
   register: "/api/auth/register/",
   profile: "/users/current-user/",
+  "change-password": "/users/change-password/",
   syllabuses: "/syllabuses/",
   "syllabus-detail": (syllabusId) => `/syllabuses/${syllabusId}/`,
   "syllabus-clos": (syllabusId) => `/syllabuses/${syllabusId}/clos/`,
@@ -54,6 +55,11 @@ export const endpoints = {
   "admin-users": "/admin/users/",
   "admin-user-detail": (id) => `/admin/users/${id}/`,
   "admin-user-activate": (id) => `/admin/users/${id}/activate/`,
+  "user-signature": "/users/signature/",
+  "syllabus-signatures": (id) => `/syllabuses/${id}/signatures/`,
+  "syllabus-sign": (id) => `/syllabuses/${id}/sign/`,
+  "syllabus-approve": (id) => `/syllabuses/${id}/approve/`,
+  "syllabus-unapprove": (id) => `/syllabuses/${id}/unapprove/`,
 };
 const CLIENT_ID = process.env.REACT_APP_CLIENT_ID;
 const CLIENT_SECRET = process.env.REACT_APP_CLIENT_SECRET;

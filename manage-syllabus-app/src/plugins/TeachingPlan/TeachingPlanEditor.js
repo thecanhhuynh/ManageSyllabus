@@ -416,8 +416,70 @@ const TeachingPlanEditor = ({item, basePath}) => {
     updateLocalBlock(item.code, {reference_data: nextData});
   };
 
+  const currentSyllabus = useSyllabusStore((state) => state.currentSyllabus);
+  const creditInfo = currentSyllabus?.subject?.credit;
+  const theoryCredits = Number(creditInfo?.number_theory || 0);
+  const practiceCredits = Number(creditInfo?.number_practice || 0);
+  const expectedTotalHours = (theoryCredits * 15) + (practiceCredits * 30);
+
+  const { totalOfflineHours, totalOnlineHours, totalTeachingHours } = useMemo(() => {
+    let offline = 0;
+    let online = 0;
+    (referenceData || []).forEach((g) => {
+      (g?.teaching_sessions || []).forEach((s) => {
+        offline += Number(s.offline_hours || 0);
+        online += Number(s.online_hours || 0);
+      });
+    });
+    return {
+      totalOfflineHours: offline,
+      totalOnlineHours: online,
+      totalTeachingHours: offline + online,
+    };
+  }, [referenceData]);
+
+  const hourDeviationPercent = expectedTotalHours > 0
+    ? Math.round(Math.abs(totalTeachingHours - expectedTotalHours) / expectedTotalHours * 100)
+    : 0;
+  const isDeviationHigh = expectedTotalHours > 0 && hourDeviationPercent > 20;
+
   return (
     <div className="w-full flex flex-col gap-6">
+      {expectedTotalHours > 0 && (
+        <div className={`p-4 rounded-xl border shadow-sm ${isDeviationHigh ? "bg-amber-50/70 border-amber-200" : "bg-blue-50/50 border-blue-100"}`}>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <div className="text-xs font-bold uppercase tracking-wider text-gray-700 flex items-center gap-2">
+                <span>Định mức giờ giảng dạy (Quy định BR-05)</span>
+                {isDeviationHigh ? (
+                  <span className="text-[11px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-semibold">
+                    Lệch {hourDeviationPercent}% (&gt;20%)
+                  </span>
+                ) : (
+                  <span className="text-[11px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-semibold">
+                    Khớp định mức (±{hourDeviationPercent}%)
+                  </span>
+                )}
+              </div>
+              <div className="text-xs text-gray-500 mt-1">
+                Số tín chỉ: {theoryCredits} LT + {practiceCredits} TH | Định mức quy định: <strong>{expectedTotalHours} giờ</strong>
+              </div>
+            </div>
+            <div className="flex items-center gap-4 text-xs font-semibold">
+              <span className="text-blue-600">Offline: {totalOfflineHours}h</span>
+              <span className="text-green-600">Online: {totalOnlineHours}h</span>
+              <span className="text-purple-700 bg-white px-2.5 py-1 rounded-md border border-gray-200 shadow-xs">
+                Tổng: {totalTeachingHours}h / {expectedTotalHours}h
+              </span>
+            </div>
+          </div>
+          {isDeviationHigh && (
+            <div className="text-[11px] text-amber-700 mt-2 font-medium italic">
+              * Cảnh báo BR-05: Tổng số giờ giảng dạy ({totalTeachingHours}h) đang lệch quá 20% so với định mức tín chỉ ({expectedTotalHours}h). Vui lòng điều chỉnh số giờ của các buổi học cho phù hợp.
+            </div>
+          )}
+        </div>
+      )}
       {referenceData.map((group, groupIdx) => {
         const groupName =
           group?.schedule_group?.name || `Nhóm lịch trình ${groupIdx + 1}`;
@@ -450,9 +512,16 @@ const TeachingPlanEditor = ({item, basePath}) => {
                     return (
                       <Panel
                         header={
-                          <span className="font-bold text-blue-600">
-                            Buổi học {sessionNo}
-                          </span>
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-blue-600">
+                              Buổi học {sessionNo}
+                            </span>
+                            {!session.content?.trim() && (
+                              <span className="text-[11px] text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded font-normal italic">
+                                Chưa nhập nội dung
+                              </span>
+                            )}
+                          </div>
                         }
                         key={panelKey}
                         extra={

@@ -1162,6 +1162,7 @@ class TestSubRenderers(TestCase):
         sub_empty = {"code": "requirement_subject", "reference_data": []}
         renderer.render(doc, sub_empty, {})
         self.assertEqual(len(tbl.rows), 2)
+        self.assertEqual(tbl.rows[1].cells[0].text, "1")
         self.assertIn("Không có", tbl.rows[1].cells[1].text)
 
         sub_3 = {
@@ -1174,10 +1175,13 @@ class TestSubRenderers(TestCase):
         }
         renderer.render(doc, sub_3, {})
         self.assertEqual(len(tbl.rows), 4)
+        self.assertEqual(tbl.rows[1].cells[0].text, "1")
         self.assertIn("Nhập môn Lập trình", tbl.rows[1].cells[1].text)
         self.assertEqual(tbl.rows[1].cells[2].text, "PRG101")
+        self.assertEqual(tbl.rows[2].cells[0].text, "2")
         self.assertIn("Cơ sở dữ liệu", tbl.rows[2].cells[1].text)
         self.assertEqual(tbl.rows[2].cells[2].text, "DBM201")
+        self.assertEqual(tbl.rows[3].cells[0].text, "3")
         self.assertIn("Phát triển web", tbl.rows[3].cells[1].text)
         self.assertEqual(tbl.rows[3].cells[2].text, "WEB101")
 
@@ -2713,7 +2717,19 @@ class RunColorTestCase(TestCase):
         renderer._render_main_section_header(doc, self.main_sec, self.template.block_layout)
         p = doc.paragraphs[0]
         color_el = p._p.find(f".//{{{W_NS}}}color")
-        self.assertIsNone(color_el)
+        self.assertIsNotNone(color_el)
+        self.assertEqual(color_el.get(f"{{{W_NS}}}val"), "000000")
+
+    def test_main_section_default_color_is_black(self):
+        from docx import Document
+        from handlers.shell_renderer import ShellDocxRenderer, W_NS
+        doc = Document()
+        renderer = ShellDocxRenderer()
+        renderer._render_main_section_header(doc, self.main_sec, {})
+        p = doc.paragraphs[0]
+        color_el = p._p.find(f".//{{{W_NS}}}color")
+        self.assertIsNotNone(color_el)
+        self.assertEqual(color_el.get(f"{{{W_NS}}}val"), "000000")
 
 
 class HeaderFooterRendererTestCase(TestCase):
@@ -3757,6 +3773,100 @@ class LecturerDisplayTypeTextTestCase(TestCase):
         self.assertIn("• Học vị: Tiến sĩ", paras[5])
 
 
+class CreditDisplayTypeStrategyTestCase(TestCase):
+    """Kiểm thử Strategy Pattern cho mục Số tín chỉ (Credit): TABLE, TEXT (INLINE), TEXT (BULLET)."""
+
+    def setUp(self):
+        self.sub_map = {
+            "credit": {
+                "type": "reference",
+                "code": "credit",
+                "reference_data": {
+                    "number_theory": 2,
+                    "number_practice": 1,
+                    "hour_self_study": 30,
+                },
+            }
+        }
+
+    def test_credit_display_type_table_keeps_table(self):
+        from docx import Document
+        from handlers.docx_renderer.block_processor import BlockProcessor
+
+        doc = Document()
+        block = TemplateBlock(code="BLOCK_CREDIT", name="Số tín chỉ", block_type="reference")
+        block.config = {"code": "credit", "display_type": "TABLE"}
+        BlockProcessor._render_block(doc, block, {}, {}, sub_sections_map=self.sub_map)
+        self.assertEqual(len(doc.tables), 1)
+
+    def test_credit_display_type_text_inline(self):
+        from docx import Document
+        from handlers.docx_renderer.block_processor import BlockProcessor
+
+        doc = Document()
+        block = TemplateBlock(code="BLOCK_CREDIT", name="Số tín chỉ", block_type="reference")
+        block.config = {"code": "credit", "display_type": "TEXT", "text_format": "INLINE"}
+        BlockProcessor._render_block(doc, block, {}, {}, sub_sections_map=self.sub_map)
+        self.assertEqual(len(doc.tables), 0)
+        paras = [p.text for p in doc.paragraphs if p.text.strip()]
+        self.assertIn("Số tín chỉ", paras[0])
+        self.assertIn("Tổng số: 3 tín chỉ (Lý thuyết: 2, Thực hành: 1, Số giờ tự học: 30 giờ)", paras[1])
+
+    def test_credit_display_type_text_inline_with_custom_columns(self):
+        from docx import Document
+        from handlers.docx_renderer.block_processor import BlockProcessor
+
+        doc = Document()
+        block = TemplateBlock(code="BLOCK_CREDIT", name="Số tín chỉ", block_type="reference")
+        block.config = {"code": "credit", "display_type": "TEXT", "text_format": "INLINE"}
+        custom_cols = [
+            {"column_label": "Ghi chú", "column_key": "custom_credit_001", "default_value": "Môn bắt buộc"}
+        ]
+        BlockProcessor._render_block(doc, block, {}, {}, sub_sections_map=self.sub_map, custom_columns=custom_cols)
+        self.assertEqual(len(doc.tables), 0)
+        paras = [p.text for p in doc.paragraphs if p.text.strip()]
+        self.assertIn("Ghi chú: Môn bắt buộc", paras[1])
+
+    def test_credit_display_type_text_bullet(self):
+        from docx import Document
+        from handlers.docx_renderer.block_processor import BlockProcessor
+
+        doc = Document()
+        block = TemplateBlock(code="BLOCK_CREDIT", name="Số tín chỉ", block_type="reference")
+        block.config = {"code": "credit", "display_type": "TEXT", "text_format": "BULLET"}
+        custom_cols = [
+            {"column_label": "Ghi chú", "column_key": "custom_credit_001", "default_value": "Môn tự chọn"}
+        ]
+        BlockProcessor._render_block(doc, block, {}, {}, sub_sections_map=self.sub_map, custom_columns=custom_cols)
+        self.assertEqual(len(doc.tables), 0)
+        paras = [p.text for p in doc.paragraphs if p.text.strip()]
+        self.assertIn("Số tín chỉ", paras[0])
+        self.assertIn("• Tổng số: 3 tín chỉ", paras[1])
+        self.assertIn("• Lý thuyết: 2 tín chỉ", paras[2])
+        self.assertIn("• Thực hành: 1 tín chỉ", paras[3])
+        self.assertIn("• Số giờ tự học: 30 giờ", paras[4])
+        self.assertIn("• Ghi chú: Môn tự chọn", paras[5])
+
+    def test_credit_text_with_label_overrides(self):
+        from docx import Document
+        from handlers.docx_renderer.block_processor import BlockProcessor
+
+        doc = Document()
+        block = TemplateBlock(code="BLOCK_CREDIT", name="Số tín chỉ", block_type="reference")
+        block.config = {"code": "credit", "display_type": "TEXT", "text_format": "INLINE"}
+        block_layout = {
+            "label_overrides": {
+                "credit": {
+                    "credit_total": "Tổng tín chỉ",
+                    "number_theory": "Lý thuyết chuẩn",
+                }
+            }
+        }
+        BlockProcessor._render_block(doc, block, {}, block_layout, sub_sections_map=self.sub_map)
+        paras = [p.text for p in doc.paragraphs if p.text.strip()]
+        self.assertIn("Tổng tín chỉ: 3 tín chỉ (Lý thuyết chuẩn: 2, Thực hành: 1, Số giờ tự học: 30 giờ)", paras[1])
+
+
 class TableManagerLabelOverridesTests(TestCase):
     def setUp(self):
         self.client = APIClient()
@@ -3931,3 +4041,565 @@ class TableManagerLabelOverridesTests(TestCase):
 
 
 
+
+
+
+class DigitalSignatureTestCase(TestCase):
+    def setUp(self):
+        self.faculty = Faculty.objects.create(name="Khoa Công nghệ Thông tin")
+        self.user_gv = User.objects.create_user(
+            username="gv_test", password="password", first_name="Thành", last_name="Dương Hữu"
+        )
+        self.lecturer_gv = Lecturer.objects.create(
+            user=self.user_gv, faculty=self.faculty, faculty_role=Lecturer.FacultyRole.LECTURER
+        )
+        self.user_dean = User.objects.create_user(
+            username="dean_test", password="password", first_name="Vinh", last_name="Trương Hoàng"
+        )
+        self.lecturer_dean = Lecturer.objects.create(
+            user=self.user_dean, faculty=self.faculty, faculty_role=Lecturer.FacultyRole.VICE_DEAN
+        )
+        self.credit = Credit.objects.create(number_theory=3, number_practice=0, hour_self_study=90)
+        self.subject = Subject.objects.create(code="IT101", name="Nhập môn lập trình", credit=self.credit)
+        self.template = TemplateSyllabus.objects.create(name="Template CNTT", version="v1.0")
+        self.syllabus = Syllabus.objects.create(
+            name="Đề cương NMLT", subject=self.subject, faculty=self.faculty,
+            lecturer=self.lecturer_gv, template=self.template, status="draft"
+        )
+
+    def test_faculty_role_and_is_leader(self):
+        self.assertFalse(self.lecturer_gv.is_leader)
+        self.assertTrue(self.lecturer_dean.is_leader)
+
+    def test_permission_can_sign(self):
+        from services.signature_service import SignatureService
+        allowed, _ = SignatureService.can_sign(self.user_gv, self.syllabus, "lecturer")
+        self.assertTrue(allowed)
+
+        allowed, _ = SignatureService.can_sign(self.user_dean, self.syllabus, "lecturer")
+        self.assertFalse(allowed)
+
+        allowed, _ = SignatureService.can_sign(self.user_dean, self.syllabus, "faculty_dean")
+        self.assertTrue(allowed)
+
+        allowed, _ = SignatureService.can_sign(self.user_gv, self.syllabus, "faculty_dean")
+        self.assertFalse(allowed)
+
+    def test_sign_syllabus_workflow(self):
+        from services.signature_service import SignatureService
+        sample_b64 = (
+            "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII="
+        )
+
+        sig, err = SignatureService.sign_syllabus(
+            self.user_gv, self.syllabus, "lecturer", image_raw=sample_b64
+        )
+        self.assertIsNotNone(sig)
+        self.assertEqual(sig.signer_name, "Dương Hữu Thành")
+        self.assertEqual(sig.signer_title, "GIẢNG VIÊN BIÊN SOẠN")
+        self.syllabus.refresh_from_db()
+        self.assertEqual(self.syllabus.status, Syllabus.Status.SUBMITTED)
+
+        sig_dean, err = SignatureService.sign_syllabus(
+            self.user_dean, self.syllabus, "faculty_dean", image_raw=sample_b64
+        )
+        self.assertIsNotNone(sig_dean)
+        self.assertEqual(sig_dean.signer_name, "Trương Hoàng Vinh")
+        self.assertEqual(sig_dean.signer_title, "PHÓ TRƯỞNG KHOA CÔNG NGHỆ THÔNG TIN")
+        self.syllabus.refresh_from_db()
+        self.assertEqual(self.syllabus.status, Syllabus.Status.APPROVED)
+
+    def test_render_docx_with_signature(self):
+        from services.signature_service import SignatureService
+        sample_b64 = (
+            "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII="
+        )
+        SignatureService.sign_syllabus(self.user_gv, self.syllabus, "lecturer", image_raw=sample_b64)
+
+        from handlers.header_footer_renderer import HeaderFooterRenderer
+        from docx import Document
+        doc = Document()
+        renderer = HeaderFooterRenderer()
+        renderer.render_footer(doc, config={}, syllabus=self.syllabus)
+        self.assertEqual(len(doc.tables), 1)
+        tbl = doc.tables[0]
+        self.assertTrue(len(tbl.rows[0].cells) >= 2)
+
+    def test_api_sign_and_get_signatures(self):
+        client = APIClient()
+        client.force_authenticate(user=self.user_gv)
+        sample_b64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII="
+
+        res = client.post(f"/syllabuses/{self.syllabus.id}/sign/", {
+            "role": "lecturer",
+            "signature_image": sample_b64
+        }, format="json")
+        self.assertEqual(res.status_code, 200)
+
+        res_list = client.get(f"/syllabuses/{self.syllabus.id}/signatures/")
+        self.assertEqual(res_list.status_code, 200)
+        self.assertEqual(len(res_list.data), 1)
+
+        # Dean signs
+        client.force_authenticate(user=self.user_dean)
+        res_dean = client.post(f"/syllabuses/{self.syllabus.id}/sign/", {
+            "role": "faculty_dean",
+            "signature_image": sample_b64
+        }, format="json")
+        self.assertEqual(res_dean.status_code, 200)
+
+        res_detail = client.get(f"/syllabuses/{self.syllabus.id}/")
+        self.assertEqual(res_detail.status_code, 200)
+        self.assertEqual(len(res_detail.data["signatures"]), 2)
+        self.assertEqual(res_detail.data["status"], Syllabus.Status.APPROVED)
+
+    def test_api_user_signature(self):
+        client = APIClient()
+        client.force_authenticate(user=self.user_gv)
+        sample_b64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII="
+
+        res_post = client.post("/users/signature/", {
+            "signature_image": sample_b64
+        }, format="json")
+        self.assertEqual(res_post.status_code, 200)
+        self.assertIsNotNone(res_post.data.get("signature_url"))
+
+        res_get = client.get("/users/signature/")
+        self.assertEqual(res_get.status_code, 200)
+        self.assertIsNotNone(res_get.data.get("signature_url"))
+        self.assertEqual(res_get.data.get("faculty_role"), "lecturer")
+
+    def test_syllabus_simple_serializer_approval_sync(self):
+        from syllabuses.serializer import SyllabusSimpleSerializer
+        self.syllabus.status = "Approved"
+        self.syllabus.approved_by = self.user_dean
+        self.syllabus.save()
+        data = SyllabusSimpleSerializer(self.syllabus).data
+        self.assertEqual(data["status"], "Approved")
+        self.assertTrue(data["is_approved"])
+        self.assertEqual(data["approved_by_name"], "Trương Hoàng Vinh")
+
+    def test_unapprove_syllabus_api(self):
+        client = APIClient()
+        self.syllabus.status = "Approved"
+        self.syllabus.approved_by = self.user_dean
+        self.syllabus.save()
+
+        # Non-leader cannot unapprove
+        client.force_authenticate(user=self.user_gv)
+        res_fail = client.post(f"/syllabuses/{self.syllabus.id}/unapprove/")
+        self.assertEqual(res_fail.status_code, 403)
+
+        # Faculty leader can unapprove
+        client.force_authenticate(user=self.user_dean)
+        res_ok = client.post(f"/syllabuses/{self.syllabus.id}/unapprove/")
+        self.assertEqual(res_ok.status_code, 200)
+        self.syllabus.refresh_from_db()
+        self.assertEqual(self.syllabus.status, Syllabus.Status.DRAFT)
+        self.assertIsNone(self.syllabus.approved_by)
+        self.assertFalse(self.syllabus.is_approved)
+
+    def test_update_faculty_role_via_serializer(self):
+        from syllabuses.serializer import UserDetailSerializer
+        serializer = UserDetailSerializer(self.user_gv, data={"faculty_role": "dean"}, partial=True)
+        self.assertTrue(serializer.is_valid())
+        serializer.save()
+        self.lecturer_gv.refresh_from_db()
+        self.assertEqual(self.lecturer_gv.faculty_role, Lecturer.FacultyRole.DEAN)
+        self.assertTrue(self.lecturer_gv.is_leader)
+
+    def test_export_docx_signature_and_names_when_approved(self):
+        import io
+        from PIL import Image
+        from docx import Document
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        from handlers.header_footer_renderer import HeaderFooterRenderer
+
+        img = Image.new("RGB", (10, 10), color="white")
+        buf = io.BytesIO()
+        img.save(buf, format="PNG")
+        png_content = buf.getvalue()
+
+        self.lecturer_gv.signature_image = SimpleUploadedFile("sig_gv.png", png_content, content_type="image/png")
+        self.lecturer_gv.save()
+        self.lecturer_dean.signature_image = SimpleUploadedFile("sig_dean.png", png_content, content_type="image/png")
+        self.lecturer_dean.save()
+
+        self.syllabus.status = "Approved"
+        self.syllabus.approved_by = self.user_dean
+        self.syllabus.save()
+
+        cfg = {
+            "footer": {
+                "signature_table": {
+                    "columns": [
+                        {"name": "Dummy Specialist 1", "title_lines": [{"text": "OLD TITLE 1"}]},
+                        {"name": "Dummy Specialist 2", "title_lines": [{"text": "OLD TITLE 2"}]}
+                    ]
+                }
+            }
+        }
+
+        doc = Document()
+        hfr = HeaderFooterRenderer()
+        hfr.render_footer(doc, cfg, syllabus=self.syllabus)
+
+        sig_tbl = doc.tables[-1]
+        cell_leader = sig_tbl.rows[0].cells[0]
+        cell_lec = sig_tbl.rows[0].cells[1]
+
+        # Leader cell must have Trương Hoàng Vinh, PHÓ TRƯỞNG KHOA CÔNG NGHỆ THÔNG TIN, and a picture
+        self.assertIn("Trương Hoàng Vinh", cell_leader.text)
+        self.assertNotIn("Dummy Specialist 1", cell_leader.text)
+        self.assertIn("PHÓ TRƯỞNG KHOA CÔNG NGHỆ THÔNG TIN", cell_leader.text)
+        leader_pics = [r for p in cell_leader.paragraphs for r in p.runs if r._r.xpath('.//a:blip/@r:embed')]
+        self.assertTrue(len(leader_pics) >= 1)
+
+        # Lecturer cell must have Dương Hữu Thành and a picture
+        self.assertIn("Dương Hữu Thành", cell_lec.text)
+        self.assertNotIn("Dummy Specialist 2", cell_lec.text)
+        lec_pics = [r for p in cell_lec.paragraphs for r in p.runs if r._r.xpath('.//a:blip/@r:embed')]
+        self.assertTrue(len(lec_pics) >= 1)
+
+    def test_export_docx_signature_unapproved_does_not_include_leader_signature(self):
+        import io
+        from PIL import Image
+        from docx import Document
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        from handlers.header_footer_renderer import HeaderFooterRenderer
+
+        img = Image.new("RGB", (10, 10), color="white")
+        buf = io.BytesIO()
+        img.save(buf, format="PNG")
+        png_content = buf.getvalue()
+
+        self.lecturer_dean.signature_image = SimpleUploadedFile("sig_dean.png", png_content, content_type="image/png")
+        self.lecturer_dean.save()
+
+        self.syllabus.status = "Draft"
+        self.syllabus.approved_by = None
+        self.syllabus.save()
+
+        doc = Document()
+        hfr = HeaderFooterRenderer()
+        hfr.render_footer(doc, {}, syllabus=self.syllabus)
+
+        sig_tbl = doc.tables[-1]
+        cell_leader = sig_tbl.rows[0].cells[0]
+        leader_pics = [r for p in cell_leader.paragraphs for r in p.runs if r._r.xpath('.//a:blip/@r:embed')]
+        self.assertEqual(len(leader_pics), 0)
+
+    def test_export_docx_api_endpoint(self):
+        client = APIClient()
+        # 1. Unapproved -> 400
+        self.syllabus.status = "Draft"
+        self.syllabus.approved_by = None
+        self.syllabus.save()
+
+        res_unapproved = client.get(f"/export-syllabus/{self.syllabus.id}/")
+        self.assertEqual(res_unapproved.status_code, 400)
+
+        # 2. Approved -> 200
+        self.syllabus.status = "Approved"
+        self.syllabus.approved_by = self.user_dean
+        self.syllabus.save()
+
+        res_approved = client.get(f"/export-syllabus/{self.syllabus.id}/")
+        self.assertEqual(res_approved.status_code, 200)
+        self.assertEqual(
+            res_approved["Content-Type"],
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        )
+
+    def test_anti_self_approval_br04(self):
+        from services.signature_service import SignatureService
+        # Assign lecturer of syllabus to dean
+        self.syllabus.lecturer = self.lecturer_dean
+        self.syllabus.save()
+
+        # Dean cannot sign as dean for their own syllabus
+        allowed, err = SignatureService.can_sign(self.user_dean, self.syllabus, "faculty_dean")
+        self.assertFalse(allowed)
+        self.assertIn("BR-04", err)
+
+        client = APIClient()
+        client.force_authenticate(user=self.user_dean)
+        res = client.post(f"/syllabuses/{self.syllabus.id}/approve/")
+        self.assertEqual(res.status_code, 400)
+        self.assertIn("BR-04", res.data.get("error", ""))
+
+    def test_approve_requires_prerequisites(self):
+        from syllabuses.models import TeachingSession, Assessment, Method, ScheduleGroup, TypeAssessment, SyllabusSignature
+        client = APIClient()
+        client.force_authenticate(user=self.user_dean)
+
+        # Ensure syllabus is authored by lecturer_gv
+        self.syllabus.lecturer = self.lecturer_gv
+        self.syllabus.save()
+
+        # 1. No teaching session & no assessment -> 400
+        res = client.post(f"/syllabuses/{self.syllabus.id}/approve/")
+        self.assertEqual(res.status_code, 400)
+        self.assertIn("Kế hoạch giảng dạy", res.data.get("error", ""))
+
+        # Create teaching session
+        sg, _ = ScheduleGroup.objects.get_or_create(name="Lý thuyết")
+        TeachingSession.objects.create(
+            syllabus=self.syllabus,
+            schedule_group=sg,
+            session_no=1,
+            content="Nội dung buổi 1"
+        )
+
+        # Still missing Assessment -> 400
+        res2 = client.post(f"/syllabuses/{self.syllabus.id}/approve/")
+        self.assertEqual(res2.status_code, 400)
+        self.assertIn("Phương pháp đánh giá", res2.data.get("error", ""))
+
+        # Create assessment without method (weight = 0) -> 400
+        ta, _ = TypeAssessment.objects.get_or_create(name="Đánh giá quá trình")
+        assessment = Assessment.objects.create(
+            syllabus=self.syllabus,
+            type_assessment=ta
+        )
+        res3 = client.post(f"/syllabuses/{self.syllabus.id}/approve/")
+        self.assertEqual(res3.status_code, 400)
+        self.assertIn("BR-02", res3.data.get("error", ""))
+
+        # Create method with weight 100
+        Method.objects.create(
+            assessment=assessment,
+            name="Thi cuối kỳ",
+            weight=100
+        )
+
+        # Still missing Lecturer Signature -> 400
+        res4 = client.post(f"/syllabuses/{self.syllabus.id}/approve/")
+        self.assertEqual(res4.status_code, 400)
+        self.assertIn("chưa ký số", res4.data.get("error", ""))
+
+        # Add Lecturer Signature
+        SyllabusSignature.objects.create(
+            syllabus=self.syllabus,
+            signer=self.user_gv,
+            signer_name=self.user_gv.get_full_name(),
+            role=SyllabusSignature.SignatureRole.LECTURER,
+            is_active=True
+        )
+
+        # Now approve succeeds -> 200
+        res5 = client.post(f"/syllabuses/{self.syllabus.id}/approve/")
+        self.assertEqual(res5.status_code, 200)
+        self.syllabus.refresh_from_db()
+        self.assertEqual(self.syllabus.status, Syllabus.Status.APPROVED)
+
+    def test_bulk_update_deadlines_duration_minimum(self):
+        client = APIClient()
+        # Admin or specialist is needed
+        admin_user = User.objects.create_superuser(
+            username="admin_test_dl",
+            password="AdminPassword123!",
+            email="admin_dl@ou.edu.vn"
+        )
+        client.force_authenticate(user=admin_user)
+
+        # < 3 days -> 400
+        res_fail = client.patch("/syllabuses/bulk-update-deadlines/", {
+            "ids": [self.syllabus.id],
+            "start_date": "2026-11-10T08:00:00",
+            "end_date": "2026-11-11T08:00:00"
+        }, format="json")
+        self.assertEqual(res_fail.status_code, 400)
+        self.assertIn("BR-03", res_fail.data.get("err_msg", ""))
+
+        # >= 3 days -> 200
+        res_ok = client.patch("/syllabuses/bulk-update-deadlines/", {
+            "ids": [self.syllabus.id],
+            "start_date": "2026-11-10T08:00:00",
+            "end_date": "2026-11-14T08:00:00"
+        }, format="json")
+        self.assertEqual(res_ok.status_code, 200)
+
+    def test_assessment_negative_weight_validation(self):
+        from syllabuses.serializer import SyllabusDetailSerializer
+        from rest_framework.exceptions import ValidationError
+
+        serializer = SyllabusDetailSerializer()
+        invalid_ref_data = [
+            {
+                "type_assessment": {"id": 1},
+                "assessment_methods": [
+                    {"name": "A", "weight": -10},
+                    {"name": "B", "weight": 110}
+                ]
+            }
+        ]
+        with self.assertRaises(ValidationError) as ctx:
+            serializer._update_assessment(self.syllabus, invalid_ref_data)
+        self.assertIn("từ 0% đến 100%", str(ctx.exception))
+
+    def test_teaching_schedule_duplicate_sessions(self):
+        from syllabuses.serializer import SyllabusDetailSerializer
+        from rest_framework.exceptions import ValidationError
+
+        serializer = SyllabusDetailSerializer()
+        invalid_sessions = [
+            {
+                "schedule_group": {"id": 1},
+                "teaching_sessions": [
+                    {"session_no": 1, "content": "B1"},
+                    {"session_no": 1, "content": "B1 trùng"}
+                ]
+            }
+        ]
+        with self.assertRaises(ValidationError) as ctx:
+            serializer._update_teaching_schedule(self.syllabus, invalid_sessions)
+        self.assertIn("bị trùng lặp", str(ctx.exception))
+
+    def test_change_password_api(self):
+        client = APIClient()
+        client.force_authenticate(user=self.user_gv)
+
+        # 1. Wrong old password -> 400
+        res1 = client.post("/users/change-password/", {
+            "old_password": "WrongPassword123!",
+            "new_password": "NewValidPassword123!"
+        }, format="json")
+        self.assertEqual(res1.status_code, 400)
+        self.assertIn("không chính xác", res1.data.get("error", ""))
+
+        # 2. Same password -> 400
+        res2 = client.post("/users/change-password/", {
+            "old_password": "password",
+            "new_password": "password"
+        }, format="json")
+        self.assertEqual(res2.status_code, 400)
+        self.assertIn("trùng", res2.data.get("error", ""))
+
+        # 3. Success -> 200
+        res3 = client.post("/users/change-password/", {
+            "old_password": "password",
+            "new_password": "NewStrongPass123!"
+        }, format="json")
+        self.assertEqual(res3.status_code, 200)
+
+        # Verify password changed
+        self.user_gv.refresh_from_db()
+        self.assertTrue(self.user_gv.check_password("NewStrongPass123!"))
+
+    def test_role_elevation_prevented(self):
+        from syllabuses.serializer import UserDetailSerializer
+        from rest_framework.exceptions import ValidationError
+        from unittest.mock import MagicMock
+
+        # Non-admin request context
+        mock_request = MagicMock()
+        mock_request.user = self.user_gv
+
+        serializer = UserDetailSerializer(
+            instance=self.user_gv,
+            data={"user_role": "admin"},
+            partial=True,
+            context={"request": mock_request}
+        )
+        self.assertFalse(serializer.is_valid())
+        self.assertIn("user_role", serializer.errors)
+
+    def test_duplicate_subject_in_training_program(self):
+        from syllabuses.serializer import SyllabusSerializer
+        from syllabuses.models import Major, TrainingProgram
+
+        major, _ = Major.objects.get_or_create(
+            code="CNTT",
+            defaults={"name": "Công nghệ thông tin", "faculty": self.faculty}
+        )
+        tp, _ = TrainingProgram.objects.get_or_create(
+            name="CTĐT CNTT 2026",
+            academic_year=2026,
+            defaults={"major": major}
+        )
+        self.syllabus.training_programs.add(tp)
+
+        # Try to create another syllabus with same subject and training program
+        serializer = SyllabusSerializer(data={
+            "name": "Đề cương trùng môn",
+            "subject_obj": self.subject.id,
+            "training_program_obj": tp.id,
+            "template_obj": self.template.id,
+            "faculty_obj": self.faculty.id,
+            "lecturer_obj": self.lecturer_gv.user.id
+        })
+        self.assertFalse(serializer.is_valid())
+        self.assertIn("đã có đề cương", str(serializer.errors))
+
+    def test_major_code_validation(self):
+        from syllabuses.serializer import MajorSerializer
+        serializer = MajorSerializer(data={
+            "name": "Chuyên ngành Test",
+            "code": "invalid code!",
+            "faculty": {"id": self.faculty.id, "name": self.faculty.name}
+        })
+        self.assertFalse(serializer.is_valid())
+        self.assertIn("code", serializer.errors)
+
+    def test_training_program_academic_year_validation(self):
+        from syllabuses.serializer import TrainingProgramSerializer
+        from syllabuses.models import Major
+        major, _ = Major.objects.get_or_create(
+            code="CNTT",
+            defaults={"name": "Công nghệ thông tin", "faculty": self.faculty}
+        )
+        serializer = TrainingProgramSerializer(data={
+            "name": "CTĐT Sai Năm",
+            "academic_year": 1999,
+            "major": {
+                "id": major.id,
+                "name": major.name,
+                "code": major.code,
+                "faculty": {"id": self.faculty.id, "name": self.faculty.name}
+            }
+        })
+        self.assertFalse(serializer.is_valid())
+        self.assertIn("academic_year", serializer.errors)
+
+    def test_teaching_session_empty_content_rejected(self):
+        from syllabuses.serializer import SyllabusDetailSerializer
+        from syllabuses.models import ScheduleGroup
+        from rest_framework.exceptions import ValidationError
+
+        sg, _ = ScheduleGroup.objects.get_or_create(name="Lý thuyết")
+        serializer = SyllabusDetailSerializer(instance=self.syllabus)
+
+        invalid_data = [{
+            "schedule_group": {"id": sg.id},
+            "teaching_sessions": [{
+                "session_no": 1,
+                "content": "   ",
+                "offline_hours": 3
+            }]
+        }]
+        with self.assertRaises(ValidationError) as ctx:
+            serializer._update_teaching_schedule(self.syllabus, invalid_data)
+        self.assertIn("không được để trống", str(ctx.exception))
+
+    def test_upload_docx_security_validation(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        client = APIClient()
+        admin_user = User.objects.create_superuser(
+            username="admin_docx_test",
+            email="admin_docx@test.com",
+            password="password"
+        )
+        client.force_authenticate(user=admin_user)
+
+        # 1. Bad zip file
+        bad_file = SimpleUploadedFile("test.docx", b"not a zip file", content_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+        res = client.post(f"/templates/{self.template.id}/upload-docx/", {"file": bad_file}, format="multipart")
+        self.assertEqual(res.status_code, 400)
+        self.assertIn("không phải là file DOCX hợp lệ", res.data.get("error", ""))
+
+        # 2. Non-docx file extension
+        txt_file = SimpleUploadedFile("test.txt", b"plain text", content_type="text/plain")
+        res2 = client.post(f"/templates/{self.template.id}/upload-docx/", {"file": txt_file}, format="multipart")
+        self.assertEqual(res2.status_code, 400)
+        self.assertIn(".docx", res2.data.get("error", ""))

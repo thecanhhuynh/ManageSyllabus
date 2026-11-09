@@ -41,14 +41,14 @@ class HeaderFooterRenderer:
         self._render_divider_line(doc)
         self._render_title_lines(doc, cfg)
 
-    def render_footer(self, doc: Document, config: dict | None = None) -> None:
+    def render_footer(self, doc: Document, config: dict | None = None, syllabus=None) -> None:
         cfg = (
             config.get("footer")
             if isinstance(config, dict) and "footer" in config
             else (config or {})
         )
-        self._render_date_line(doc, cfg)
-        self._render_signature_table(doc, cfg)
+        self._render_date_line(doc, cfg, syllabus=syllabus)
+        self._render_signature_table(doc, cfg, syllabus=syllabus)
 
     @staticmethod
     def _apply_run_color(run, color: str | None) -> None:
@@ -324,8 +324,11 @@ class HeaderFooterRenderer:
             }
             self._apply_line_style(p, item.get("style"), default_style)
 
-    def _render_date_line(self, doc: Document, config: dict) -> None:
-        date_text = "Thành phố Hồ Chí Minh, ngày 15  tháng  09   năm 2023"
+    def _render_date_line(self, doc: Document, config: dict, syllabus=None) -> None:
+        date_text = "Thành phố Hồ Chí Minh, ngày ... tháng ... năm 202..."
+        if syllabus and getattr(syllabus, "approved_date", None):
+            d = syllabus.approved_date
+            date_text = f"Thành phố Hồ Chí Minh, ngày {d.day:02d}  tháng  {d.month:02d}   năm {d.year}"
         date_cfg = config.get("date_line") or config.get("date_location")
         style = {}
         if isinstance(date_cfg, dict):
@@ -346,7 +349,7 @@ class HeaderFooterRenderer:
         }
         self._apply_line_style(p, style, default_style)
 
-    def _render_signature_table(self, doc: Document, config: dict) -> None:
+    def _render_signature_table(self, doc: Document, config: dict, syllabus=None) -> None:
         sig_cfg = config.get("signature_table", {})
         columns = (
             sig_cfg.get("columns", []) if isinstance(sig_cfg, dict) else []
@@ -359,20 +362,95 @@ class HeaderFooterRenderer:
 
         col_width = Inches(6.5 / col_count)
         cells = tbl.rows[0].cells
+
         for i in range(col_count):
             cells[i].width = col_width
             col_data = columns[i] if i < len(columns) else {}
-            def_t1 = (
-                "PHỤ TRÁCH KHOA CNTT" if i == 0 else "GIẢNG VIÊN BIÊN SOẠN"
-            )
-            def_t2 = "DEPUTY DEAN" if i == 0 else "ACADEMIC"
-            def_sub = "(Ký và ghi rõ họ tên-Signed with fullname)"
-            def_name = (
-                "TS. Trương Hoàng Vinh" if i == 0 else "ThS. Dương Hữu Thành"
-            )
-            self._populate_sig_cell(
-                cells[i], col_data, def_t1, def_t2, def_sub, def_name
-            )
+            cell_info = self._get_signature_cell_info(i, col_data, syllabus)
+            self._populate_sig_cell(cells[i], col_data, **cell_info)
+
+    @staticmethod
+    def _get_user_display_name(user) -> str:
+        if not user:
+            return ""
+        last = (getattr(user, "last_name", "") or "").strip()
+        first = (getattr(user, "first_name", "") or "").strip()
+        full = f"{last} {first}".strip()
+        return full or (getattr(user, "username", "") or "").strip()
+
+    def _get_signature_cell_info(self, index: int, col_data: dict, syllabus) -> dict:
+        if index == 0:
+            return self._get_faculty_leader_sig_info(col_data, syllabus)
+        return self._get_lecturer_sig_info(col_data, syllabus)
+
+    def _get_faculty_leader_sig_info(self, col_data: dict, syllabus) -> dict:
+        fac_name = getattr(syllabus.faculty, "name", "Công nghệ Thông tin") if syllabus and syllabus.faculty else "Công nghệ Thông tin"
+        clean_fac = fac_name[5:].strip() if fac_name.lower().startswith("khoa ") else fac_name.strip()
+
+        leader = self._resolve_faculty_leader(syllabus)
+        role = getattr(leader, "faculty_role", "dean")
+        if role == "dean":
+            def_t1, def_t2 = f"TRƯỞNG KHOA {clean_fac.upper()}", "DEAN"
+        elif role == "vice_dean":
+            def_t1, def_t2 = f"PHÓ TRƯỞNG KHOA {clean_fac.upper()}", "DEPUTY DEAN"
+        elif role == "head_of_dept":
+            def_t1, def_t2 = "TRƯỞNG BỘ MÔN", "HEAD OF DEPARTMENT"
+        else:
+            def_t1, def_t2 = f"PHỤ TRÁCH KHOA {clean_fac.upper()}", "DEPUTY DEAN"
+
+        user = getattr(leader, "user", None) or getattr(syllabus, "approved_by", None)
+        user_name = self._get_user_display_name(user)
+        def_name = user_name if user_name else "TS. Trương Hoàng Vinh"
+        sig_img_path = self._get_sig_img_path(leader, check_approved=True, syllabus=syllabus)
+
+        return {
+            "def_t1": def_t1,
+            "def_t2": def_t2,
+            "def_sub": "(Ký và ghi rõ họ tên-Signed with fullname)",
+            "def_name": def_name,
+            "sig_img_path": sig_img_path,
+            "has_syllabus": bool(syllabus),
+        }
+
+    def _get_lecturer_sig_info(self, col_data: dict, syllabus) -> dict:
+        lecturer = getattr(syllabus, "lecturer", None) if syllabus else None
+        user = getattr(lecturer, "user", None) if lecturer else None
+        user_name = self._get_user_display_name(user)
+        def_name = user_name if user_name else "ThS. Dương Hữu Thành"
+        sig_img_path = self._get_sig_img_path(lecturer, check_approved=False, syllabus=syllabus)
+
+        return {
+            "def_t1": "GIẢNG VIÊN BIÊN SOẠN",
+            "def_t2": "ACADEMIC",
+            "def_sub": "(Ký và ghi rõ họ tên-Signed with fullname)",
+            "def_name": def_name,
+            "sig_img_path": sig_img_path,
+            "has_syllabus": bool(syllabus),
+        }
+
+    def _resolve_faculty_leader(self, syllabus):
+        if not syllabus:
+            return None
+        if syllabus.approved_by and hasattr(syllabus.approved_by, "lecturer_profile"):
+            return syllabus.approved_by.lecturer_profile
+        if not syllabus.faculty:
+            return None
+        from syllabuses.models import Lecturer
+        return Lecturer.objects.filter(
+            faculty=syllabus.faculty,
+            faculty_role__in=["dean", "vice_dean"]
+        ).first()
+
+    def _get_sig_img_path(self, lecturer, check_approved: bool, syllabus=None) -> str | None:
+        if check_approved and syllabus and not syllabus.is_approved:
+            return None
+        if not lecturer or not getattr(lecturer, "signature_image", None):
+            return None
+        try:
+            p = lecturer.signature_image.path
+            return p if os.path.exists(p) else None
+        except Exception:
+            return None
 
     def _populate_sig_cell(
         self,
@@ -382,6 +460,8 @@ class HeaderFooterRenderer:
         def_t2: str,
         def_sub: str,
         def_name: str,
+        sig_img_path: str | None = None,
+        has_syllabus: bool = False,
     ) -> None:
         dashed_border = (
             f'<w:tcBorders {nsdecls("w")}>'
@@ -395,11 +475,11 @@ class HeaderFooterRenderer:
         tc_pr.append(parse_xml(dashed_border))
 
         (t1, s1), (t2, s2) = self._extract_titles_with_styles(
-            col_data, def_t1, def_t2
+            col_data, def_t1, def_t2, override_text=has_syllabus
         )
         subtitle = col_data.get("subtitle") or def_sub
         sub_style = col_data.get("subtitle_style") or {}
-        name = col_data.get("name") or def_name
+        name = def_name if has_syllabus else (col_data.get("name") or def_name)
         name_style = col_data.get("name_style") or {}
 
         p1 = cell.paragraphs[0]
@@ -425,8 +505,15 @@ class HeaderFooterRenderer:
             {"alignment": "CENTER", "italic": True, "font_size_pt": 11},
         )
 
-        for _ in range(4):
-            cell.add_paragraph()
+        if sig_img_path:
+            p_img = cell.add_paragraph()
+            p_img.paragraph_format.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            p_img.paragraph_format.space_before = Pt(4)
+            p_img.paragraph_format.space_after = Pt(4)
+            p_img.add_run().add_picture(sig_img_path, height=Pt(40))
+        else:
+            for _ in range(4):
+                cell.add_paragraph()
 
         p_name = cell.add_paragraph()
         p_name.add_run(name)
@@ -437,18 +524,20 @@ class HeaderFooterRenderer:
         )
 
     def _extract_titles_with_styles(
-        self, col_data: dict, def1: str, def2: str
+        self, col_data: dict, def1: str, def2: str, override_text: bool = False
     ) -> tuple[tuple[str, dict], tuple[str, dict]]:
         title_lines = col_data.get("title_lines", [])
         t1, s1 = def1, {}
         t2, s2 = def2, {}
         if len(title_lines) > 0:
             item = title_lines[0]
-            t1 = item.get("text", def1) if isinstance(item, dict) else str(item)
+            cfg_text = item.get("text", def1) if isinstance(item, dict) else str(item)
+            t1 = def1 if (override_text and def1) else cfg_text
             s1 = item.get("style", {}) if isinstance(item, dict) else {}
         if len(title_lines) > 1:
             item = title_lines[1]
-            t2 = item.get("text", def2) if isinstance(item, dict) else str(item)
+            cfg_text = item.get("text", def2) if isinstance(item, dict) else str(item)
+            t2 = def2 if (override_text and def2) else cfg_text
             s2 = item.get("style", {}) if isinstance(item, dict) else {}
         return (t1, s1), (t2, s2)
 

@@ -201,6 +201,13 @@ const RequirementSubjectEditor = ({item, basePath}) => {
   }, []);
 
   const handleAddSubject = (reqType, selectedSub) => {
+    const currentSyllabus = useSyllabusStore.getState().currentSyllabus;
+    const currentSubjectId = currentSyllabus?.subject?.id;
+    if (currentSubjectId && String(currentSubjectId) === String(selectedSub.subject_id)) {
+      message.error("Môn học không thể là môn điều kiện của chính nó!");
+      return;
+    }
+
     const currentList =
       useSyllabusStore.getState().localBlocks[item.code]?.data
         ?.reference_data || [];

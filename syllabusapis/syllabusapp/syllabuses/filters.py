@@ -6,11 +6,27 @@ from syllabuses.models import Syllabus, Subject, LearningMaterial, User, Lecture
 
 
 class SyllabusFilter(django_filters.FilterSet):
-    q = django_filters.CharFilter(field_name='name', lookup_expr='icontains')
+    q = django_filters.CharFilter(method="custom_search")
+    status = django_filters.CharFilter(field_name='status', lookup_expr='iexact')
+    training_program = django_filters.NumberFilter(field_name='training_programs__id', distinct=True)
+    subject = django_filters.NumberFilter(field_name='subject__id')
+    lecturer = django_filters.NumberFilter(field_name='lecturer__id')
+    lecturer_user = django_filters.NumberFilter(field_name='lecturer__user__id')
 
     class Meta:
         model = Syllabus
-        fields = ['faculty', 'subject']
+        fields = ['faculty', 'subject', 'status', 'training_program', 'lecturer', 'lecturer_user', 'q']
+
+    def custom_search(self, queryset, name, value):
+        if not value:
+            return queryset
+        return queryset.filter(
+            Q(name__icontains=value) |
+            Q(subject__name__icontains=value) |
+            Q(subject__code__icontains=value) |
+            Q(lecturer__user__first_name__icontains=value) |
+            Q(lecturer__user__last_name__icontains=value)
+        )
 
 class LecturerFilter(django_filters.FilterSet):
     q = django_filters.CharFilter(method="custom_search")

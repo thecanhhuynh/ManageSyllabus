@@ -12,8 +12,13 @@ from .xml_helpers import (
     W_NS,
     _append_xml_to_body,
     _apply_style_to_xml,
+    _apply_run_style,
+    _extract_styles,
+    _toggle_xml_element,
 )
 from .block_processor import BlockProcessor
+from .style_manager import StyleManager
+from .table_manager import TableManager
 
 logger = logging.getLogger(__name__)
 
@@ -36,6 +41,15 @@ def _to_roman(n: int) -> str:
 
 class ShellDocxRenderer:
     """Renderer lắp ráp các TemplateBlock vào file Shell DOCX theo Spec V3."""
+
+    _apply_run_style = staticmethod(_apply_run_style)
+    _apply_style_to_xml = staticmethod(_apply_style_to_xml)
+    _extract_styles = staticmethod(_extract_styles)
+    _toggle_xml_element = staticmethod(_toggle_xml_element)
+    _resolve_column_keys = staticmethod(TableManager._resolve_column_keys)
+    _format_paragraphs = staticmethod(StyleManager._format_paragraphs)
+    _format_tables = staticmethod(StyleManager._format_tables)
+    _render_block = staticmethod(BlockProcessor._render_block)
 
     def __init__(self):
         self.header_footer_renderer = HeaderFooterRenderer()
@@ -88,7 +102,7 @@ class ShellDocxRenderer:
             doc, template, data_ctx, block_layout, sub_sections_map, syllabus
         )
 
-        self.header_footer_renderer.render_footer(doc, footer_cfg)
+        self.header_footer_renderer.render_footer(doc, footer_cfg, syllabus=syllabus)
 
         output_buffer = io.BytesIO()
         doc.save(output_buffer)
@@ -201,6 +215,9 @@ class ShellDocxRenderer:
         effective = {**fallback, **custom_style}
         if "bold" not in effective:
             effective["bold"] = True
+        color_val = effective.get("color")
+        if not color_val or str(color_val).upper() == "AUTO":
+            effective["color"] = "000000"
 
         xml_header = (
             f'<w:p><w:pPr><w:pStyle w:val="Heading1"/></w:pPr>'

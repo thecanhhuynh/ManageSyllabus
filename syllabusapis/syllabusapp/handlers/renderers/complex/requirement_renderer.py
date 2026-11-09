@@ -59,7 +59,7 @@ class RequirementSubRenderer(BaseSubRenderer):
         if len(table.rows) == 1:
             table.add_row()
         if len(table.rows) >= 2:
-            table.rows[1].cells[0].text = "1."
+            table.rows[1].cells[0].text = "1"
             table.rows[1].cells[1].text = "Không có"
             table.rows[1].cells[2].text = ""
 
@@ -77,6 +77,6 @@ class RequirementSubRenderer(BaseSubRenderer):
             type_name = req_type_obj.get("name", "") if isinstance(req_type_obj, dict) else ""
 
             type_display = f"{type_name}\n" if type_name else ""
-            row.cells[0].text = f"{idx}."
+            row.cells[0].text = str(idx)
             row.cells[1].text = f"{type_display}{name}".strip()
             row.cells[2].text = str(code)

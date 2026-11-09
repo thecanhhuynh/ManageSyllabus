@@ -14,6 +14,7 @@ import {
   UserAddOutlined,
   LogoutOutlined,
   SettingOutlined,
+  CheckSquareOutlined,
 } from "@ant-design/icons";
 import {Link, useNavigate} from "react-router-dom";
 import {MyUserContext} from "../config/contexts/MyContext";
@@ -35,12 +36,27 @@ const MyHeader = () => {
       message.error("Đăng xuất thất bại");
     }
   };
+  const isFacultyLeader = Boolean(
+    user?.lecturer?.is_leader ||
+    user?.is_superuser ||
+    user?.user_role === "admin"
+  );
+
   const userMenuItems = [
     {
       key: "profile",
       icon: <SettingOutlined />,
       label: <Link to="/profile">Hồ sơ cá nhân</Link>,
     },
+    ...(isFacultyLeader
+      ? [
+          {
+            key: "approvals",
+            icon: <CheckSquareOutlined />,
+            label: <Link to="/approvals">Phê duyệt đề cương Khoa</Link>,
+          },
+        ]
+      : []),
     {
       type: "divider",
     },
@@ -117,6 +133,32 @@ const MyHeader = () => {
             </Text>
           </div>
         </Link>
+
+        {user && (
+          <div className="hidden md:flex items-center gap-2 ml-8">
+            <Link to="/">
+              <Button type="text" style={{fontWeight: 500}}>
+                Trang chủ
+              </Button>
+            </Link>
+            {isFacultyLeader && (
+              <Link to="/approvals">
+                <Button
+                  type="text"
+                  icon={<CheckSquareOutlined />}
+                  style={{
+                    fontWeight: 600,
+                    color: "#16a34a",
+                    backgroundColor: "#f0fdf4",
+                    borderRadius: 6,
+                  }}
+                >
+                  Phê duyệt đề cương
+                </Button>
+              </Link>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="flex items-center">

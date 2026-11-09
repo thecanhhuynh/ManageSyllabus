@@ -1,5 +1,5 @@
 import React, {useEffect, useState} from "react";
-import {Table, Button, Modal, Form, Input, message, Space, Select} from "antd";
+import {Table, Button, Modal, Form, Input, message, Space, Select, InputNumber} from "antd";
 import {
   EditOutlined,
   DeleteOutlined,
@@ -45,6 +45,18 @@ const TrainingProgramManagement = () => {
   }, []);
 
   const handleSave = async (values) => {
+    const isDuplicate = programs.some(
+      (p) =>
+        p.id !== values.id &&
+        (p.major?.id === values.major || p.major_id === values.major) &&
+        Number(p.academic_year) === Number(values.academic_year)
+    );
+    if (isDuplicate) {
+      return message.error(
+        `Chuyên ngành này đã có Chương trình đào tạo cho năm học ${values.academic_year}!`
+      );
+    }
+
     try {
       const selectedMajor = majors.find((m) => m.id === values.major);
 
@@ -193,9 +205,22 @@ const TrainingProgramManagement = () => {
           <Form.Item
             name="academic_year"
             label="Năm học"
-            rules={[{required: true, message: "Vui lòng nhập năm học"}]}
+            rules={[
+              {required: true, message: "Vui lòng nhập năm học"},
+              {
+                type: "number",
+                min: 2000,
+                max: 2100,
+                message: "Năm học hợp lệ từ năm 2000 đến 2100",
+              },
+            ]}
           >
-            <Input type="number" placeholder="VD: 2024" />
+            <InputNumber
+              style={{width: "100%"}}
+              min={2000}
+              max={2100}
+              placeholder="VD: 2026"
+            />
           </Form.Item>
 
           <Form.Item

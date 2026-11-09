@@ -258,6 +258,11 @@ const TemplateBuilder = () => {
   };
 
   const handlePublish = async () => {
+    if (!sections || sections.length === 0) {
+      return message.error(
+        "Template chưa có phần lớn (MainSection) nào. Không thể ban hành!",
+      );
+    }
     try {
       setActionLoading(true);
       const res = await TemplateStyleService.publishStyle(id, blockLayout);

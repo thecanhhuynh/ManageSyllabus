@@ -16,6 +16,7 @@ import {
 import cookies from "react-cookies";
 import User from "./screens/User/User";
 import SyllabusEdit from "./screens/syllabus/SyllabusEdit";
+import FacultyApprovals from "./screens/Faculty/FacultyApprovals";
 import {authApis, endpoints} from "./config/Apis";
 import FacultyManagement from "./screens/Admin/FacultyManagement";
 import AdminRoutes from "./screens/Admin/AdminRoutes";
@@ -117,6 +118,7 @@ const App = () => {
                     <Route path="/login" element={<Login />} />
                     <Route path="/register" element={<Register />} />
                     <Route path="/profile" element={<User />} />
+                    <Route path="/approvals" element={<FacultyApprovals />} />
                     <Route path="/" element={<Home />} />
                     <Route
                       path="/syllabuses/:syllabusId"

@@ -1,5 +1,5 @@
 import React, {useRef, useState, useEffect} from "react";
-import {Affix, Button, Col, Form, Input, message, Row, Spin} from "antd";
+import {Button, Col, Form, Input, message, Row, Spin} from "antd";
 import {SaveOutlined} from "@ant-design/icons";
 import {authApis, endpoints} from "../../config/Apis";
 import SubSectionRenderer from "../../components/SubSectionRender";
@@ -30,7 +30,7 @@ const savePendingCustomValues = async (syllabusId) => {
   }
 };
 
-const MainSectionForm = ({syllabusId, mainSection}) => {
+const MainSectionForm = ({syllabusId, mainSection, isApproved = false}) => {
   const [form] = Form.useForm();
   const [isSaving, setIsSaving] = useState(false);
   const timerRef = useRef(null);
@@ -41,6 +41,13 @@ const MainSectionForm = ({syllabusId, mainSection}) => {
   };
 
   const handleSave = async () => {
+    if (isApproved) {
+      message.warning(
+        "Đề cương đã được phê duyệt. Vui lòng liên hệ Lãnh đạo Khoa để yêu cầu chỉnh sửa.",
+      );
+      return;
+    }
+
     try {
       setIsSaving(true);
 
@@ -57,6 +64,69 @@ const MainSectionForm = ({syllabusId, mainSection}) => {
           "CẢNH BÁO: Không tìm thấy block nào khớp với Main Section ID này!",
         );
         message.info("Không có dữ liệu (Test)");
+        return;
+      }
+
+      const invalidAssessmentBlock = dirtyBlocksInCard.find((block) => {
+        const code = block.data.code || block.data.reference_type;
+        if (code !== "assessment_method") return false;
+        const groups = block.data.reference_data || [];
+        if (groups.length === 0) return false;
+        const total = groups.reduce((sum, grp) => {
+          const methods = grp?.assessment_methods || [];
+          return (
+            sum +
+            methods.reduce((mSum, m) => mSum + (Number(m?.weight) || 0), 0)
+          );
+        }, 0);
+        return total !== 100;
+      });
+
+      if (invalidAssessmentBlock) {
+        message.error(
+          "Tổng trọng số của phương pháp đánh giá phải bằng đúng 100%!",
+        );
+        return;
+      }
+
+      const negativeAssessmentBlock = dirtyBlocksInCard.find((block) => {
+        const code = block.data.code || block.data.reference_type;
+        if (code !== "assessment_method") return false;
+        const groups = block.data.reference_data || [];
+        return groups.some((grp) =>
+          (grp?.assessment_methods || []).some(
+            (m) => Number(m?.weight) < 0 || Number(m?.weight) > 100,
+          ),
+        );
+      });
+
+      if (negativeAssessmentBlock) {
+        message.error(
+          "Trọng số của từng phương pháp đánh giá phải từ 0% đến 100%!",
+        );
+        return;
+      }
+
+      const duplicateSessionBlock = dirtyBlocksInCard.find((block) => {
+        const code = block.data.code || block.data.reference_type;
+        if (code !== "teaching_schedule") return false;
+        const groups = block.data.reference_data || [];
+        const seenNos = new Set();
+        for (const grp of groups) {
+          for (const s of grp?.teaching_sessions || []) {
+            const no = Number(s?.session_no);
+            if (!no) continue;
+            if (seenNos.has(no)) return true;
+            seenNos.add(no);
+          }
+        }
+        return false;
+      });
+
+      if (duplicateSessionBlock) {
+        message.error(
+          "Kế hoạch giảng dạy có số buổi bị trùng lặp. Vui lòng kiểm tra lại!",
+        );
         return;
       }
       const deltaSubSections = dirtyBlocksInCard.map((block) => {
@@ -140,31 +210,33 @@ const MainSectionForm = ({syllabusId, mainSection}) => {
         onFinish={onFinish}
         requiredMark={false}
       >
-        <div
-          style={{
-            position: "fixed",
-            top: 140,
-            right: 28,
-            zIndex: 1000,
-          }}
-        >
-          <Button
-            type="primary"
-            htmlType="submit"
-            icon={<SaveOutlined />}
-            loading={isSaving}
+        {!isApproved && (
+          <div
             style={{
-              fontWeight: 600,
-              height: 40,
-              padding: "0 20px",
-              borderRadius: 8,
-              boxShadow: "0 4px 12px rgba(24, 144, 255, 0.35)",
+              position: "fixed",
+              top: 140,
+              right: 28,
+              zIndex: 1000,
             }}
-            className="flex items-center gap-2"
           >
-            Lưu thay đổi
-          </Button>
-        </div>
+            <Button
+              type="primary"
+              htmlType="submit"
+              icon={<SaveOutlined />}
+              loading={isSaving}
+              style={{
+                fontWeight: 600,
+                height: 40,
+                padding: "0 20px",
+                borderRadius: 8,
+                boxShadow: "0 4px 12px rgba(24, 144, 255, 0.35)",
+              }}
+              className="flex items-center gap-2"
+            >
+              Lưu thay đổi
+            </Button>
+          </div>
+        )}
 
         <Row gutter={[24, 24]}>
           {mainSection.sub_sections?.map((subSection, subIndex) => (
