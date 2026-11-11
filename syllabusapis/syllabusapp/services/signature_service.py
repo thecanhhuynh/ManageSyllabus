@@ -106,10 +106,86 @@ class SignatureService:
             return cls._can_sign_as_dean(lecturer, syllabus)
         return False, "Vai trò ký không hợp lệ."
 
+    @classmethod
+    def validate_syllabus_completeness(cls, syllabus: Syllabus) -> tuple[bool, list[str]]:
+        missing = []
+        missing.extend(cls._validate_reference_sections(syllabus))
+        missing.extend(cls._validate_content_sections(syllabus))
+        return len(missing) == 0, missing
+
+    @classmethod
+    def _validate_reference_sections(cls, syllabus: Syllabus) -> list[str]:
+        from syllabuses.models import (
+            Assessment,
+            CourseLearningOutcome,
+            CourseObjective,
+            Credit,
+            Method,
+            TeachingSession,
+        )
+
+        missing = []
+        if not TeachingSession.objects.filter(syllabus=syllabus).exists():
+            missing.append("Kế hoạch giảng dạy (chưa có buổi học nào)")
+
+        methods = Method.objects.filter(assessment__syllabus=syllabus)
+        total_weight = sum(m.weight for m in methods if m.weight is not None)
+        if not methods.exists() or total_weight != 100:
+            missing.append(f"Phương pháp đánh giá (tổng trọng số = {total_weight}%, yêu cầu 100%)")
+
+        if not CourseObjective.objects.filter(syllabus=syllabus).exists():
+            missing.append("Mục tiêu môn học (CO)")
+        if not CourseLearningOutcome.objects.filter(course_objective__syllabus=syllabus).exists():
+            missing.append("Chuẩn đầu ra môn học (CLO)")
+
+        credit = Credit.objects.filter(subject=syllabus.subject).first()
+        if not credit or (credit.number_theory + credit.number_practice <= 0):
+            missing.append("Số tín chỉ môn học")
+
+        if not syllabus.learning_materials_rel.exists():
+            missing.append("Tài liệu học tập / Giáo trình tham khảo")
+        return missing
+
+    @classmethod
+    def _validate_content_sections(cls, syllabus: Syllabus) -> list[str]:
+        from syllabuses.models import SelectionSubSection, TableSubSection, TextSubSection
+
+        missing = []
+        for ms in syllabus.main_sections.all():
+            for sub in ms.sub_sections.all():
+                item_err = cls._check_single_subsection(sub)
+                if item_err:
+                    missing.append(item_err)
+        return missing
+
     @staticmethod
-    def _can_sign_as_lecturer(lecturer: Lecturer, syllabus: Syllabus) -> tuple[bool, str]:
+    def _check_single_subsection(sub) -> str | None:
+        from syllabuses.models import SelectionSubSection, TableSubSection, TextSubSection
+
+        label = sub.name or sub.code
+        if sub.type == "text":
+            t = getattr(sub, "textsubsection", None) or TextSubSection.objects.filter(id=sub.id).first()
+            if not t or not t.content or not t.content.strip():
+                return f"Mục văn bản: {label}"
+        if sub.type == "selection":
+            sel = getattr(sub, "selectionsubsection", None) or SelectionSubSection.objects.filter(id=sub.id).first()
+            if not sel or not sel.selected_values.exists():
+                return f"Mục lựa chọn: {label}"
+        if sub.type == "table":
+            tbl = getattr(sub, "tablesubsection", None) or TableSubSection.objects.filter(id=sub.id).first()
+            rows = tbl.data.get("rows", []) if tbl and isinstance(tbl.data, dict) else []
+            if not rows:
+                return f"Bảng dữ liệu: {label}"
+        return None
+
+    @classmethod
+    def _can_sign_as_lecturer(cls, lecturer: Lecturer, syllabus: Syllabus) -> tuple[bool, str]:
         if syllabus.lecturer_id != lecturer.id:
             return False, "Bạn không phải giảng viên phụ trách đề cương này."
+        is_complete, missing_items = cls.validate_syllabus_completeness(syllabus)
+        if not is_complete:
+            missing_msg = "; ".join(missing_items)
+            return False, f"Đề cương chưa thể gửi ký do còn mục chưa hoàn thành: {missing_msg}."
         return True, ""
 
     @staticmethod
@@ -157,7 +233,9 @@ class SignatureService:
         if hasattr(image_raw, "read"):
             return image_raw
         if isinstance(image_raw, str) and image_raw.strip():
-            return cls.decode_base64_image(image_raw)
+            decoded = cls.decode_base64_image(image_raw)
+            if decoded:
+                return decoded
         lecturer = getattr(user, "lecturer_profile", None)
         if lecturer and lecturer.signature_image:
             return lecturer.signature_image

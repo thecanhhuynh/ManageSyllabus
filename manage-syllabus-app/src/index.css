@@ -113,4 +113,47 @@ code {
 
 .custom-thin-scrollbar::-webkit-scrollbar-thumb:hover {
   background-color: #94a3b8;
-}
+}
+
+/* ==========================================================================
+   Syllabus Card Grid (Đồng nhất width và height giữa các card)
+   ========================================================================== */
+.syllabus-card-grid .ant-col {
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.syllabus-card-grid .ant-list-item {
+  flex: 1 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  margin-bottom: 0 !important;
+  height: 100% !important;
+}
+
+/* ==========================================================================
+   Credit Editor Stat Box (Đồng trục tuyệt đối Value & Title - Thu gọn)
+   ========================================================================== */
+.credit-stat-container .ant-input-number {
+  width: 100% !important;
+  max-width: 100px !important;
+  background: transparent !important;
+}
+
+.credit-stat-container .ant-input-number-input {
+  text-align: center !important;
+  font-size: 1.05rem !important; /* text-base bình thường, gọn gàng */
+  line-height: 1.5rem !important;
+  font-weight: 600 !important;
+  color: #1f2937 !important;
+  padding: 0 !important;
+  margin: 0 auto !important;
+  height: 28px !important;
+}
+
+.credit-stat-container .ant-input-number-handler-wrap {
+  display: none !important;
+}
+
+
+

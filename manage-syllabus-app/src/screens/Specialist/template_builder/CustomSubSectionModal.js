@@ -1,5 +1,7 @@
-import React from "react";
-import { Modal, Form, Input, Select } from "antd";
+import React, { useState, useEffect } from "react";
+import { Modal, Form, Input, Select, Button, message } from "antd";
+import { PlusOutlined } from "@ant-design/icons";
+import { authApis, endpoints } from "../../../config/Apis";
 import TableSchemaBuilder from "../TableSchemaBuilder";
 
 const REFERENCE_OPTIONS = [
@@ -24,6 +26,43 @@ const CustomSubSectionModal = ({
 }) => {
   const [form] = Form.useForm();
   const selectedType = Form.useWatch("type", form);
+  const [groupsList, setGroupsList] = useState(attributeGroups);
+  const [quickModalOpen, setQuickModalOpen] = useState(false);
+  const [quickName, setQuickName] = useState("");
+  const [quickValues, setQuickValues] = useState("");
+  const [creatingQuick, setCreatingQuick] = useState(false);
+
+  useEffect(() => {
+    setGroupsList(attributeGroups);
+  }, [attributeGroups]);
+
+  const handleQuickCreate = async () => {
+    const name = quickName.trim();
+    if (!name) {
+      message.warning("Vui lòng nhập tên nhóm danh mục!");
+      return;
+    }
+    setCreatingQuick(true);
+    try {
+      const vals = quickValues.split("\n").map((v) => v.trim()).filter(Boolean);
+      const res = await authApis().post(endpoints["attribute-groups"], {
+        name,
+        values: vals,
+      });
+      message.success(`Đã tạo nhóm "${name}" thành công!`);
+      const newGroup = res.data;
+      setGroupsList((prev) => [...prev, newGroup]);
+      form.setFieldValue("attribute_group_id", newGroup.id);
+      setQuickModalOpen(false);
+      setQuickName("");
+      setQuickValues("");
+    } catch (err) {
+      console.error(err);
+      message.error(err?.response?.data?.error || "Lỗi tạo nhóm danh mục!");
+    } finally {
+      setCreatingQuick(false);
+    }
+  };
 
   const handleSubmit = async () => {
     try {
@@ -100,11 +139,24 @@ const CustomSubSectionModal = ({
         {selectedType === "selection" && (
           <Form.Item
             name="attribute_group_id"
-            label="Nguồn dữ liệu danh mục"
+            label={
+              <div className="flex items-center justify-between w-full" style={{ minWidth: 260 }}>
+                <span>Nguồn dữ liệu danh mục</span>
+                <Button
+                  type="link"
+                  size="small"
+                  icon={<PlusOutlined />}
+                  onClick={() => setQuickModalOpen(true)}
+                  style={{ padding: 0, height: "auto", fontSize: 12, marginLeft: 16 }}
+                >
+                  Tạo nhóm mới
+                </Button>
+              </div>
+            }
             rules={[{ required: true, message: "Vui lòng chọn danh mục!" }]}
           >
             <Select placeholder="Chọn danh mục hệ thống...">
-              {attributeGroups.map((g) => (
+              {groupsList.map((g) => (
                 <Select.Option key={g.id} value={g.id}>
                   {g.name}
                 </Select.Option>
@@ -119,6 +171,41 @@ const CustomSubSectionModal = ({
           </Form.Item>
         )}
       </Form>
+
+      <Modal
+        title="Tạo nhanh nhóm danh mục lựa chọn"
+        open={quickModalOpen}
+        onOk={handleQuickCreate}
+        onCancel={() => setQuickModalOpen(false)}
+        confirmLoading={creatingQuick}
+        okText="Tạo & Chọn"
+        cancelText="Hủy"
+        destroyOnClose
+      >
+        <div className="py-2 flex flex-col gap-3">
+          <div>
+            <label className="block text-xs font-semibold text-gray-700 mb-1">
+              Tên nhóm danh mục <span className="text-red-500">*</span>
+            </label>
+            <Input
+              placeholder="VD: Hình thức thực tập..."
+              value={quickName}
+              onChange={(e) => setQuickName(e.target.value)}
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-gray-700 mb-1">
+              Các giá trị tùy chọn (Mỗi dòng 1 giá trị)
+            </label>
+            <Input.TextArea
+              rows={4}
+              placeholder={"VD:\nTrực tiếp tại doanh nghiệp\nLàm việc từ xa (Remote)\nTại phòng thí nghiệm"}
+              value={quickValues}
+              onChange={(e) => setQuickValues(e.target.value)}
+            />
+          </div>
+        </div>
+      </Modal>
     </Modal>
   );
 };

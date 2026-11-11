@@ -425,8 +425,9 @@ const Home = () => {
                         </div>
                       ) : (
                         <List
+                          className="syllabus-card-grid"
                           grid={{
-                            gutter: 24,
+                            gutter: [24, 24],
                             xs: 1,
                             sm: 2,
                             md: 2,
@@ -436,13 +437,39 @@ const Home = () => {
                           }}
                           dataSource={displayItems}
                           renderItem={(item) => (
-                            <List.Item>
+                            <List.Item
+                              style={{
+                                height: "100%",
+                                marginBottom: 0,
+                                display: "flex",
+                                flexDirection: "column",
+                              }}
+                            >
                               <Card
                                 hoverable
                                 style={{
+                                  width: "100%",
+                                  height: "100%",
+                                  display: "flex",
+                                  flexDirection: "column",
                                   borderRadius: 12,
                                   overflow: "hidden",
                                   border: "1px solid #e8e8e8",
+                                }}
+                                headStyle={{
+                                  height: 80,
+                                  minHeight: 80,
+                                  display: "flex",
+                                  alignItems: "center",
+                                  padding: "0 16px",
+                                  borderBottom: "1px solid #f0f0f0",
+                                }}
+                                bodyStyle={{
+                                  flex: 1,
+                                  display: "flex",
+                                  flexDirection: "column",
+                                  justifyContent: "space-between",
+                                  padding: "16px 20px",
                                 }}
                                 extra={
                                   (item.status === "Approved" || item.is_approved) && item.approved_by ? (
@@ -456,6 +483,7 @@ const Home = () => {
                                       <Tag
                                         color="success"
                                         icon={<CheckCircleOutlined />}
+                                        style={{ margin: 0, flexShrink: 0 }}
                                       >
                                         Đã phê duyệt
                                       </Tag>
@@ -464,6 +492,7 @@ const Home = () => {
                                     <Tag
                                       color="warning"
                                       icon={<ClockCircleOutlined />}
+                                      style={{ margin: 0, flexShrink: 0 }}
                                     >
                                       {item.status === "Submitted"
                                         ? "Chờ phê duyệt"
@@ -472,19 +501,26 @@ const Home = () => {
                                   )
                                 }
                                 title={
-                                  <Text
-                                    strong
-                                    style={{
-                                      fontSize: 16,
-                                      color: "#00529C",
-                                      whiteSpace: "normal",
-                                      wordBreak: "break-word",
-                                    }}
-                                  >
-                                    <Tooltip title={item.name}>
-                                      {item.name}
+                                  <div style={{ paddingRight: 8 }}>
+                                    <Tooltip title={item.name} placement="topLeft">
+                                      <Text
+                                        strong
+                                        style={{
+                                          fontSize: 15,
+                                          color: "#00529C",
+                                          display: "-webkit-box",
+                                          WebkitLineClamp: 2,
+                                          WebkitBoxOrient: "vertical",
+                                          overflow: "hidden",
+                                          textOverflow: "ellipsis",
+                                          lineHeight: 1.35,
+                                          wordBreak: "break-word",
+                                        }}
+                                      >
+                                        {item.name}
+                                      </Text>
                                     </Tooltip>
-                                  </Text>
+                                  </div>
                                 }
                                 actions={[
                                   <Tooltip title="Chỉnh sửa đề cương">
@@ -539,100 +575,135 @@ const Home = () => {
                                   </Tooltip>,
                                 ]}
                               >
-                                <Space
-                                  direction="vertical"
-                                  size="middle"
-                                  style={{width: "100%"}}
-                                >
-                                  <div
-                                    style={{
-                                      display: "flex",
-                                      alignItems: "flex-start",
-                                      gap: 8,
-                                    }}
+                                <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+                                  <Space
+                                    direction="vertical"
+                                    size="middle"
+                                    style={{width: "100%"}}
                                   >
-                                    <BookOutlined
-                                      style={{color: "#8c8c8c", marginTop: 4}}
-                                    />
-                                    <Text type="secondary">
-                                      {item.subject_name}
-                                    </Text>
-                                  </div>
+                                    <div
+                                      style={{
+                                        display: "flex",
+                                        alignItems: "flex-start",
+                                        gap: 8,
+                                      }}
+                                    >
+                                      <BookOutlined
+                                        style={{color: "#8c8c8c", marginTop: 4, flexShrink: 0}}
+                                      />
+                                      <Text
+                                        type="secondary"
+                                        ellipsis={{ tooltip: item.subject_name }}
+                                      >
+                                        {item.subject_name}
+                                      </Text>
+                                    </div>
 
-                                  <div
-                                    style={{
-                                      display: "flex",
-                                      alignItems: "center",
-                                      gap: 8,
-                                    }}
-                                  >
-                                    <UserOutlined style={{color: "#8c8c8c"}} />
-                                    <Text strong>
-                                      Giảng viên: {item.lecturer_name}
-                                    </Text>
-                                  </div>
-
-                                  {Boolean(
-                                    (item.status === "Approved" ||
-                                      item.is_approved) &&
-                                      item.approved_by &&
-                                      item.approved_by_name,
-                                  ) && (
                                     <div
                                       style={{
                                         display: "flex",
                                         alignItems: "center",
                                         gap: 8,
-                                        fontSize: 13,
-                                        color: "#16a34a",
                                       }}
                                     >
-                                      <CheckCircleOutlined
-                                        style={{color: "#16a34a"}}
-                                      />
-                                      <span>
-                                        Phê duyệt bởi:{" "}
-                                        <strong>{item.approved_by_name}</strong>
-                                      </span>
+                                      <UserOutlined style={{color: "#8c8c8c", flexShrink: 0}} />
+                                      <Text
+                                        strong
+                                        ellipsis={{ tooltip: item.lecturer_name }}
+                                      >
+                                        Giảng viên: {item.lecturer_name}
+                                      </Text>
                                     </div>
-                                  )}
 
-                                  <div
-                                    style={{
-                                      display: "flex",
-                                      alignItems: "center",
-                                      gap: 8,
-                                    }}
-                                  >
-                                    <CalendarOutlined
-                                      style={{color: "#8c8c8c"}}
-                                    />
-                                    <Text
-                                      type="secondary"
-                                      style={{fontSize: 13}}
-                                    >
-                                      Ngày tạo:{" "}
-                                      {item.created_date
-                                        ? new Date(
-                                            item.created_date,
-                                          ).toLocaleDateString("vi-VN")
-                                        : "N/A"}
-                                    </Text>
-                                  </div>
+                                    {Boolean(
+                                      (item.status === "Approved" ||
+                                        item.is_approved) &&
+                                        item.approved_by &&
+                                        item.approved_by_name,
+                                    ) ? (
+                                      <div
+                                        style={{
+                                          display: "flex",
+                                          alignItems: "center",
+                                          gap: 8,
+                                          fontSize: 13,
+                                          color: "#16a34a",
+                                          minHeight: 22,
+                                        }}
+                                      >
+                                        <CheckCircleOutlined
+                                          style={{color: "#16a34a", flexShrink: 0}}
+                                        />
+                                        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                          Phê duyệt bởi:{" "}
+                                          <strong>{item.approved_by_name}</strong>
+                                        </span>
+                                      </div>
+                                    ) : (
+                                      <div
+                                        style={{
+                                          display: "flex",
+                                          alignItems: "center",
+                                          gap: 8,
+                                          fontSize: 13,
+                                          color: "#8c8c8c",
+                                          minHeight: 22,
+                                        }}
+                                      >
+                                        <ClockCircleOutlined
+                                          style={{color: "#8c8c8c", flexShrink: 0}}
+                                        />
+                                        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                          Phê duyệt bởi:{" "}
+                                          <span style={{ fontStyle: "italic", color: "#8c8c8c" }}>
+                                            Chưa phê duyệt
+                                          </span>
+                                        </span>
+                                      </div>
+                                    )}
 
-                                  {item.edit_date && (
                                     <div
                                       style={{
-                                        fontSize: 12,
-                                        color: "#fa8c16",
-                                        fontStyle: "italic",
-                                        marginTop: -8,
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: 8,
                                       }}
                                     >
-                                      * {item.edit_date}
+                                      <CalendarOutlined
+                                        style={{color: "#8c8c8c", flexShrink: 0}}
+                                      />
+                                      <Text
+                                        type="secondary"
+                                        style={{fontSize: 13}}
+                                      >
+                                        Ngày tạo:{" "}
+                                        {item.created_date
+                                          ? new Date(
+                                              item.created_date,
+                                            ).toLocaleDateString("vi-VN")
+                                          : "N/A"}
+                                      </Text>
                                     </div>
-                                  )}
-                                </Space>
+                                  </Space>
+
+                                  <div style={{ minHeight: 20, marginTop: 12 }}>
+                                    {item.edit_date && (
+                                      <div
+                                        style={{
+                                          fontSize: 12,
+                                          color: "#fa8c16",
+                                          fontStyle: "italic",
+                                          overflow: "hidden",
+                                          textOverflow: "ellipsis",
+                                          whiteSpace: "nowrap",
+                                        }}
+                                        title={item.edit_date}
+                                      >
+                                        * {item.edit_date}
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
                               </Card>
                             </List.Item>
                           )}

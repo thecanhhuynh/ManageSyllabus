@@ -27,7 +27,7 @@ class LecturerSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Lecturer
-        fields = ['room', 'faculty', 'faculty_role', 'signature_image', 'is_leader']
+        fields = ['id', 'room', 'faculty', 'faculty_role', 'signature_image', 'is_leader']
 
     def get_signature_image(self, obj):
         if not obj or not obj.signature_image:
@@ -246,6 +246,9 @@ class SubjectSerializer(serializers.ModelSerializer):
 class SyllabusSerializer(serializers.ModelSerializer):
     subject = SubjectSerializer(read_only=True)
     lecturer = LecturerBasicSerializer(read_only=True)
+    is_approved = serializers.BooleanField(read_only=True)
+    approved_by_name = serializers.SerializerMethodField()
+    approved_date = serializers.DateTimeField(format="%d/%m/%Y %H:%M", read_only=True)
 
     subject_obj = serializers.PrimaryKeyRelatedField(
         queryset=Subject.objects.all(), write_only=True, source="subject",
@@ -270,9 +273,16 @@ class SyllabusSerializer(serializers.ModelSerializer):
         model = Syllabus
         fields = [
             'id', 'name', 'status', 'created_date',
+            'is_approved', 'approved_by', 'approved_by_name', 'approved_date',
             'subject', 'lecturer',
             'subject_obj', 'template_obj', 'faculty_obj', 'lecturer_obj', 'training_program_obj'
         ]
+
+    def get_approved_by_name(self, obj):
+        if not obj or not obj.approved_by:
+            return ""
+        name = f"{obj.approved_by.last_name} {obj.approved_by.first_name}".strip()
+        return name if name else obj.approved_by.username
 
     def validate(self, attrs):
         subject = attrs.get('subject')
@@ -433,12 +443,13 @@ class SyllabusDetailSerializer(serializers.ModelSerializer):
     approved_date = serializers.DateTimeField(format="%d/%m/%Y %H:%M", read_only=True)
     faculty_name = serializers.CharField(source='faculty.name', read_only=True, default="N/A")
     lecturer_name = serializers.SerializerMethodField()
+    lecturer_id = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = Syllabus
         fields = [
             'id', 'name', 'template', 'subject', 'status', 'is_approved', 'approved_by',
-            'approved_by_name', 'approved_date', 'faculty_name', 'lecturer_name',
+            'approved_by_name', 'approved_date', 'faculty_name', 'lecturer_name', 'lecturer_id',
             'signatures', 'main_sections', 'start_date_edition', 'end_date_edition',
             'revision', 'label_overrides'
         ]

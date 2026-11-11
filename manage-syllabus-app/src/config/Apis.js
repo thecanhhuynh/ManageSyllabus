@@ -17,6 +17,9 @@ export const endpoints = {
   subjects: "/subjects/",
   "update-subject": (subjectId) => `/subjects/${subjectId}/`,
   "attribute-groups": "/attribute-groups/",
+  "attribute-group-detail": (id) => `/attribute-groups/${id}/`,
+  "attribute-group-values": (id) => `/attribute-groups/${id}/values/`,
+  "attribute-group-value-detail": (id, valId) => `/attribute-groups/${id}/values/${valId}/`,
   "type-requirements": "/type-requirements/",
   "programme-learning-outcomes": "/programme-learning-outcomes/",
   "learning-materials": "/learning-materials/",
@@ -58,6 +61,7 @@ export const endpoints = {
   "user-signature": "/users/signature/",
   "syllabus-signatures": (id) => `/syllabuses/${id}/signatures/`,
   "syllabus-sign": (id) => `/syllabuses/${id}/sign/`,
+  "syllabus-validation-status": (id) => `/syllabuses/${id}/validation-status/`,
   "syllabus-approve": (id) => `/syllabuses/${id}/approve/`,
   "syllabus-unapprove": (id) => `/syllabuses/${id}/unapprove/`,
 };

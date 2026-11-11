@@ -8,6 +8,7 @@ import {
   ProfileOutlined,
   TeamOutlined,
   AimOutlined,
+  TagsOutlined,
 } from "@ant-design/icons";
 
 const AdminManagement = () => {
@@ -62,6 +63,14 @@ const AdminManagement = () => {
       path: "/admin/programs-learning-outcomes",
       bgColor: "bg-indigo-50",
       borderColor: "border-indigo-200",
+    },
+    {
+      title: "Danh mục Lựa chọn (Selection)",
+      description: "Quản lý nhóm và các giá trị lựa chọn cho đề cương (Ngôn ngữ, Phương thức giảng dạy...)",
+      icon: <TagsOutlined className="text-4xl text-teal-500" />,
+      path: "/admin/attribute-groups",
+      bgColor: "bg-teal-50",
+      borderColor: "border-teal-200",
     },
   ];
 

@@ -204,7 +204,7 @@ const FacultyApprovals = () => {
 
     if (statusFilter !== "ALL") {
       result = result.filter((item) => {
-        const isApproved = Boolean(item.is_approved && item.approved_by);
+        const isApproved = Boolean(item.is_approved || item.status === "Approved");
         if (statusFilter === "Approved") return isApproved;
         if (statusFilter === "Submitted")
           return item.status === "Submitted" && !isApproved;
@@ -340,7 +340,7 @@ const FacultyApprovals = () => {
   };
 
   const handleExportDocx = async (record) => {
-    const isApproved = Boolean(record.is_approved && record.approved_by);
+    const isApproved = Boolean(record.is_approved || record.status === "Approved");
     if (!isApproved) {
       message.warning(
         "Đề cương chưa được Lãnh đạo Khoa phê duyệt. Không thể xuất file chính thức.",
@@ -381,12 +381,14 @@ const FacultyApprovals = () => {
     }
   };
 
+  const isSyllabusApproved = (item) => Boolean(item?.is_approved || item?.status === "Approved");
+
   const countTotal = syllabuses.length;
   const countApproved = syllabuses.filter(
-    (s) => s.is_approved && s.approved_by,
+    (s) => isSyllabusApproved(s),
   ).length;
   const countSubmitted = syllabuses.filter(
-    (s) => s.status === "Submitted" && !(s.is_approved && s.approved_by),
+    (s) => s.status === "Submitted" && !isSyllabusApproved(s),
   ).length;
   const countDraft = countTotal - countApproved - countSubmitted;
 
@@ -464,7 +466,7 @@ const FacultyApprovals = () => {
       key: "status",
       width: 150,
       render: (_, record) => {
-        const isApproved = Boolean(record.is_approved && record.approved_by);
+        const isApproved = Boolean(record.is_approved || record.status === "Approved");
         if (isApproved) {
           return (
             <Tooltip
@@ -495,7 +497,7 @@ const FacultyApprovals = () => {
       key: "approver",
       width: 180,
       render: (_, record) => {
-        const isApproved = Boolean(record.is_approved && record.approved_by);
+        const isApproved = Boolean(record.is_approved || record.status === "Approved");
         if (!isApproved) {
           return (
             <span style={{color: "#9ca3af", fontStyle: "italic"}}>
@@ -506,10 +508,10 @@ const FacultyApprovals = () => {
         return (
           <div>
             <div style={{fontWeight: 600, color: "#16a34a"}}>
-              {record.approved_by_name}
+              {record.approved_by_name || "Lãnh đạo Khoa"}
             </div>
             <div style={{fontSize: 11, color: "#6b7280"}}>
-              {record.approved_date}
+              {record.approved_date || "Đã phê duyệt"}
             </div>
           </div>
         );
@@ -521,11 +523,13 @@ const FacultyApprovals = () => {
       width: 280,
       fixed: "right",
       render: (_, record) => {
-        const isApproved = Boolean(record.is_approved && record.approved_by);
+        const isApproved = Boolean(record.is_approved || record.status === "Approved");
         const isSelfAuthored = Boolean(
-          (record.lecturer_id && (record.lecturer_id === user?.lecturer?.id || record.lecturer_id === user?.id)) ||
+          (record.lecturer_id &&
+            (record.lecturer_id === user?.lecturer?.id ||
+              record.lecturer_id === user?.id)) ||
           (record.lecturer?.id && record.lecturer.id === user?.lecturer?.id) ||
-          (record.lecturer?.user?.id && record.lecturer.user.id === user?.id)
+          (record.lecturer?.user?.id && record.lecturer.user.id === user?.id),
         );
         const isAdmin = user?.is_superuser || user?.user_role === "admin";
         const canApprove = !isSelfAuthored || isAdmin;

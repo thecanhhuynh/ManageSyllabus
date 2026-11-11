@@ -40,6 +40,12 @@ class SignatureService {
     return res.data;
   }
 
+  static async checkValidationStatus(syllabusId) {
+    if (!syllabusId) return { is_complete: false, missing_items: [] };
+    const res = await authApis().get(endpoints["syllabus-validation-status"](syllabusId));
+    return res.data;
+  }
+
   static async signSyllabus(syllabusId, payload) {
     if (!syllabusId || !payload) return null;
     const res = await authApis().post(endpoints["syllabus-sign"](syllabusId), payload);

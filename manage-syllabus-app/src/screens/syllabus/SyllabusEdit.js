@@ -18,6 +18,7 @@ import {
   ClockCircleOutlined,
   FileWordOutlined,
   ExclamationCircleOutlined,
+  SafetyCertificateOutlined,
 } from "@ant-design/icons";
 import {authApis, endpoints} from "../../config/Apis";
 import {MyUserContext} from "../../config/contexts/MyContext";
@@ -26,6 +27,7 @@ import MainSectionForm from "./MainSectionForm";
 import {useSyllabusStore} from "../../store/useSyllabusStore";
 import CustomColumnService from "../../services/customColumnService";
 import SignatureService from "../../services/signatureService";
+import SignaturePadModal from "../../components/signature/SignaturePadModal";
 import {resolveMediaUrl} from "../../utils/mediaUtils";
 
 const {Title} = Typography;
@@ -37,9 +39,13 @@ const SyllabusEdit = () => {
   const [syllabusData, setSyllabusData] = useState({});
   const [approving, setApproving] = useState(false);
   const [unapproving, setUnapproving] = useState(false);
+  const [signing, setSigning] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [approveModalOpen, setApproveModalOpen] = useState(false);
   const [unapproveModalOpen, setUnapproveModalOpen] = useState(false);
+  const [signModalOpen, setSignModalOpen] = useState(false);
+  const [checkingValidation, setCheckingValidation] = useState(false);
+  const [validationModal, setValidationModal] = useState({open: false, items: []});
   const [unapproveReason, setUnapproveReason] = useState("");
   const [leaderSignature, setLeaderSignature] = useState(null);
   const [user] = useContext(MyUserContext);
@@ -65,6 +71,50 @@ const SyllabusEdit = () => {
     (syllabusData?.is_approved || syllabusData?.status === "Approved") &&
     syllabusData?.approved_by,
   );
+  const isSubmitted = syllabusData?.status === "Submitted";
+  const isReadOnly = isApproved || isSubmitted;
+  const canSignAndSubmit =
+    (isSelfAuthored || isAdmin) && !isApproved && !isSubmitted;
+
+  const handleStartSignAndSubmit = async () => {
+    try {
+      setCheckingValidation(true);
+      const status = await SignatureService.checkValidationStatus(syllabusId);
+      if (!status?.is_complete) {
+        setValidationModal({
+          open: true,
+          items: status?.missing_items || ["Đề cương chưa điền đầy đủ nội dung."],
+        });
+        return;
+      }
+      setSignModalOpen(true);
+    } catch (err) {
+      console.error("Lỗi kiểm tra ràng buộc đề cương:", err);
+      setSignModalOpen(true);
+    } finally {
+      setCheckingValidation(false);
+    }
+  };
+
+  const handleConfirmSignAndSubmit = async (sigData) => {
+    try {
+      setSigning(true);
+      await SignatureService.signSyllabus(syllabusId, {
+        role: "lecturer",
+        signature_image: sigData,
+      });
+      message.success("Ký xác nhận và nộp duyệt đề cương thành công!");
+      setSignModalOpen(false);
+      await loadSyllabusDetail(syllabusId);
+    } catch (err) {
+      console.error(err);
+      message.error(
+        err?.response?.data?.error || "Lỗi khi ký và nộp duyệt đề cương!",
+      );
+    } finally {
+      setSigning(false);
+    }
+  };
 
   const handleOpenApproveModal = async () => {
     setApproveModalOpen(true);
@@ -196,7 +246,8 @@ const SyllabusEdit = () => {
       if (res.status === 200) {
         const initData = useSyllabusStore.getState().initData;
         const setLabelOverrides = useSyllabusStore.getState().setLabelOverrides;
-        const setCurrentSyllabus = useSyllabusStore.getState().setCurrentSyllabus;
+        const setCurrentSyllabus =
+          useSyllabusStore.getState().setCurrentSyllabus;
         const serverRevision = res.data.revision || 1;
         initData(serverRevision, res.data.main_sections);
         setLabelOverrides(res.data.label_overrides || {});
@@ -296,7 +347,7 @@ const SyllabusEdit = () => {
           <MainSectionForm
             syllabusId={syllabusId}
             mainSection={mainSection}
-            isApproved={isApproved}
+            isApproved={isReadOnly}
           />
         </div>
       ),
@@ -343,10 +394,11 @@ const SyllabusEdit = () => {
                   </Tag>
                 </Tooltip>
               ) : (
-                <Tag color="warning" icon={<ClockCircleOutlined />}>
-                  {syllabusData.status === "Submitted"
-                    ? "Chờ phê duyệt"
-                    : "Bản nháp"}
+                <Tag
+                  color={isSubmitted ? "orange" : "warning"}
+                  icon={<ClockCircleOutlined />}
+                >
+                  {isSubmitted ? "Chờ phê duyệt" : "Bản nháp"}
                 </Tag>
               )}
             </div>
@@ -369,6 +421,23 @@ const SyllabusEdit = () => {
           </div>
 
           <div className="flex items-center gap-3">
+            {canSignAndSubmit && (
+              <Tooltip title="Ký xác nhận và nộp đề cương lên Lãnh đạo Khoa phê duyệt">
+                <Button
+                  type="primary"
+                  icon={<SafetyCertificateOutlined />}
+                  style={{
+                    background: "#0284c7",
+                    borderColor: "#0284c7",
+                  }}
+                  loading={signing || checkingValidation}
+                  onClick={handleStartSignAndSubmit}
+                >
+                  Ký & Nộp duyệt
+                </Button>
+              </Tooltip>
+            )}
+
             {isFacultyLeader && !isApproved && (
               <Tooltip
                 title={
@@ -422,6 +491,16 @@ const SyllabusEdit = () => {
             message="Đề cương đã được phê duyệt chính thức"
             description={`Đề cương này đã được phê duyệt bởi ${syllabusData.approved_by_name || "Lãnh đạo Khoa"}${syllabusData.approved_date ? ` lúc ${syllabusData.approved_date}` : ""}. Toàn bộ nội dung hiện đang được khóa ở chế độ chỉ đọc. Nếu cần chỉnh sửa lại, vui lòng liên hệ Lãnh đạo Khoa để hủy duyệt.`}
             type="success"
+            showIcon
+            style={{marginBottom: 16, borderRadius: 8}}
+          />
+        )}
+
+        {isSubmitted && !isApproved && (
+          <Alert
+            message="Đề cương đang chờ Lãnh đạo Khoa phê duyệt"
+            description="Đề cương đã được Giảng viên biên soạn ký số và gửi lên Ban Chủ nhiệm Khoa. Trong thời gian chờ phê duyệt, nội dung đề cương được chuyển sang chế độ chỉ đọc để đảm bảo tính toàn vẹn."
+            type="info"
             showIcon
             style={{marginBottom: 16, borderRadius: 8}}
           />
@@ -560,6 +639,66 @@ const SyllabusEdit = () => {
             />
           </div>
         </Modal>
+
+        <Modal
+          title={
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                color: "#dc2626",
+                fontWeight: 700,
+                fontSize: 16,
+              }}
+            >
+              <ExclamationCircleOutlined />
+              <span>Đề cương chưa đủ điều kiện nộp duyệt</span>
+            </div>
+          }
+          open={validationModal.open}
+          onOk={() => setValidationModal({open: false, items: []})}
+          onCancel={() => setValidationModal({open: false, items: []})}
+          okText="Đã hiểu, tôi sẽ hoàn thiện nội dung"
+          cancelButtonProps={{style: {display: "none"}}}
+          width={580}
+        >
+          <div style={{display: "flex", flexDirection: "column", gap: 12}}>
+            <p style={{margin: 0, color: "#475569", lineHeight: 1.6}}>
+              Theo quy định chất lượng đào tạo, tất cả các mục trong đề cương đều
+              phải có giá trị và đạt chuẩn trước khi ký nộp lên Lãnh đạo Khoa.
+            </p>
+            <div style={{fontWeight: 600, color: "#1f2937"}}>
+              Các mục hiện tại đang bị thiếu hoặc chưa hoàn thành:
+            </div>
+            <div
+              style={{
+                maxHeight: 260,
+                overflowY: "auto",
+                background: "#fff1f2",
+                border: "1px solid #fecdd3",
+                borderRadius: 8,
+                padding: "10px 16px",
+              }}
+            >
+              <ul style={{margin: 0, paddingLeft: 18, color: "#be123c"}}>
+                {validationModal.items.map((item, idx) => (
+                  <li key={idx} style={{marginBottom: 4}}>
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </Modal>
+
+        <SignaturePadModal
+          visible={signModalOpen}
+          onCancel={() => setSignModalOpen(false)}
+          onConfirm={handleConfirmSignAndSubmit}
+          roleTitle="Ký xác nhận & Nộp duyệt đề cương"
+          mode="sign"
+        />
       </div>
     </div>
   );

@@ -36,6 +36,7 @@ const SelectionEditor = ({item, basePath}) => {
       >
         <Select
           mode="multiple"
+          maxTagCount="responsive"
           placeholder={item.place_holder || "Vui lòng chọn..."}
           style={{width: "100%"}}
           options={optionsForThisSelect}

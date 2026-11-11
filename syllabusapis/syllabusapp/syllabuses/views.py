@@ -45,7 +45,7 @@ from services.user_service import UserService
 from syllabusapp.settings import ONLYOFFICE_JWT_SECRET
 from syllabuses import perms
 from syllabuses.filters import SyllabusFilter, SubjectFilter, LearningMaterialsFilter, UserFilter, LecturerFilter
-from syllabuses.models import User, Syllabus, Faculty, Subject, AttributeGroup, TypeRequirement, \
+from syllabuses.models import User, Syllabus, Faculty, Subject, AttributeGroup, AttributeValue, TypeRequirement, \
     ProgrammeLearningOutcome, LearningMaterial, TypeLearningMaterial, TypeAssessment, CourseLearningOutcome, Assessment, \
     ScheduleGroup, Major, TrainingProgram, Lecturer, TemplateSyllabus, TemplateSubSection, TemplateMainSection, \
     TemplateTableSubSection, TemplateSelectionSubSection, TemplateTextSubSection, \
@@ -414,6 +414,17 @@ class SyllabusView(viewsets.ModelViewSet):
         from syllabuses.serializer import SyllabusSignatureSerializer
         sigs = syllabus.signatures.filter(is_active=True).order_by('signed_at')
         return Response(SyllabusSignatureSerializer(sigs, many=True).data)
+
+    @action(detail=True, methods=['get'], url_path='validation-status',
+            permission_classes=[permissions.IsAuthenticated])
+    def validation_status(self, request, pk=None):
+        syllabus = self.get_object()
+        from services.signature_service import SignatureService
+        is_complete, missing_items = SignatureService.validate_syllabus_completeness(syllabus)
+        return Response({
+            "is_complete": is_complete,
+            "missing_items": missing_items,
+        }, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['post'], url_path='sign',
             permission_classes=[permissions.IsAuthenticated])
@@ -1526,9 +1537,65 @@ class TrainingProgramView(mixins.ListModelMixin,
 
 
 
-class AttributeGroupView(viewsets.ViewSet, generics.ListAPIView, generics.RetrieveAPIView):
-    queryset = AttributeGroup.objects.all()
+class AttributeGroupView(viewsets.ModelViewSet):
+    queryset = AttributeGroup.objects.prefetch_related('attribute_values').all().order_by('id')
     serializer_class = AttributeGroupListSerializer
+    pagination_class = None
+
+    def get_permissions(self):
+        if self.action in ['list', 'retrieve']:
+            return [permissions.IsAuthenticated()]
+        return [(perms.IsAdmin | perms.IsSpecialist)()]
+
+    def create(self, request, *args, **kwargs):
+        name = request.data.get('name', '').strip()
+        if not name:
+            return Response({'error': 'Tên nhóm danh mục không được để trống.'}, status=status.HTTP_400_BAD_REQUEST)
+        if AttributeGroup.objects.filter(name__iexact=name).exists():
+            return Response({'error': f'Nhóm danh mục "{name}" đã tồn tại.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        group = AttributeGroup.objects.create(name=name)
+        values = request.data.get('values', [])
+        if isinstance(values, list):
+            for v in values:
+                val_text = str(v).strip()
+                if val_text:
+                    AttributeValue.objects.create(attribute_group=group, name_value=val_text)
+
+        serializer = AttributeGroupListSerializer(group)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    @action(detail=True, methods=['post'], url_path='values')
+    def add_value(self, request, pk=None):
+        group = self.get_object()
+        val_name = str(request.data.get('name_value') or request.data.get('name') or '').strip()
+        if not val_name:
+            return Response({'error': 'Tên giá trị không được để trống.'}, status=status.HTTP_400_BAD_REQUEST)
+        if AttributeValue.objects.filter(attribute_group=group, name_value__iexact=val_name).exists():
+            return Response({'error': f'Giá trị "{val_name}" đã tồn tại trong nhóm.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        val = AttributeValue.objects.create(attribute_group=group, name_value=val_name)
+        from syllabuses.serializer import SimpleAttributeValueSerializer
+        return Response(SimpleAttributeValueSerializer(val).data, status=status.HTTP_201_CREATED)
+
+    @action(detail=True, methods=['patch', 'delete'], url_path=r'values/(?P<val_id>\d+)')
+    def manage_value(self, request, pk=None, val_id=None):
+        group = self.get_object()
+        val = AttributeValue.objects.filter(attribute_group=group, id=val_id).first()
+        if not val:
+            return Response({'error': 'Giá trị không tồn tại trong nhóm này.'}, status=status.HTTP_404_NOT_FOUND)
+
+        if request.method == 'DELETE':
+            val.delete()
+            return Response({'message': 'Đã xóa giá trị thành công.'}, status=status.HTTP_200_OK)
+
+        new_name = str(request.data.get('name_value') or request.data.get('name') or '').strip()
+        if not new_name:
+            return Response({'error': 'Tên giá trị không được để trống.'}, status=status.HTTP_400_BAD_REQUEST)
+        val.name_value = new_name
+        val.save(update_fields=['name_value'])
+        from syllabuses.serializer import SimpleAttributeValueSerializer
+        return Response(SimpleAttributeValueSerializer(val).data, status=status.HTTP_200_OK)
 
 class TypeRequirementView(viewsets.ViewSet, generics.ListAPIView):
     queryset = TypeRequirement.objects.all()

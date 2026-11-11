@@ -1,7 +1,7 @@
 import React from "react";
 import {Card} from "antd";
 import {useNavigate} from "react-router-dom";
-import {BankOutlined} from "@ant-design/icons";
+import {BankOutlined, TagsOutlined} from "@ant-design/icons";
 
 const SpecialistManagement = () => {
   const navigate = useNavigate();
@@ -14,6 +14,14 @@ const SpecialistManagement = () => {
       path: "/specialist/templates",
       bgColor: "bg-blue-50",
       borderColor: "border-blue-200",
+    },
+    {
+      title: "Danh mục Lựa chọn (Selection)",
+      description: "Quản lý các nhóm và giá trị lựa chọn cho đề cương",
+      icon: <TagsOutlined className="text-4xl text-teal-500" />,
+      path: "/specialist/attribute-groups",
+      bgColor: "bg-teal-50",
+      borderColor: "border-teal-200",
     },
   ];
 

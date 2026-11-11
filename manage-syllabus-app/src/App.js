@@ -32,6 +32,7 @@ import SpecialistRoutes from "./screens/Specialist/SpecialistRoutes";
 import TemplateManagement from "./screens/Specialist/TemplateManagement";
 import SpecialistManagement from "./screens/Specialist/SpecialistManagement";
 import TemplateBuilder from "./screens/Specialist/TemplateBuilder";
+import AttributeGroupManagement from "./screens/Admin/AttributeGroupManagement";
 const App = () => {
   const [user, dispatch] = useReducer(MyUserReducer, null);
   const [selectionDictionary, setSelectionDictionary] = useState({});
@@ -150,6 +151,10 @@ const App = () => {
                         path="programs-learning-outcomes"
                         element={<ProgrammeLearningOutcomeManagement />}
                       />
+                      <Route
+                        path="attribute-groups"
+                        element={<AttributeGroupManagement />}
+                      />
                     </Route>
                     <Route
                       path="/specialist"
@@ -163,6 +168,10 @@ const App = () => {
                       <Route
                         path="templates"
                         element={<TemplateManagement />}
+                      />
+                      <Route
+                        path="attribute-groups"
+                        element={<AttributeGroupManagement />}
                       />
                       <Route
                         path="templates/:id/builder"
