@@ -8,10 +8,10 @@ import "./styles.css";
 import {cleanWhitespace, formatTypingWhitespace} from "../../utils/stringUtils";
 
 const NO_ROWS_TEMPLATE = `
-  <div style="padding: 24px; text-align: center; color: #64748b; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+  <div style="padding: 24px 16px 42px 16px; text-align: center; color: #64748b; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; height: 100%;">
     <div style="font-size: 26px; margin-bottom: 6px; opacity: 0.7;">📋</div>
     <div style="font-size: 14px; font-weight: 600; color: #475569; margin-bottom: 4px;">Chưa có hàng nào trong bảng mẫu</div>
-    <div style="font-size: 12px; color: #94a3b8;">Nhấn nút "+ Thêm hàng mới" bên dưới để thêm hàng</div>
+    <div style="font-size: 12px; color: #94a3b8; line-height: 1.4;">Nhấn nút "+ Thêm hàng mới" bên dưới để thêm hàng</div>
   </div>
 `;
 
@@ -321,7 +321,7 @@ const TableSchemaBuilder = ({value, onChange}) => {
     ...tableData.columns.map((col) => ({
       ...col,
       flex: 1,
-      minWidth: 150,
+      minWidth: 100,
       resizable: true,
       headerClass: "border-r border-gray-200",
       cellStyle: {
@@ -347,7 +347,10 @@ const TableSchemaBuilder = ({value, onChange}) => {
     {
       headerName: "",
       width: 48,
-      pinned: "right",
+      minWidth: 48,
+      maxWidth: 48,
+      resizable: false,
+      suppressMenu: true,
       headerClass: "border-l border-gray-200",
       cellStyle: {
         borderTop: "1px solid #e2e8f0",
@@ -408,7 +411,7 @@ const TableSchemaBuilder = ({value, onChange}) => {
       <div className="p-3">
         <div
           className="ag-theme-alpine table-schema-builder-grid w-full mb-3 rounded-lg overflow-hidden border border-gray-100"
-          style={{minHeight: tableData.rows.length === 0 ? 140 : "auto"}}
+          style={{minHeight: tableData.rows.length === 0 ? 190 : "auto"}}
         >
           <AgGridReact
             columnDefs={gridColumnDefs}
@@ -423,6 +426,7 @@ const TableSchemaBuilder = ({value, onChange}) => {
             domLayout="autoHeight"
             overlayNoRowsTemplate={NO_ROWS_TEMPLATE}
             onGridReady={onGridReady}
+            onGridSizeChanged={(params) => params?.api?.sizeColumnsToFit()}
             onRowDragEnd={(e) => {
               if (e.overIndex === -1) return;
               const fromIndex = tableData.rows.findIndex(

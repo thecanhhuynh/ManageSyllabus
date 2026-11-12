@@ -8,10 +8,10 @@ import UpdateRequireWrapper from "../../components/wrapper/UpdateRequireWrapper"
 import {useSyllabusStore} from "../../store/useSyllabusStore";
 
 const NO_ROWS_TEMPLATE = `
-  <div style="padding: 28px; text-align: center; color: #64748b; display: flex; flex-direction: column; align-items: center; justify-content: center;">
-    <div style="font-size: 28px; margin-bottom: 6px; opacity: 0.7;">📋</div>
+  <div style="padding: 24px 16px 42px 16px; text-align: center; color: #64748b; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; height: 100%;">
+    <div style="font-size: 26px; margin-bottom: 6px; opacity: 0.7;">📋</div>
     <div style="font-size: 14px; font-weight: 600; color: #475569; margin-bottom: 4px;">Chưa có dòng dữ liệu nào</div>
-    <div style="font-size: 12px; color: #94a3b8;">Nhấn nút "+ Thêm dòng dữ liệu" bên dưới để bắt đầu nhập</div>
+    <div style="font-size: 12px; color: #94a3b8; line-height: 1.4;">Nhấn nút "+ Thêm dòng dữ liệu" bên dưới để bắt đầu nhập</div>
   </div>
 `;
 
@@ -107,6 +107,11 @@ const AgGridTableInput = ({value, onChange, firstColumnHeader, tableName}) => {
 
   const onGridReady = useCallback((params) => {
     gridApiRef.current = params.api;
+    params.api?.sizeColumnsToFit();
+  }, []);
+
+  const onGridSizeChanged = useCallback((params) => {
+    params?.api?.sizeColumnsToFit();
   }, []);
 
   const updateCell = useCallback(
@@ -171,7 +176,8 @@ const AgGridTableInput = ({value, onChange, firstColumnHeader, tableName}) => {
       {
         headerName: headerTitle,
         field: "rowTitle",
-        width: 170,
+        width: 140,
+        minWidth: 110,
         pinned: "left",
         cellStyle: {padding: 0, display: "flex", alignItems: "stretch"},
         cellRenderer: CustomCell,
@@ -186,7 +192,7 @@ const AgGridTableInput = ({value, onChange, firstColumnHeader, tableName}) => {
       headerName: col.headerName || "Cột",
       field: col.field,
       flex: 1,
-      minWidth: 150,
+      minWidth: 100,
       cellStyle: {
         padding: 0,
         display: "flex",
@@ -205,7 +211,10 @@ const AgGridTableInput = ({value, onChange, firstColumnHeader, tableName}) => {
     defs.push({
       headerName: "",
       width: 48,
-      pinned: "right",
+      minWidth: 48,
+      maxWidth: 48,
+      resizable: false,
+      suppressMenu: true,
       cellStyle: {
         display: "flex",
         alignItems: "center",
@@ -258,7 +267,7 @@ const AgGridTableInput = ({value, onChange, firstColumnHeader, tableName}) => {
       <div className="p-3">
         <div
           className="ag-theme-alpine w-full mb-3 rounded-lg overflow-hidden border border-gray-100"
-          style={{minHeight: schema.rows.length === 0 ? 140 : "auto"}}
+          style={{minHeight: schema.rows.length === 0 ? 190 : "auto"}}
         >
           <AgGridReact
             columnDefs={columnDefs}
@@ -272,6 +281,7 @@ const AgGridTableInput = ({value, onChange, firstColumnHeader, tableName}) => {
             domLayout="autoHeight"
             overlayNoRowsTemplate={NO_ROWS_TEMPLATE}
             onGridReady={onGridReady}
+            onGridSizeChanged={onGridSizeChanged}
           />
         </div>
         <Button

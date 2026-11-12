@@ -248,11 +248,11 @@ const AttributeGroupManagement = () => {
     {
       title: "Thao tác",
       key: "actions",
-      width: 180,
+      width: 240,
       fixed: "right",
       align: "center",
       render: (_, record) => (
-        <Space size="small">
+        <Space size="small" wrap={false}>
           <Button
             size="small"
             type="primary"
@@ -265,6 +265,7 @@ const AttributeGroupManagement = () => {
           <Button
             size="small"
             icon={<EditOutlined />}
+            title="Chỉnh sửa tên nhóm"
             onClick={() => handleOpenGroupModal(record)}
           />
           <Popconfirm
@@ -275,7 +276,7 @@ const AttributeGroupManagement = () => {
             cancelText="Hủy"
             okButtonProps={{ danger: true }}
           >
-            <Button size="small" danger icon={<DeleteOutlined />} />
+            <Button size="small" danger icon={<DeleteOutlined />} title="Xóa nhóm" />
           </Popconfirm>
         </Space>
       ),
@@ -325,7 +326,7 @@ const AttributeGroupManagement = () => {
           })}
           columns={columns}
           loading={loading}
-          scroll={{x: 870}}
+          scroll={{ x: 950 }}
           pagination={{
             pageSize: 10,
             showTotal: (total) => `Tổng cộng ${total} nhóm thuộc tính`,

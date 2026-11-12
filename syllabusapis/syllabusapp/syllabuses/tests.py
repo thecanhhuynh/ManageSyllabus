@@ -9,6 +9,9 @@ from syllabuses.models import (
     Faculty, Lecturer, TemplateBlock, TemplateSyllabus, User,
     CustomColumn, CustomColumnValue, Syllabus, Subject, Credit,
     TemplateMainSection, TemplateSubSection,
+    TypeAssessment, Assessment, Method, ScheduleGroup, TeachingSession,
+    CourseObjective, CourseLearningOutcome, LearningMaterial,
+    TypeLearningMaterial, SyllabusLearningMaterial,
 )
 from lxml import etree
 from handlers.shell_renderer import ShellDocxRenderer, _to_roman, W_NS
@@ -1651,6 +1654,9 @@ class TemplateBackendAPIsTestCase(TestCase):
         self.assertIn("preview_url", resp.data)
 
     def test_export_syllabus_with_blocks(self):
+        self.syllabus.status = Syllabus.Status.APPROVED
+        self.syllabus.approved_by = self.specialist
+        self.syllabus.save()
         TemplateBlock.objects.create(
             template=self.template,
             code="BLOCK_001",
@@ -4120,11 +4126,24 @@ class DigitalSignatureTestCase(TestCase):
             lecturer=self.lecturer_gv, template=self.template, status="draft"
         )
 
+    def _make_complete_syllabus(self, syllabus):
+        ta, _ = TypeAssessment.objects.get_or_create(name="Đánh giá quá trình")
+        ass = Assessment.objects.create(syllabus=syllabus, type_assessment=ta)
+        Method.objects.create(assessment=ass, weight=100, name="Kiểm tra cuối kỳ")
+        sg, _ = ScheduleGroup.objects.get_or_create(name="Nhóm 1")
+        TeachingSession.objects.create(syllabus=syllabus, schedule_group=sg, session_no=1, content="Bài 1")
+        co = CourseObjective.objects.create(syllabus=syllabus, content="Mục tiêu 1", position=1)
+        CourseLearningOutcome.objects.create(course_objective=co, content="Chuẩn đầu ra 1", position=1)
+        lm, _ = LearningMaterial.objects.get_or_create(name="Tài liệu tham khảo 1")
+        tm, _ = TypeLearningMaterial.objects.get_or_create(name="Giáo trình chính")
+        SyllabusLearningMaterial.objects.create(syllabus=syllabus, learning_material=lm, type_material=tm)
+
     def test_faculty_role_and_is_leader(self):
         self.assertFalse(self.lecturer_gv.is_leader)
         self.assertTrue(self.lecturer_dean.is_leader)
 
     def test_permission_can_sign(self):
+        self._make_complete_syllabus(self.syllabus)
         from services.signature_service import SignatureService
         allowed, _ = SignatureService.can_sign(self.user_gv, self.syllabus, "lecturer")
         self.assertTrue(allowed)
@@ -4139,6 +4158,7 @@ class DigitalSignatureTestCase(TestCase):
         self.assertFalse(allowed)
 
     def test_sign_syllabus_workflow(self):
+        self._make_complete_syllabus(self.syllabus)
         from services.signature_service import SignatureService
         sample_b64 = (
             "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII="
@@ -4179,6 +4199,7 @@ class DigitalSignatureTestCase(TestCase):
         self.assertTrue(len(tbl.rows[0].cells) >= 2)
 
     def test_api_sign_and_get_signatures(self):
+        self._make_complete_syllabus(self.syllabus)
         client = APIClient()
         client.force_authenticate(user=self.user_gv)
         sample_b64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII="
