@@ -10,6 +10,8 @@ import Apis, {
   CLIENT_SECRET,
 } from "../../config/Apis";
 import {MyUserContext} from "../../config/contexts/MyContext";
+import CleanInput from "../../components/CleanInput";
+import {cleanWhitespace} from "../../utils/stringUtils";
 
 const {Title, Text} = Typography;
 
@@ -23,9 +25,10 @@ const Login = () => {
   const handleLogin = async (values) => {
     try {
       setLoading(true);
+      const cleanUsername = cleanWhitespace(values.username);
       const res = await Apis.post(
         endpoints["login"],
-        `grant_type=password&username=${values.username}&password=${values.password}&client_id=${CLIENT_ID}&client_secret=${CLIENT_SECRET}`,
+        `grant_type=password&username=${encodeURIComponent(cleanUsername)}&password=${encodeURIComponent(values.password)}&client_id=${CLIENT_ID}&client_secret=${CLIENT_SECRET}`,
         {
           headers: {
             "Content-Type": "application/x-www-form-urlencoded",
@@ -129,7 +132,7 @@ const Login = () => {
               ]}
               style={{marginBottom: 20}}
             >
-              <Input
+              <CleanInput
                 prefix={
                   <UserOutlined style={{color: "#9ca3af", marginRight: 8}} />
                 }

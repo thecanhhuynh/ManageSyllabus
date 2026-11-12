@@ -8,6 +8,8 @@ import {
 } from "@ant-design/icons";
 import {authApis, endpoints} from "../../config/Apis";
 import {useNavigate} from "react-router-dom";
+import CleanInput from "../../components/CleanInput";
+import {cleanFormData} from "../../utils/stringUtils";
 
 const FacultyManagement = () => {
   const [faculties, setFaculties] = useState([]);
@@ -30,7 +32,8 @@ const FacultyManagement = () => {
     loadFaculties();
   }, []);
 
-  const handleSave = async (values) => {
+  const handleSave = async (rawValues) => {
+    const values = cleanFormData(rawValues);
     try {
       if (values.id) {
         await authApis().patch(endpoints["update-faculty"](values.id), values);
@@ -134,7 +137,7 @@ const FacultyManagement = () => {
             label="Tên Khoa"
             rules={[{required: true, message: "Vui lòng nhập tên khoa"}]}
           >
-            <Input placeholder="Nhập tên khoa..." />
+            <CleanInput placeholder="Nhập tên khoa..." />
           </Form.Item>
         </Form>
       </Modal>

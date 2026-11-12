@@ -5,6 +5,8 @@ import {AgGridReact} from "ag-grid-react";
 import "ag-grid-community/styles/ag-grid.css";
 import "ag-grid-community/styles/ag-theme-alpine.css";
 import "./styles.css";
+import {cleanWhitespace, formatTypingWhitespace} from "../../utils/stringUtils";
+
 const CustomHeader = (props) => {
   return (
     <div className="flex justify-between items-center w-full group">
@@ -12,7 +14,16 @@ const CustomHeader = (props) => {
         variant="borderless"
         value={props.displayName}
         onChange={(e) =>
-          props.onNameChange(props.column.getColDef().field, e.target.value)
+          props.onNameChange(
+            props.column.getColDef().field,
+            formatTypingWhitespace(e.target.value)
+          )
+        }
+        onBlur={(e) =>
+          props.onNameChange(
+            props.column.getColDef().field,
+            cleanWhitespace(e.target.value)
+          )
         }
         className="font-bold text-gray-700 bg-transparent hover:bg-gray-100 focus:bg-white px-2 rounded-sm w-full"
         placeholder="Tên cột..."
@@ -32,7 +43,19 @@ const CustomHeader = (props) => {
 
 const CustomCell = (props) => {
   const handleChange = (e) => {
-    props.onCellChange(props.data.id, props.colDef.field, e.target.value);
+    props.onCellChange(
+      props.data.id,
+      props.colDef.field,
+      formatTypingWhitespace(e.target.value, true)
+    );
+  };
+
+  const handleBlur = (e) => {
+    props.onCellChange(
+      props.data.id,
+      props.colDef.field,
+      cleanWhitespace(e.target.value, true)
+    );
   };
 
   const handleMouseDown = (e) => {
@@ -87,6 +110,7 @@ const CustomCell = (props) => {
         variant="borderless"
         value={props.value || ""}
         onChange={handleChange}
+        onBlur={handleBlur}
         style={{
           flex: 1,
           resize: "none",

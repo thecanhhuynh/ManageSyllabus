@@ -22,6 +22,8 @@ import {
 } from "@ant-design/icons";
 import {authApis, endpoints, springApi} from "../../config/Apis";
 import {useNavigate} from "react-router-dom";
+import CleanInput from "../../components/CleanInput";
+import {cleanFormData} from "../../utils/stringUtils";
 
 const TemplateManagement = () => {
   const [templates, setTemplates] = useState([]);
@@ -53,7 +55,8 @@ const TemplateManagement = () => {
     loadTemplates();
   }, [page]);
 
-  const handleSave = async (values) => {
+  const handleSave = async (rawValues) => {
+    const values = cleanFormData(rawValues);
     try {
       if (values.id) {
         await authApis().patch(
@@ -293,7 +296,7 @@ const TemplateManagement = () => {
             label="Tên Template"
             rules={[{required: true, message: "Vui lòng nhập tên Template"}]}
           >
-            <Input placeholder="VD: Mẫu Đề cương Khoa CNTT..." />
+            <CleanInput placeholder="VD: Mẫu Đề cương Khoa CNTT..." />
           </Form.Item>
 
           <Form.Item
@@ -301,7 +304,7 @@ const TemplateManagement = () => {
             label="Phiên bản (Version)"
             rules={[{required: true, message: "Vui lòng nhập version"}]}
           >
-            <Input placeholder="VD: v1.0" />
+            <CleanInput placeholder="VD: v1.0" />
           </Form.Item>
         </Form>
       </Modal>

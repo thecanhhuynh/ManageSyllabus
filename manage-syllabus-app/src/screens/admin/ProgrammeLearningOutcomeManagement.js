@@ -2,6 +2,8 @@ import {Button, Form, Input, message, Modal, Space, Table} from "antd";
 import {useEffect, useState} from "react";
 import {useNavigate} from "react-router-dom";
 import {authApis, endpoints} from "../../config/Apis";
+import CleanInput from "../../components/CleanInput";
+import {cleanFormData} from "../../utils/stringUtils";
 import {
   EditOutlined,
   DeleteOutlined,
@@ -38,7 +40,8 @@ const ProgrammeLearningOutcomeManagement = () => {
     loadPLOs();
   }, [page]);
 
-  const handleSave = async (values) => {
+  const handleSave = async (rawValues) => {
+    const values = cleanFormData(rawValues);
     try {
       if (values.id) {
         await authApis().patch(
@@ -159,14 +162,14 @@ const ProgrammeLearningOutcomeManagement = () => {
             label="Tên PLO"
             rules={[{required: true, message: "Vui lòng nhập tên PLO"}]}
           >
-            <Input placeholder="VD: PLO1" />
+            <CleanInput placeholder="VD: PLO1" />
           </Form.Item>
           <Form.Item
             name="description"
             label="Mô tả chi tiết"
             rules={[{required: true, message: "Vui lòng nhập mô tả"}]}
           >
-            <Input.TextArea rows={4} placeholder="Nhập mô tả chi tiết..." />
+            <CleanInput.TextArea rows={4} placeholder="Nhập mô tả chi tiết..." />
           </Form.Item>
         </Form>
       </Modal>

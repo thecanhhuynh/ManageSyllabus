@@ -26,6 +26,7 @@ import MySpinner from "../../components/MySpinner";
 import {useNavigate} from "react-router-dom";
 import cookies from "react-cookies";
 import {MyUserContext} from "../../config/contexts/MyContext";
+import CleanInput from "../../components/CleanInput";
 
 const Home = () => {
   const [user] = useContext(MyUserContext);
@@ -242,7 +243,7 @@ const Home = () => {
             alignItems: "center",
           }}
         >
-          <Input
+          <CleanInput
             placeholder="Tìm kiếm đề cương..."
             prefix={<SearchOutlined />}
             value={q}

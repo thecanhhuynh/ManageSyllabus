@@ -9,6 +9,8 @@ import {
 } from "@ant-design/icons";
 import {authApis, endpoints} from "../../config/Apis";
 import {useNavigate} from "react-router-dom";
+import CleanInput from "../../components/CleanInput";
+import {cleanFormData} from "../../utils/stringUtils";
 
 const TrainingProgramManagement = () => {
   const [programs, setPrograms] = useState([]);
@@ -44,7 +46,8 @@ const TrainingProgramManagement = () => {
     loadMajors();
   }, []);
 
-  const handleSave = async (values) => {
+  const handleSave = async (rawValues) => {
+    const values = cleanFormData(rawValues);
     try {
       const selectedMajor = majors.find((m) => m.id === values.major);
 
@@ -187,7 +190,7 @@ const TrainingProgramManagement = () => {
             label="Tên chương trình đào tạo"
             rules={[{required: true, message: "Vui lòng nhập tên CTĐT"}]}
           >
-            <Input placeholder="VD: CTĐT-KHMT 2024..." />
+            <CleanInput placeholder="VD: CTĐT-KHMT 2024..." />
           </Form.Item>
 
           <Form.Item

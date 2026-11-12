@@ -17,6 +17,8 @@ import {
 } from "@ant-design/icons";
 import {authApis, endpoints} from "../../config/Apis";
 import {useNavigate} from "react-router-dom";
+import CleanInput from "../../components/CleanInput";
+import {cleanFormData} from "../../utils/stringUtils";
 
 const SubjectManagement = () => {
   const [subjects, setSubjects] = useState([]);
@@ -40,7 +42,8 @@ const SubjectManagement = () => {
     loadSubjects();
   }, []);
 
-  const handleSave = async (values) => {
+  const handleSave = async (rawValues) => {
+    const values = cleanFormData(rawValues);
     try {
       if (values.id) {
         await authApis().patch(endpoints["update-subject"](values.id), values);
@@ -150,7 +153,7 @@ const SubjectManagement = () => {
               label="Mã môn học"
               rules={[{required: true, message: "Vui lòng nhập mã môn học"}]}
             >
-              <Input placeholder="Nhập mã môn" />
+              <CleanInput placeholder="Nhập mã môn" />
             </Form.Item>
 
             <Form.Item
@@ -158,7 +161,7 @@ const SubjectManagement = () => {
               label="Tên môn học"
               rules={[{required: true, message: "Vui lòng nhập tên môn học"}]}
             >
-              <Input placeholder="Nhập tên môn học..." />
+              <CleanInput placeholder="Nhập tên môn học..." />
             </Form.Item>
           </div>
 

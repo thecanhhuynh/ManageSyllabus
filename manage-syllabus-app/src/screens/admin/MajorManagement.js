@@ -8,6 +8,8 @@ import {
 } from "@ant-design/icons";
 import {authApis, endpoints} from "../../config/Apis";
 import {useNavigate} from "react-router-dom";
+import CleanInput from "../../components/CleanInput";
+import {cleanFormData} from "../../utils/stringUtils";
 
 const MajorManagement = () => {
   const [faculties, setFaculties] = useState([]);
@@ -44,7 +46,8 @@ const MajorManagement = () => {
     loadFaculties();
   }, []);
 
-  const handleSave = async (values) => {
+  const handleSave = async (rawValues) => {
+    const values = cleanFormData(rawValues);
     try {
       const faculty = faculties.find((f) => f.id === values.faculty);
 
@@ -170,7 +173,7 @@ const MajorManagement = () => {
             label="Mã chuyên ngành"
             rules={[{required: true, message: "Vui lòng nhập mã chuyên ngành"}]}
           >
-            <Input placeholder="Nhập mã chuyên ngành" />
+            <CleanInput placeholder="Nhập mã chuyên ngành" />
           </Form.Item>
           <Form.Item
             name="name"
@@ -179,7 +182,7 @@ const MajorManagement = () => {
               {required: true, message: "Vui lòng nhập tên chuyên ngành"},
             ]}
           >
-            <Input placeholder="Nhập tên chuyên ngành..." />
+            <CleanInput placeholder="Nhập tên chuyên ngành..." />
           </Form.Item>
           <Form.Item
             name="faculty"

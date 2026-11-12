@@ -25,6 +25,8 @@ import {MyUserContext} from "../../config/contexts/MyContext";
 import {authApis, endpoints} from "../../config/Apis";
 import MySpinner from "../../components/MySpinner";
 import dayjs from "dayjs";
+import CleanInput from "../../components/CleanInput";
+import {cleanFormData} from "../../utils/stringUtils";
 
 const {Title, Text} = Typography;
 
@@ -82,7 +84,8 @@ const User = () => {
     form.resetFields();
   };
 
-  const onFinish = async (values) => {
+  const onFinish = async (rawValues) => {
+    const values = cleanFormData(rawValues);
     setSubmitLoading(true);
     try {
       const res = await authApis().patch(endpoints["profile"], values);
@@ -323,7 +326,7 @@ const User = () => {
                         }
                         rules={[{required: true, message: "Vui lòng nhập họ!"}]}
                       >
-                        <Input style={{borderRadius: 6}} />
+                        <CleanInput style={{borderRadius: 6}} />
                       </Form.Item>
                     </Col>
                     <Col span={12}>
@@ -338,7 +341,7 @@ const User = () => {
                           {required: true, message: "Vui lòng nhập tên!"},
                         ]}
                       >
-                        <Input style={{borderRadius: 6}} />
+                        <CleanInput style={{borderRadius: 6}} />
                       </Form.Item>
                     </Col>
                   </Row>
@@ -358,7 +361,7 @@ const User = () => {
                       },
                     ]}
                   >
-                    <Input style={{borderRadius: 6}} />
+                    <CleanInput style={{borderRadius: 6}} />
                   </Form.Item>
 
                   <Row gutter={24}>
@@ -396,7 +399,7 @@ const User = () => {
                           </span>
                         }
                       >
-                        <Input style={{borderRadius: 6}} />
+                        <CleanInput style={{borderRadius: 6}} />
                       </Form.Item>
                     </Col>
                   </Row>
