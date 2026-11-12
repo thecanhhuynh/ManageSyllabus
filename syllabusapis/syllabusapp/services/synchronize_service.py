@@ -1,3 +1,4 @@
+import copy
 import json
 
 import redis
@@ -50,14 +51,35 @@ class SelectionSyncStrategy(SubSectionSyncStrategy):
 
 class TableSyncStrategy(SubSectionSyncStrategy):
     def create(self, main_sec, tpl_sub):
-        table_cols = []
-        if hasattr(tpl_sub, 'templatetablesubsection') and tpl_sub.templatetablesubsection.table_schema:
-            table_cols = tpl_sub.templatetablesubsection.table_schema.get("columns", [])
+        schema = self._get_template_schema(tpl_sub)
         return TableSubSection.objects.create(
-            main_section=main_sec, code=tpl_sub.code, type=tpl_sub.type,
-            name=tpl_sub.name, position=tpl_sub.position,
-            data={"columns": table_cols, "rows": []}, requires_update=True
+            main_section=main_sec,
+            code=tpl_sub.code,
+            type=tpl_sub.type,
+            name=tpl_sub.name,
+            position=tpl_sub.position,
+            data=schema,
+            requires_update=True,
         )
+
+    def _get_template_schema(self, tpl_sub):
+        raw_schema = None
+        if hasattr(tpl_sub, 'table_schema'):
+            raw_schema = tpl_sub.table_schema
+        elif hasattr(tpl_sub, 'templatetablesubsection'):
+            raw_schema = tpl_sub.templatetablesubsection.table_schema
+
+        if not raw_schema:
+            return {"columns": [], "rows": []}
+        if isinstance(raw_schema, str):
+            try:
+                raw_schema = json.loads(raw_schema)
+            except Exception:
+                return {"columns": [], "rows": []}
+        schema = copy.deepcopy(raw_schema) if isinstance(raw_schema, dict) else {}
+        schema.setdefault("columns", [])
+        schema.setdefault("rows", [])
+        return schema
 
 SYNC_STRATEGIES = {
     'text': TextSyncStrategy(),

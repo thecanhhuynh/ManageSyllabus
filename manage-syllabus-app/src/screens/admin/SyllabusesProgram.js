@@ -37,7 +37,7 @@ const SyllabusesProgram = () => {
   const [loading, setLoading] = useState(false);
   const [syllabuses, setSyllabuses] = useState([]);
   const [page, setPage] = useState(1);
-  const [hasNext, setHasNext] = useState(false);
+  const [total, setTotal] = useState(0);
   const [q, setQ] = useState("");
   const [editingData, setEditingData] = useState({});
 
@@ -97,17 +97,16 @@ const SyllabusesProgram = () => {
     }
   };
 
-  const loadSyllabuses = async () => {
+  const loadSyllabuses = async (targetPage = page, query = q) => {
     try {
       setLoading(true);
-      let url = `${endpoints["syllabuses-programs"](programId)}?page=${page}`;
-      if (q) url += `&q=${q}`;
+      let url = `${endpoints["syllabuses-programs"](programId)}?page=${targetPage}`;
+      if (query.trim()) url += `&q=${encodeURIComponent(query.trim())}`;
 
       const res = await authApis().get(url);
       if (res.status === 200) {
-        if (page === 1) setSyllabuses(res.data.results);
-        else setSyllabuses([...syllabuses, ...res.data.results]);
-        setHasNext(res.data.next !== null);
+        setSyllabuses(res.data.results || res.data || []);
+        setTotal(res.data.count || (res.data.results ? res.data.results.length : 0));
       }
     } catch (error) {
       console.error(error);
@@ -137,10 +136,6 @@ const SyllabusesProgram = () => {
   useEffect(() => {
     setLecturerPage(1);
   }, [lecturerQ]);
-
-  const loadMore = async () => {
-    setPage(page + 1);
-  };
 
   const handleFieldChange = (id, field, value) => {
     setEditingData((prev) => ({
@@ -340,6 +335,7 @@ const SyllabusesProgram = () => {
     {title: "ID", dataIndex: "id", width: 60},
     {
       title: "Tên Đề Cương",
+      width: 260,
       render: (_, record) => (
         <div>
           <div className="font-semibold text-blue-600">{record.name}</div>
@@ -499,19 +495,21 @@ const SyllabusesProgram = () => {
         columns={columns}
         dataSource={syllabuses}
         rowKey="id"
-        loading={loading && page === 1}
-        pagination={false}
+        loading={loading}
+        pagination={{
+          current: page,
+          pageSize: 10,
+          total: total,
+          showTotal: (t) => `Tổng cộng ${t} đề cương`,
+          showSizeChanger: false,
+          onChange: (p) => {
+            setPage(p);
+            loadSyllabuses(p, q);
+          },
+        }}
         bordered
         scroll={{x: "max-content"}}
       />
-
-      {hasNext && (
-        <div className="mt-4 flex justify-center">
-          <Button type="default" onClick={loadMore} loading={loading}>
-            Tải thêm đề cương
-          </Button>
-        </div>
-      )}
       <Modal
         title="Tạo đề cương mới"
         open={isCreateModalOpen}

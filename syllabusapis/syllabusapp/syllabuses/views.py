@@ -44,7 +44,18 @@ from services.notify_service import NotifyService
 from services.user_service import UserService
 from syllabusapp.settings import ONLYOFFICE_JWT_SECRET
 from syllabuses import perms
-from syllabuses.filters import SyllabusFilter, SubjectFilter, LearningMaterialsFilter, UserFilter, LecturerFilter
+from syllabuses.filters import (
+    FacultyFilter,
+    LearningMaterialsFilter,
+    LecturerFilter,
+    MajorFilter,
+    ProgrammeLearningOutcomeFilter,
+    SubjectFilter,
+    SyllabusFilter,
+    TemplateFilter,
+    TrainingProgramFilter,
+    UserFilter,
+)
 from syllabuses.models import User, Syllabus, Faculty, Subject, AttributeGroup, AttributeValue, TypeRequirement, \
     ProgrammeLearningOutcome, LearningMaterial, TypeLearningMaterial, TypeAssessment, CourseLearningOutcome, Assessment, \
     ScheduleGroup, Major, TrainingProgram, Lecturer, TemplateSyllabus, TemplateSubSection, TemplateMainSection, \
@@ -240,7 +251,9 @@ class LecturerView(viewsets.ReadOnlyModelViewSet):
     filterset_class = LecturerFilter
 
 class SyllabusView(viewsets.ModelViewSet):
-    queryset = Syllabus.objects.all().order_by("-created_date")
+    queryset = Syllabus.objects.select_related(
+        'subject', 'faculty', 'lecturer__user', 'approved_by'
+    ).prefetch_related('training_programs').all().order_by("-created_date")
     pagination_class = SyllabusPagination
     filter_backends = [DjangoFilterBackend]
     filterset_class = SyllabusFilter
@@ -557,6 +570,8 @@ class TemplateSyllabusView(viewsets.ModelViewSet):
     queryset = TemplateSyllabus.objects.prefetch_related('main_sections__sub_sections').all()
     permission_classes = [perms.IsSpecialist | perms.IsAdmin]
     pagination_class = TemplatePagination
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = TemplateFilter
 
     def get_serializer_class(self):
         if self.action in ['retrieve', 'update', 'partial_update']:
@@ -1445,6 +1460,8 @@ class FacultyView(mixins.ListModelMixin,
     queryset = Faculty.objects.all()
     serializer_class = FacultySerializer
     pagination_class = FacultyPagination
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = FacultyFilter
     http_method_names = ['get', 'post', 'patch', 'delete']
 
     def get_permissions(self):
@@ -1481,6 +1498,8 @@ class MajorView(mixins.ListModelMixin,
     queryset = Major.objects.all()
     serializer_class = MajorSerializer
     pagination_class = MajorPagination
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = MajorFilter
     http_method_names = ['get', 'post', 'patch', 'delete']
     permission_classes = [perms.IsAdmin]
 
@@ -1512,6 +1531,8 @@ class TrainingProgramView(mixins.ListModelMixin,
     queryset = TrainingProgram.objects.all()
     serializer_class = TrainingProgramSerializer
     pagination_class = TrainingPagination
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = TrainingProgramFilter
     http_method_names = ['get', 'post', 'patch', 'delete']
     permission_classes = [permissions.IsAuthenticated]
 
@@ -1527,6 +1548,7 @@ class TrainingProgramView(mixins.ListModelMixin,
         q = self.request.query_params.get('q')
         if q:
             syllabuses = syllabuses.filter(name__icontains=q)
+        syllabuses = syllabuses.order_by('-created_date', '-id')
         page = self.paginate_queryset(syllabuses)
         if page is not None:
             serializer = SyllabusSimpleSerializer(page, many=True)
@@ -1609,6 +1631,8 @@ class ProgrammeLearningOutcomeView(mixins.ListModelMixin,
     queryset = ProgrammeLearningOutcome.objects.all()
     serializer_class = ProgrammeLearningOutcomeSerializer
     pagination_class = ProgrammeLearningOutcomePagination
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = ProgrammeLearningOutcomeFilter
     http_method_names = ['get', 'post', 'patch', 'delete']
 
     def get_permissions(self):

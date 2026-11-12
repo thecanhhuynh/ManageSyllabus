@@ -8,30 +8,6 @@ const {TextArea} = Input;
 const {Panel} = Collapse;
 const EMPTY_ARRAY = [];
 
-const ACTIVITY_FIELDS = [
-  {
-    key: "offline",
-    title: "HĐ trên lớp (Offline)",
-    titleColor: "text-blue-600",
-    activityField: "offline_activity",
-    hoursField: "offline_hours",
-  },
-  {
-    key: "online",
-    title: "HĐ trực tuyến (Online)",
-    titleColor: "text-green-600",
-    activityField: "online_activity",
-    hoursField: "online_hours",
-  },
-  {
-    key: "self_study",
-    title: "Tự học",
-    titleColor: "text-purple-600",
-    activityField: "self_study_activity",
-    hoursField: "self_study_hours",
-  },
-];
-
 const SessionContent = ({
   session,
   cloOptions,
@@ -329,15 +305,25 @@ const TeachingPlanEditor = ({item, basePath}) => {
   }, []);
 
   useEffect(() => {
-    if (scheduleGroupOptions.length === 0 || hasInitializedRef.current) return;
+    if (scheduleGroupOptions.length === 0) return;
 
     const currentData =
       useSyllabusStore.getState().localBlocks[item.code]?.data
         ?.reference_data || [];
 
-    let isChanged = false;
     const isFlatData =
-      currentData.length > 0 && currentData[0].session_no !== undefined;
+      Array.isArray(currentData) &&
+      currentData.length > 0 &&
+      currentData[0].session_no !== undefined;
+
+    const isAlreadyGrouped =
+      Array.isArray(currentData) &&
+      currentData.length === scheduleGroupOptions.length &&
+      currentData.every(
+        (g) => g?.schedule_group && Array.isArray(g?.teaching_sessions),
+      );
+
+    if (isAlreadyGrouped && hasInitializedRef.current) return;
 
     const syncedData = scheduleGroupOptions.map((sg) => {
       if (isFlatData) {
@@ -346,31 +332,28 @@ const TeachingPlanEditor = ({item, basePath}) => {
             String(session.schedule_group?.id || session.schedule_group_id) ===
             String(sg.id),
         );
-        isChanged = true;
         return {
           schedule_group: {id: sg.id, name: sg.name},
           teaching_sessions: sessionsInGroup,
         };
-      } else {
-        const existingGroup = currentData.find(
-          (entry) => String(entry?.schedule_group?.id) === String(sg.id),
-        );
-        if (existingGroup) return existingGroup;
-
-        isChanged = true;
-        return {
-          schedule_group: {id: sg.id, name: sg.name},
-          teaching_sessions: [],
-        };
       }
+
+      const existingGroup = Array.isArray(currentData)
+        ? currentData.find(
+            (entry) => String(entry?.schedule_group?.id) === String(sg.id),
+          )
+        : null;
+      if (existingGroup) return existingGroup;
+
+      return {
+        schedule_group: {id: sg.id, name: sg.name},
+        teaching_sessions: [],
+      };
     });
 
-    if (isChanged || currentData.length !== syncedData.length) {
-      updateLocalBlock(item.code, {reference_data: syncedData});
-    }
-
+    updateLocalBlock(item.code, {reference_data: syncedData});
     hasInitializedRef.current = true;
-  }, [scheduleGroupOptions]);
+  }, [scheduleGroupOptions, referenceData, item.code, updateLocalBlock]);
 
   const handleAddSession = (groupIdx) => {
     const nextData = [...referenceData];

@@ -1,0 +1,308 @@
+- generic [ref=f1e9]:
+  - banner [ref=f1e10]:
+    - generic [ref=f1e11]:
+      - link "H HCMOU Syllabus System" [ref=f1e12] [cursor=pointer]:
+        - /url: /admin
+        - generic [ref=f1e13]: H
+        - generic [ref=f1e14]:
+          - strong [ref=f1e16]: HCMOU
+          - generic [ref=f1e17]: Syllabus System
+      - generic [ref=f1e18]:
+        - link [ref=f1e19] [cursor=pointer]:
+          - /url: /
+          - button "Trang chủ" [ref=f1e20]
+        - link [ref=f1e22] [cursor=pointer]:
+          - /url: /approvals
+          - button "check-square Phê duyệt đề cương" [ref=f1e23]:
+            - img "check-square" [ref=f1e25]
+            - generic [ref=f1e29]: Phê duyệt đề cương
+    - generic [ref=f1e31] [cursor=pointer]:
+      - generic [ref=f1e32]:
+        - strong [ref=f1e34]: admin
+        - generic [ref=f1e35]: admin@gmail.com
+      - img "user" [ref=f1e37]
+  - generic [ref=f1e43]:
+    - generic [ref=f1e44]:
+      - generic [ref=f1e45]:
+        - generic [ref=f1e46]:
+          - heading "Đề cương chi tiết học phần CTDL & GT" [level=4] [ref=f1e47]
+          - generic [ref=f1e48]:
+            - img "clock-circle" [ref=f1e49]
+            - text: Chờ phê duyệt
+        - generic [ref=f1e53]: "Khoa: Khoa Công nghệ thông tin | Giảng viên: Thị Trần"
+      - generic [ref=f1e54]:
+        - button "check-circle Phê duyệt đề cương" [ref=f1e56] [cursor=pointer]:
+          - img "check-circle" [ref=f1e58]
+          - generic [ref=f1e62]: Phê duyệt đề cương
+        - button "file-word Xuất file Word" [ref=f1e63] [cursor=pointer]:
+          - img "file-word" [ref=f1e65]
+          - generic [ref=f1e68]: Xuất file Word
+    - alert [ref=f1e69]:
+      - img "info-circle" [ref=f1e71]
+      - generic [ref=f1e74]:
+        - generic [ref=f1e75]: Đề cương đang chờ Lãnh đạo Khoa phê duyệt
+        - generic [ref=f1e76]: Đề cương đã được Giảng viên biên soạn ký số và gửi lên Ban Chủ nhiệm Khoa. Trong thời gian chờ phê duyệt, nội dung đề cương được chuyển sang chế độ chỉ đọc để đảm bảo tính toàn vẹn.
+    - generic [ref=f1e79]:
+      - tablist [ref=f1e80]:
+        - generic [ref=f1e82]:
+          - tab "1. Thông tin tổng quát - General Information" [selected] [ref=f1e84] [cursor=pointer]
+          - tab "2. Mô tả môn học - Course Objective" [ref=f1e86] [cursor=pointer]
+      - tabpanel "1. Thông tin tổng quát - General Information" [ref=f1e89]:
+        - generic [ref=f1e94]:
+          - generic [ref=f1e96]:
+            - generic [ref=f1e97]: 1. Tên môn học tiếng Anh
+            - generic [ref=f1e102]:
+              - generic [ref=f1e103]: Nhập tên tiếng anh
+              - textbox "Nhập tên tiếng anh" [ref=f1e109]: Data Structures and Algorithms - test
+          - generic [ref=f1e111]:
+            - generic [ref=f1e112]: 2. Tên môn học tiếng Việt
+            - textbox [ref=f1e121]: Cấu trúc dữ liệu và giải thuật
+          - generic [ref=f1e123]:
+            - generic [ref=f1e124]: 3. Mã môn học
+            - textbox [ref=f1e133]: CSE101
+          - generic [ref=f1e135]:
+            - generic [ref=f1e136]: 4. Phương thức giảng dạy
+            - generic [ref=f1e145]:
+              - generic [ref=f1e146]:
+                - generic "Trực tiếp (Face-to-face)" [ref=f1e148]:
+                  - generic [aria-hidden] [ref=f1e150] [cursor=pointer]
+                - generic "Trực tuyến (Online)" [ref=f1e155]:
+                  - generic [aria-hidden] [ref=f1e157] [cursor=pointer]
+                - generic: + 0 ...
+                - combobox [ref=f1e162]
+              - img "down" [ref=f1e164]
+          - generic [ref=f1e168]:
+            - generic [ref=f1e169]: 5. Ngôn ngữ giảng dạy
+            - generic [ref=f1e178]:
+              - generic [ref=f1e179]:
+                - generic "Kiến thức cơ sở khối ngành" [ref=f1e181]:
+                  - generic [aria-hidden] [ref=f1e183] [cursor=pointer]
+                - generic "Kiến thức cơ sở ngành" [ref=f1e188]:
+                  - generic [aria-hidden] [ref=f1e190] [cursor=pointer]
+                - generic "Kiến thức ngành" [ref=f1e195]:
+                  - generic [aria-hidden] [ref=f1e197] [cursor=pointer]
+                - generic: + 0 ...
+                - combobox [ref=f1e202]
+              - img "down" [ref=f1e204]
+          - generic [ref=f1e208]:
+            - generic [ref=f1e209]: 6. Thành phần kiến thức
+            - generic [ref=f1e218]:
+              - generic [ref=f1e219]:
+                - generic "Tiếng Việt" [ref=f1e221]:
+                  - generic [aria-hidden] [ref=f1e223] [cursor=pointer]
+                - generic: + 0 ...
+                - combobox [ref=f1e228]
+              - img "down" [ref=f1e230]
+          - generic [ref=f1e234]:
+            - generic [ref=f1e235]: 7. bảng đồng bộ
+            - generic [ref=f1e244]:
+              - generic [ref=f1e245]:
+                - generic [ref=f1e246]:
+                  - img "table" [ref=f1e247]
+                  - generic [ref=f1e250]: bảng đồng bộ
+                  - generic [ref=f1e251]: 6 cột • 3 hàng
+                - generic [ref=f1e252]:
+                  - img "info-circle" [ref=f1e253]
+                  - generic [ref=f1e257]: Kéo mép cột để chỉnh độ rộng • Kéo cạnh đáy ô để chỉnh chiều cao
+              - generic [ref=f1e258]:
+                - grid [ref=f1e265]:
+                  - rowgroup [ref=f1e266]:
+                    - row [ref=f1e267]:
+                      - columnheader "Tiêu đề hàng" [ref=f1e268]:
+                        - generic: 
+                      - columnheader "Họ" [ref=f1e271]:
+                        - generic: 
+                      - columnheader "Cột 2" [ref=f1e274]:
+                        - generic: 
+                      - columnheader "Cột 3" [ref=f1e277]:
+                        - generic: 
+                      - columnheader "Cột mới" [ref=f1e280]:
+                        - generic: 
+                      - columnheader [ref=f1e283]:
+                        - generic: 
+                    - row [ref=f1e285]:
+                      - gridcell [ref=f1e286]:
+                        - generic [ref=f1e287]:
+                          - textbox "Tên hàng..." [ref=f1e288]: Hàng 1
+                          - generic "Kéo cạnh này để đổi chiều cao hàng" [ref=f1e289]
+                      - gridcell [ref=f1e290]:
+                        - generic [ref=f1e291]:
+                          - textbox "Nhập nội dung..." [ref=f1e292]: Huynỳh theêế canảah3
+                          - generic "Kéo cạnh này để đổi chiều cao hàng" [ref=f1e293]
+                      - gridcell [ref=f1e294]:
+                        - generic [ref=f1e295]:
+                          - textbox "Nhập nội dung..." [ref=f1e296]: sdasd
+                          - generic "Kéo cạnh này để đổi chiều cao hàng" [ref=f1e297]
+                      - gridcell [ref=f1e298]:
+                        - generic [ref=f1e299]:
+                          - textbox "Nhập nội dung..." [ref=f1e300]: asda
+                          - generic "Kéo cạnh này để đổi chiều cao hàng" [ref=f1e301]
+                      - gridcell [ref=f1e302]:
+                        - generic [ref=f1e303]:
+                          - textbox "Nhập nội dung..." [ref=f1e304]: sdas
+                          - generic "Kéo cạnh này để đổi chiều cao hàng" [ref=f1e305]
+                      - gridcell [ref=f1e306]:
+                        - button [ref=f1e658] [cursor=pointer]:
+                          - img "delete" [ref=f1e660]
+                    - row [ref=f1e312]:
+                      - gridcell [ref=f1e313]:
+                        - generic [ref=f1e314]:
+                          - textbox "Tên hàng..." [ref=f1e315]: Hàng 2
+                          - generic "Kéo cạnh này để đổi chiều cao hàng" [ref=f1e316]
+                      - gridcell [ref=f1e317]:
+                        - generic [ref=f1e318]:
+                          - textbox "Nhập nội dung..." [ref=f1e319]: ddsda
+                          - generic "Kéo cạnh này để đổi chiều cao hàng" [ref=f1e320]
+                      - gridcell [ref=f1e321]:
+                        - generic [ref=f1e322]:
+                          - textbox "Nhập nội dung..." [ref=f1e323]: sdas
+                          - generic "Kéo cạnh này để đổi chiều cao hàng" [ref=f1e324]
+                      - gridcell [ref=f1e325]:
+                        - generic [ref=f1e326]:
+                          - textbox "Nhập nội dung..." [ref=f1e327]: sdasda
+                          - generic "Kéo cạnh này để đổi chiều cao hàng" [ref=f1e328]
+                      - gridcell [ref=f1e329]:
+                        - generic [ref=f1e330]:
+                          - textbox "Nhập nội dung..." [ref=f1e331]: asda
+                          - generic "Kéo cạnh này để đổi chiều cao hàng" [ref=f1e332]
+                      - gridcell [ref=f1e333]:
+                        - button [ref=f1e663] [cursor=pointer]:
+                          - img "delete" [ref=f1e665]
+                    - row [ref=f1e339]:
+                      - gridcell [ref=f1e340]:
+                        - generic [ref=f1e341]:
+                          - textbox "Tên hàng..." [ref=f1e342]: Hàng 3
+                          - generic "Kéo cạnh này để đổi chiều cao hàng" [ref=f1e343]
+                      - gridcell [ref=f1e344]:
+                        - generic [ref=f1e345]:
+                          - textbox "Nhập nội dung..." [ref=f1e346]
+                          - generic "Kéo cạnh này để đổi chiều cao hàng" [ref=f1e347]
+                      - gridcell [ref=f1e348]:
+                        - generic [ref=f1e349]:
+                          - textbox "Nhập nội dung..." [ref=f1e350]
+                          - generic "Kéo cạnh này để đổi chiều cao hàng" [ref=f1e351]
+                      - gridcell [ref=f1e352]:
+                        - generic [ref=f1e353]:
+                          - textbox "Nhập nội dung..." [ref=f1e354]
+                          - generic "Kéo cạnh này để đổi chiều cao hàng" [ref=f1e355]
+                      - gridcell [ref=f1e356]:
+                        - generic [ref=f1e357]:
+                          - textbox "Nhập nội dung..." [ref=f1e358]: AS
+                          - generic "Kéo cạnh này để đổi chiều cao hàng" [ref=f1e359]
+                      - gridcell [ref=f1e360]:
+                        - button [ref=f1e668] [cursor=pointer]:
+                          - img "delete" [ref=f1e670]
+                - button "plus Thêm dòng dữ liệu" [ref=f1e396] [cursor=pointer]:
+                  - img "plus" [ref=f1e398]
+                  - generic [ref=f1e402]: Thêm dòng dữ liệu
+          - generic [ref=f1e404]:
+            - generic [ref=f1e405]: 8. Phụ trách môn học
+            - generic [ref=f1e410]:
+              - generic [ref=f1e411]:
+                - generic [ref=f1e412]: Họ và tên đệm
+                - textbox [ref=f1e418]: Trần
+              - generic [ref=f1e419]:
+                - generic [ref=f1e420]: Tên
+                - textbox [ref=f1e426]: Thị
+              - generic [ref=f1e427]:
+                - generic [ref=f1e428]: Email Address
+                - generic [ref=f1e434]:
+                  - img "mail" [ref=f1e436]
+                  - textbox [ref=f1e439]: lecturer_201@ou.edu.vn
+              - generic [ref=f1e440]:
+                - generic [ref=f1e441]: Khoa / Đơn vị
+                - textbox [ref=f1e447]: Công nghệ
+              - generic [ref=f1e448]:
+                - generic [ref=f1e449]: Văn phòng / Phòng làm việc
+                - generic [ref=f1e455]:
+                  - img "bank" [ref=f1e457]
+                  - textbox "Chưa có thông tin phòng làm việc" [ref=f1e460]: Phòng 201
+              - generic [ref=f1e461]:
+                - generic [ref=f1e462]: ghi chú
+                - textbox "Nhập ghi chú..." [ref=f1e468]: test
+          - generic [ref=f1e470]:
+            - generic [ref=f1e471]: 9. Số tín chỉ / Credits
+            - generic [ref=f1e475]:
+              - generic [ref=f1e476]:
+                - generic [ref=f1e477]:
+                  - spinbutton [ref=f1e485]: "6"
+                  - generic [ref=f1e486]: Tống số
+                - generic [ref=f1e488]:
+                  - spinbutton [ref=f1e496]: "4"
+                  - generic [ref=f1e497]: Lý thuyết chuẩn (Tiết)
+                - generic [ref=f1e499]:
+                  - spinbutton [ref=f1e507]: "2"
+                  - generic [ref=f1e508]: Thực hành chuẩn
+                - generic [ref=f1e510]:
+                  - spinbutton [ref=f1e518]: "100"
+                  - generic [ref=f1e519]: Số giờ tự học/Self-study
+              - generic [ref=f1e521]:
+                - generic [ref=f1e522]: Thông tin bổ sung (4/10 mục)
+                - generic [ref=f1e524]:
+                  - generic [ref=f1e526]:
+                    - generic [ref=f1e527]:
+                      - generic "Học liệu và tài nguyên hỗ trợ" [ref=f1e528]
+                      - generic [ref=f1e529]: Đoạn văn
+                    - textbox "Nhập học liệu và tài nguyên hỗ trợ..." [ref=f1e531]: Giáo trình Cấu trúc dữ liệu và giải thuật (NXB ĐHQG TP.HCM, 2023), kết hợp mã nguồn mẫu trên GitHub và hệ thống chấm bài tự động phục vụ các bài tập tuần.
+                  - generic [ref=f1e533]:
+                    - generic [ref=f1e534]:
+                      - generic "Ghi chú phân bổ tín chỉ đặc thù" [ref=f1e535]
+                      - generic [ref=f1e536]: Đoạn văn
+                    - textbox "Nhập ghi chú phân bổ tín chỉ đặc thù..." [ref=f1e538]: Học phần có tính chất nền tảng cơ sở ngành CNTT, khuyến khích sinh viên dành thêm 45 giờ tự học chuyên sâu về cây nhị phân tìm kiếm, đồ thị và giải thuật quy hoạch động.
+                  - generic [ref=f1e540]:
+                    - generic [ref=f1e541]:
+                      - generic "Quy định giờ tự học & E-learning" [ref=f1e542]
+                      - generic [ref=f1e543]: Đoạn văn
+                    - textbox "Nhập quy định giờ tự học & e-learning..." [ref=f1e545]: Sinh viên bắt buộc tham gia tối thiểu 80% các buổi học trực tuyến qua hệ thống LMS của trường, hoàn thành đầy đủ các bài tập trắc nghiệm và thảo luận chuyên đề trước thời hạn quy định.
+                  - generic [ref=f1e547]:
+                    - generic [ref=f1e548]:
+                      - generic "Điều kiện thi và đánh giá thực hành" [ref=f1e549]
+                      - generic [ref=f1e550]: Đoạn văn
+                    - textbox "Nhập điều kiện thi và đánh giá thực hành..." [ref=f1e552]: Sinh viên phải tham gia đầy đủ các buổi thực hành tại phòng máy, hoàn thành ít nhất 4/5 bài lab và đạt điểm đánh giá quá trình tối thiểu 5.0 để đủ điều kiện dự thi cuối kỳ.
+          - generic [ref=f1e554]:
+            - generic [ref=f1e555]: 10. test
+            - generic [ref=f1e560]:
+              - generic [ref=f1e561]: test
+              - textbox "test" [ref=f1e567]: kjkj
+          - generic [ref=f1e569]:
+            - generic [ref=f1e570]: 11. lựa chọn
+            - generic [ref=f1e579]:
+              - generic [ref=f1e580]:
+                - generic "Trực tuyến (Online)" [ref=f1e582]:
+                  - generic [aria-hidden] [ref=f1e584] [cursor=pointer]
+                - generic: + 0 ...
+                - combobox [ref=f1e589]
+              - img "down" [ref=f1e591]
+          - generic [ref=f1e595]:
+            - generic [ref=f1e596]: 12. asd
+            - generic [ref=f1e600]:
+              - generic [ref=f1e601]:
+                - generic [ref=f1e602]: Tiên quyết (Prerequisite)
+                - generic [ref=f1e603]:
+                  - generic [ref=f1e604]:
+                    - img "book" [ref=f1e605]
+                    - generic "PRG101 - Nhập môn Lập trình" [ref=f1e608]
+                    - img "close" [ref=f1e610] [cursor=pointer]
+                  - generic [ref=f1e613] [cursor=pointer]:
+                    - img "plus" [ref=f1e614]
+                    - generic [ref=f1e618]: Thêm môn
+              - generic [ref=f1e619]:
+                - generic [ref=f1e620]: Học trước (Pre-course)
+                - generic [ref=f1e621]:
+                  - generic [ref=f1e622]:
+                    - img "book" [ref=f1e623]
+                    - generic "DBM201 - Cơ sở dữ liệu" [ref=f1e626]
+                    - img "close" [ref=f1e628] [cursor=pointer]
+                  - generic [ref=f1e631] [cursor=pointer]:
+                    - img "plus" [ref=f1e632]
+                    - generic [ref=f1e636]: Thêm môn
+              - generic [ref=f1e637]:
+                - generic [ref=f1e638]: Song hành (Corequisite)
+                - generic [ref=f1e640] [cursor=pointer]:
+                  - img "plus" [ref=f1e641]
+                  - generic [ref=f1e645]: Thêm môn
+  - contentinfo [ref=f1e646]:
+    - strong [ref=f1e648]: Hệ thống quản lý đề cương môn học
+    - generic [ref=f1e650]:
+      - generic [ref=f1e651]: Trường Đại học Mở Thành phố Hồ Chí Minh
+      - generic [ref=f1e652]: © 2026 - Bản quyền thuộc về Tôi Syllabus

@@ -2,7 +2,6 @@ import React, {useContext, useEffect, useState} from "react";
 import {
   Table,
   Card,
-  Input,
   Select,
   Button,
   Tag,
@@ -27,6 +26,8 @@ import {
 } from "@ant-design/icons";
 import {UserService} from "../../services/UserService";
 import {MyUserContext} from "../../config/contexts/MyContext";
+import CleanInput from "../../components/CleanInput";
+import {cleanFormData} from "../../utils/stringUtils";
 
 const {Title, Text} = Typography;
 const {Option} = Select;
@@ -46,7 +47,13 @@ const UserManagement = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [faculties, setFaculties] = useState([]);
-  const [pagination, setPagination] = useState({current: 1, pageSize: 10, total: 0});
+  const [pagination, setPagination] = useState({
+    current: 1,
+    pageSize: 10,
+    total: 0,
+    showTotal: (total) => `Tổng cộng ${total} người dùng`,
+    showSizeChanger: false,
+  });
   const [filters, setFilters] = useState({q: "", user_role: "", is_active: ""});
 
   const [editModalVisible, setEditModalVisible] = useState(false);
@@ -66,6 +73,8 @@ const UserManagement = () => {
           current: page,
           pageSize: 10,
           total: data.count || data.results.length,
+          showTotal: (total) => `Tổng cộng ${total} người dùng`,
+          showSizeChanger: false,
         });
         return;
       }
@@ -151,15 +160,15 @@ const UserManagement = () => {
       try {
         setUpdating(true);
 
-        const payload = {
-          first_name: values.first_name !== undefined ? values.first_name.trim() : "",
-          last_name: values.last_name !== undefined ? values.last_name.trim() : "",
-          email: values.email !== undefined ? values.email.trim() : "",
+        const payload = cleanFormData({
+          first_name: values.first_name || "",
+          last_name: values.last_name || "",
+          email: values.email || "",
           user_role: values.user_role,
           faculty_role: values.faculty_role || "lecturer",
-          room: values.room !== undefined ? values.room.trim() : "",
+          room: values.room || "",
           faculty: values.faculty ? Number(values.faculty) : null,
-        };
+        });
 
         const res = await UserService.updateUser(editingUser.id, payload);
 
@@ -294,6 +303,7 @@ const UserManagement = () => {
     {
       title: "Người dùng",
       key: "user",
+      width: 220,
       render: (_, record) => (
         <Space orientation="horizontal" size={12}>
           <Avatar
@@ -316,17 +326,20 @@ const UserManagement = () => {
       title: "Email",
       dataIndex: "email",
       key: "email",
+      width: 180,
       render: (email) => email || <Text type="secondary">Chưa cập nhật</Text>,
     },
     {
       title: "Vai trò",
       dataIndex: "user_role",
       key: "user_role",
+      width: 120,
       render: (role) => roleTags[role] || <Tag>{role}</Tag>,
     },
     {
       title: "Chức vụ",
       key: "faculty_role",
+      width: 140,
       render: (_, record) => {
         const role = record.lecturer?.faculty_role || "lecturer";
         const map = {
@@ -346,6 +359,7 @@ const UserManagement = () => {
     {
       title: "Khoa & Phòng",
       key: "department",
+      width: 180,
       render: (_, record) => {
         const facultyName = getFacultyDisplayName(record.lecturer, faculties);
         const room = record.lecturer?.room ? ` (${record.lecturer.room})` : "";
@@ -356,6 +370,7 @@ const UserManagement = () => {
       title: "Trạng thái",
       dataIndex: "is_active",
       key: "is_active",
+      width: 130,
       render: (isActive) =>
         isActive ? (
           <Badge status="success" text={<span className="text-green-600 font-medium">Hoạt động</span>} />
@@ -366,6 +381,8 @@ const UserManagement = () => {
     {
       title: "Hành động",
       key: "actions",
+      width: 140,
+      fixed: "right",
       render: (_, record) => (
         <Space size="middle">
           <Button
@@ -436,7 +453,7 @@ const UserManagement = () => {
       <Card bordered={false} className="shadow-sm rounded-xl">
         <Row gutter={[16, 16]} className="mb-6">
           <Col xs={24} sm={10} md={10}>
-            <Input
+            <CleanInput
               placeholder="Tìm kiếm theo tên, username, email..."
               prefix={<SearchOutlined className="text-gray-400" />}
               allowClear
@@ -478,6 +495,7 @@ const UserManagement = () => {
           loading={loading}
           pagination={pagination}
           onChange={handleTableChange}
+          scroll={{x: 1110}}
         />
       </Card>
 
@@ -496,7 +514,7 @@ const UserManagement = () => {
                 name="last_name"
                 rules={[{required: true, message: "Vui lòng nhập họ & tên đệm!"}]}
               >
-                <Input placeholder="Nguyễn Văn" />
+                <CleanInput placeholder="Nguyễn Văn" />
               </Form.Item>
             </Col>
             <Col span={12}>
@@ -505,7 +523,7 @@ const UserManagement = () => {
                 name="first_name"
                 rules={[{required: true, message: "Vui lòng nhập tên!"}]}
               >
-                <Input placeholder="An" />
+                <CleanInput placeholder="An" />
               </Form.Item>
             </Col>
           </Row>
@@ -515,7 +533,7 @@ const UserManagement = () => {
             name="email"
             rules={[{type: "email", message: "Định dạng email không hợp lệ"}]}
           >
-            <Input placeholder="user@university.edu.vn" />
+            <CleanInput placeholder="user@university.edu.vn" />
           </Form.Item>
 
           <Form.Item
@@ -567,7 +585,7 @@ const UserManagement = () => {
           </Form.Item>
 
           <Form.Item label="Phòng làm việc" name="room">
-            <Input placeholder="Ví dụ: Phòng A101" />
+            <CleanInput placeholder="Ví dụ: Phòng A101" />
           </Form.Item>
 
           <div className="flex justify-end gap-2 mt-6">

@@ -214,7 +214,7 @@ const MainSectionForm = ({syllabusId, mainSection, isApproved = false}) => {
           <div
             style={{
               position: "fixed",
-              top: 140,
+              bottom: 28,
               right: 28,
               zIndex: 1000,
             }}
@@ -224,12 +224,13 @@ const MainSectionForm = ({syllabusId, mainSection, isApproved = false}) => {
               htmlType="submit"
               icon={<SaveOutlined />}
               loading={isSaving}
+              size="large"
               style={{
                 fontWeight: 600,
-                height: 40,
-                padding: "0 20px",
-                borderRadius: 8,
-                boxShadow: "0 4px 12px rgba(24, 144, 255, 0.35)",
+                height: 44,
+                padding: "0 22px",
+                borderRadius: 22,
+                boxShadow: "0 6px 16px rgba(24, 144, 255, 0.4)",
               }}
               className="flex items-center gap-2"
             >

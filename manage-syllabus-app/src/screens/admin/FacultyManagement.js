@@ -5,32 +5,50 @@ import {
   DeleteOutlined,
   PlusOutlined,
   ArrowLeftOutlined,
+  SearchOutlined,
 } from "@ant-design/icons";
 import {authApis, endpoints} from "../../config/Apis";
 import {useNavigate} from "react-router-dom";
+import CleanInput from "../../components/CleanInput";
+import {cleanFormData} from "../../utils/stringUtils";
 
 const FacultyManagement = () => {
   const [faculties, setFaculties] = useState([]);
   const [loading, setLoading] = useState(false);
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const [searchText, setSearchText] = useState("");
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
   const [form] = Form.useForm();
   const nav = useNavigate();
-  const loadFaculties = async () => {
+
+  const loadFaculties = async (currentPage = 1, query = "") => {
     setLoading(true);
     try {
-      const res = await authApis().get(endpoints["faculties"]);
-      setFaculties(res.data.results || res.data);
+      let url = `${endpoints["faculties"]}?page=${currentPage}`;
+      if (query.trim()) {
+        url += `&q=${encodeURIComponent(query.trim())}`;
+      }
+      const res = await authApis().get(url);
+      setFaculties(res.data.results || res.data || []);
+      setTotal(res.data.count || (res.data.results ? res.data.results.length : 0));
+      setPage(currentPage);
     } catch (err) {
       message.error("Lỗi tải danh sách Khoa");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   useEffect(() => {
-    loadFaculties();
-  }, []);
+    const timer = setTimeout(() => {
+      loadFaculties(1, searchText);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [searchText]);
 
-  const handleSave = async (values) => {
+  const handleSave = async (rawValues) => {
+    const values = cleanFormData(rawValues);
     try {
       if (values.id) {
         await authApis().patch(endpoints["update-faculty"](values.id), values);
@@ -40,7 +58,7 @@ const FacultyManagement = () => {
         message.success("Thêm mới thành công!");
       }
       setIsModalVisible(false);
-      loadFaculties();
+      loadFaculties(page, searchText);
     } catch (err) {
       message.error("Có lỗi xảy ra!");
     }
@@ -58,11 +76,12 @@ const FacultyManagement = () => {
 
   const columns = [
     {title: "ID", dataIndex: "id", key: "id", width: 80},
-    {title: "Tên Khoa", dataIndex: "name", key: "name"},
+    {title: "Tên Khoa", dataIndex: "name", key: "name", width: 280},
     {
       title: "Hành động",
       key: "action",
       width: 150,
+      fixed: "right",
       render: (_, record) => (
         <Space>
           <Button
@@ -112,11 +131,30 @@ const FacultyManagement = () => {
         </Button>
       </div>
 
+      <div className="mb-4 max-w-md">
+        <CleanInput
+          placeholder="Tìm kiếm khoa theo tên..."
+          prefix={<SearchOutlined className="text-gray-400" />}
+          allowClear
+          value={searchText}
+          onChange={(e) => setSearchText(e.target.value)}
+        />
+      </div>
+
       <Table
         dataSource={faculties}
         columns={columns}
         rowKey="id"
         loading={loading}
+        scroll={{x: 550}}
+        pagination={{
+          current: page,
+          pageSize: 10,
+          total: total,
+          showTotal: (t) => `Tổng cộng ${t} khoa`,
+          showSizeChanger: false,
+          onChange: (p) => loadFaculties(p, searchText),
+        }}
       />
 
       <Modal
@@ -134,7 +172,7 @@ const FacultyManagement = () => {
             label="Tên Khoa"
             rules={[{required: true, message: "Vui lòng nhập tên khoa"}]}
           >
-            <Input placeholder="Nhập tên khoa..." />
+            <CleanInput placeholder="Nhập tên khoa..." />
           </Form.Item>
         </Form>
       </Modal>

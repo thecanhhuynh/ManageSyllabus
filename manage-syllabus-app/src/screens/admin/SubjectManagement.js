@@ -14,31 +14,47 @@ import {
   DeleteOutlined,
   PlusOutlined,
   ArrowLeftOutlined,
+  SearchOutlined,
 } from "@ant-design/icons";
 import {authApis, endpoints} from "../../config/Apis";
 import {useNavigate} from "react-router-dom";
+import CleanInput from "../../components/CleanInput";
+import {cleanFormData} from "../../utils/stringUtils";
 
 const SubjectManagement = () => {
   const [subjects, setSubjects] = useState([]);
   const [loading, setLoading] = useState(false);
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const [searchText, setSearchText] = useState("");
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
   const [form] = Form.useForm();
   const nav = useNavigate();
 
-  const loadSubjects = async () => {
+  const loadSubjects = async (currentPage = 1, query = "") => {
     setLoading(true);
     try {
-      const res = await authApis().get(endpoints["subjects"]);
-      setSubjects(res.data.results || res.data);
+      let url = `${endpoints["subjects"]}?page=${currentPage}`;
+      if (query.trim()) {
+        url += `&q=${encodeURIComponent(query.trim())}`;
+      }
+      const res = await authApis().get(url);
+      setSubjects(res.data.results || res.data || []);
+      setTotal(res.data.count || (res.data.results ? res.data.results.length : 0));
+      setPage(currentPage);
     } catch (err) {
-      message.error("Lỗi tải danh sách Khoa");
+      message.error("Lỗi tải danh sách Môn học");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   useEffect(() => {
-    loadSubjects();
-  }, []);
+    const timer = setTimeout(() => {
+      loadSubjects(1, searchText);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [searchText]);
 
   const handleCreditChange = (changedValues, allValues) => {
     if (!changedValues.credit) return;
@@ -57,7 +73,8 @@ const SubjectManagement = () => {
     });
   };
 
-  const handleSave = async (values) => {
+  const handleSave = async (rawValues) => {
+    const values = cleanFormData(rawValues);
     const theory = Number(values?.credit?.number_theory || 0);
     const practice = Number(values?.credit?.number_practice || 0);
     if (theory + practice <= 0) {
@@ -92,12 +109,13 @@ const SubjectManagement = () => {
   };
 
   const columns = [
-    {title: "Mã môn", dataIndex: "code", key: "code", width: 150},
-    {title: "Tên môn học", dataIndex: "name", key: "name"},
+    {title: "Mã môn", dataIndex: "code", key: "code", width: 140},
+    {title: "Tên môn học", dataIndex: "name", key: "name", width: 320},
     {
       title: "Hành động",
       key: "action",
-      width: 150,
+      width: 120,
+      fixed: "right",
       render: (_, record) => (
         <Space>
           <Button
@@ -147,11 +165,30 @@ const SubjectManagement = () => {
         </Button>
       </div>
 
+      <div className="mb-4 max-w-md">
+        <CleanInput
+          placeholder="Tìm kiếm môn học theo mã hoặc tên..."
+          prefix={<SearchOutlined className="text-gray-400" />}
+          allowClear
+          value={searchText}
+          onChange={(e) => setSearchText(e.target.value)}
+        />
+      </div>
+
       <Table
         dataSource={subjects}
         columns={columns}
         rowKey="id"
         loading={loading}
+        scroll={{x: 600}}
+        pagination={{
+          current: page,
+          pageSize: 10,
+          total: total,
+          showTotal: (t) => `Tổng cộng ${t} môn học`,
+          showSizeChanger: false,
+          onChange: (p) => loadSubjects(p, searchText),
+        }}
       />
 
       <Modal
@@ -186,7 +223,7 @@ const SubjectManagement = () => {
                 },
               ]}
             >
-              <Input placeholder="VD: CS101, MATH_01" />
+              <CleanInput placeholder="VD: CS101, MATH_01" />
             </Form.Item>
 
             <Form.Item
@@ -194,7 +231,7 @@ const SubjectManagement = () => {
               label="Tên môn học"
               rules={[{required: true, message: "Vui lòng nhập tên môn học"}]}
             >
-              <Input placeholder="Nhập tên môn học..." />
+              <CleanInput placeholder="Nhập tên môn học..." />
             </Form.Item>
           </div>
 

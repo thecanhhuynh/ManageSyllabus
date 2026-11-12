@@ -1,0 +1,64 @@
+- generic [ref=f14e3]:
+  - banner [ref=f14e4]:
+    - link "H HCMOU Syllabus System" [ref=f14e6] [cursor=pointer]:
+      - /url: /
+      - generic [ref=f14e7]: H
+      - generic [ref=f14e8]:
+        - strong [ref=f14e10]: HCMOU
+        - generic [ref=f14e11]: Syllabus System
+    - generic [ref=f14e13] [cursor=pointer]
+  - generic [ref=f14e19]:
+    - generic [ref=f14e21]:
+      - generic [ref=f14e23]:
+        - img "search" [ref=f14e25]
+        - textbox "Tìm kiếm đề cương..." [ref=f14e28]
+      - generic [ref=f14e30] [cursor=pointer]:
+        - generic [ref=f14e31]:
+          - generic: Chọn Khoa
+          - combobox [ref=f14e32]
+        - img "loading" [ref=f14e34]
+      - generic [ref=f14e37] [cursor=pointer]:
+        - generic [ref=f14e38]:
+          - generic: Chọn môn học
+          - combobox [ref=f14e39]
+        - img "loading" [ref=f14e41]
+      - generic [ref=f14e44] [cursor=pointer]:
+        - generic "Tất cả trạng thái" [ref=f14e45]:
+          - text: Tất cả trạng thái
+          - combobox [ref=f14e46]
+        - img "down" [ref=f14e48]
+        - img "close-circle" [ref=f14e52]
+    - generic [ref=f14e56]:
+      - tablist [ref=f14e57]:
+        - generic [ref=f14e59]:
+          - tab "CTĐT-KHMT-2023" [selected] [ref=f14e61] [cursor=pointer]
+          - tab "CTĐT-CNTT-2026" [ref=f14e63] [cursor=pointer]
+          - tab "CTĐT-KHMT-2026" [ref=f14e65] [cursor=pointer]
+      - tabpanel "CTĐT-KHMT-2023" [ref=f14e68]:
+        - generic [ref=f14e71]:
+          - generic:
+            - generic:
+              - generic:
+                - generic:
+                  - table:
+                    - rowgroup:
+                      - row "Mã môn Tên Đề cương / Học phần Giảng viên biên soạn Trạng thái Người phê duyệt Thao tác":
+                        - columnheader "Mã môn"
+                        - columnheader "Tên Đề cương / Học phần"
+                        - columnheader "Giảng viên biên soạn"
+                        - columnheader "Trạng thái"
+                        - columnheader "Người phê duyệt"
+                        - columnheader "Thao tác"
+                    - rowgroup:
+                      - row "No data No data":
+                        - cell "No data No data":
+                          - generic:
+                            - generic:
+                              - generic:
+                                - img "No data"
+                              - generic: No data
+  - contentinfo [ref=f14e79]:
+    - strong [ref=f14e81]: Hệ thống quản lý đề cương môn học
+    - generic [ref=f14e83]:
+      - generic [ref=f14e84]: Trường Đại học Mở Thành phố Hồ Chí Minh
+      - generic [ref=f14e85]: © 2026 - Bản quyền thuộc về Tôi Syllabus

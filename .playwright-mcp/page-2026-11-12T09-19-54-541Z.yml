@@ -1,0 +1,28 @@
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - link "H HCMOU Syllabus System" [ref=e6] [cursor=pointer]:
+      - /url: /
+      - generic [ref=e7]: H
+      - generic [ref=e8]:
+        - strong [ref=e10]: HCMOU
+        - generic [ref=e11]: Syllabus System
+    - generic [ref=e13]:
+      - link [ref=e15] [cursor=pointer]:
+        - /url: /login
+        - button "login Đăng nhập" [ref=e16]:
+          - img "login" [ref=e18]
+          - generic [ref=e21]: Đăng nhập
+      - link [ref=e23] [cursor=pointer]:
+        - /url: /register
+        - button "user-add Đăng ký" [ref=e24]:
+          - img "user-add" [ref=e26]
+          - generic [ref=e29]: Đăng ký
+  - generic [ref=e33]:
+    - heading "Bạn không có quyền truy cập trang này" [level=4] [ref=e34]
+    - text: Chỉ Lãnh đạo Khoa (Trưởng khoa, Phó trưởng khoa) mới có quyền phê duyệt đề cương.
+    - button "Quay về Trang chủ" [ref=e36] [cursor=pointer]
+  - contentinfo [ref=e38]:
+    - strong [ref=e40]: Hệ thống quản lý đề cương môn học
+    - generic [ref=e42]:
+      - generic [ref=e43]: Trường Đại học Mở Thành phố Hồ Chí Minh
+      - generic [ref=e44]: © 2026 - Bản quyền thuộc về Tôi Syllabus

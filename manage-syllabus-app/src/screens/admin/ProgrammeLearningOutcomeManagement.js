@@ -1,31 +1,39 @@
-import {Button, Form, Input, message, Modal, Space, Table} from "antd";
+import {Button, Form, message, Modal, Space, Table} from "antd";
 import {useEffect, useState} from "react";
 import {useNavigate} from "react-router-dom";
 import {authApis, endpoints} from "../../config/Apis";
+import CleanInput from "../../components/CleanInput";
+import {cleanFormData} from "../../utils/stringUtils";
 import {
   EditOutlined,
   DeleteOutlined,
   PlusOutlined,
   ArrowLeftOutlined,
+  SearchOutlined,
 } from "@ant-design/icons";
 
 const ProgrammeLearningOutcomeManagement = () => {
   const [plos, setPlos] = useState([]);
   const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [searchText, setSearchText] = useState("");
   const [loading, setLoading] = useState(false);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [form] = Form.useForm();
   const nav = useNavigate();
 
-  const loadPLOs = async () => {
+  const loadPLOs = async (currentPage = 1, query = "") => {
     try {
       setLoading(true);
-      const res = await authApis().get(
-        `${endpoints["programme-learning-outcomes"]}?page=${page}`,
-      );
+      let url = `${endpoints["programme-learning-outcomes"]}?page=${currentPage}`;
+      if (query.trim()) {
+        url += `&q=${encodeURIComponent(query.trim())}`;
+      }
+      const res = await authApis().get(url);
       if (res.status === 200) {
-        if (page === 1) setPlos(res.data.results);
-        else setPlos([...plos, ...res.data.results]);
+        setPlos(res.data.results || res.data || []);
+        setTotal(res.data.count || (res.data.results ? res.data.results.length : 0));
+        setPage(currentPage);
       }
     } catch (error) {
       console.log(error);
@@ -35,10 +43,14 @@ const ProgrammeLearningOutcomeManagement = () => {
   };
 
   useEffect(() => {
-    loadPLOs();
-  }, [page]);
+    const timer = setTimeout(() => {
+      loadPLOs(1, searchText);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [searchText]);
 
-  const handleSave = async (values) => {
+  const handleSave = async (rawValues) => {
+    const values = cleanFormData(rawValues);
     const cleanName = (values.name || "").trim().toLowerCase();
     const isDuplicate = plos.some(
       (item) => item.id !== values.id && (item.name || "").trim().toLowerCase() === cleanName
@@ -81,15 +93,16 @@ const ProgrammeLearningOutcomeManagement = () => {
     {
       title: "ID",
       key: "index",
-      width: 80,
+      width: 70,
       render: (text, record, index) => index + 1,
     },
-    {title: "Tên PLO", dataIndex: "name", key: "name", width: 150},
-    {title: "Mô tả", dataIndex: "description", key: "description"},
+    {title: "Tên PLO", dataIndex: "name", key: "name", width: 160},
+    {title: "Mô tả", dataIndex: "description", key: "description", width: 380},
     {
       title: "Hành động",
       key: "action",
       width: 120,
+      fixed: "right",
       render: (_, record) => (
         <Space>
           <Button
@@ -137,22 +150,31 @@ const ProgrammeLearningOutcomeManagement = () => {
         </Button>
       </div>
 
+      <div className="mb-4 max-w-md">
+        <CleanInput
+          placeholder="Tìm kiếm chuẩn đầu ra (PLO)..."
+          prefix={<SearchOutlined className="text-gray-400" />}
+          allowClear
+          value={searchText}
+          onChange={(e) => setSearchText(e.target.value)}
+        />
+      </div>
+
       <Table
         dataSource={plos}
         columns={columns}
         rowKey="id"
         loading={loading}
-        pagination={false}
+        scroll={{x: 730}}
+        pagination={{
+          current: page,
+          pageSize: 10,
+          total: total,
+          showTotal: (t) => `Tổng cộng ${t} chuẩn đầu ra`,
+          showSizeChanger: false,
+          onChange: (p) => loadPLOs(p, searchText),
+        }}
       />
-      <div className="mt-4 flex justify-center">
-        <Button
-          type="primary"
-          loading={loading}
-          onClick={() => setPage(page + 1)}
-        >
-          Tải thêm
-        </Button>
-      </div>
 
       <Modal
         title={form.getFieldValue("id") ? "Sửa PLO" : "Thêm PLO"}
@@ -173,14 +195,14 @@ const ProgrammeLearningOutcomeManagement = () => {
               },
             ]}
           >
-            <Input placeholder="VD: PLO1 hoặc PLO1.1" />
+            <CleanInput placeholder="VD: PLO1 hoặc PLO1.1" />
           </Form.Item>
           <Form.Item
             name="description"
             label="Mô tả chi tiết"
             rules={[{required: true, message: "Vui lòng nhập mô tả"}]}
           >
-            <Input.TextArea rows={4} placeholder="Nhập mô tả chi tiết..." />
+            <CleanInput.TextArea rows={4} placeholder="Nhập mô tả chi tiết..." />
           </Form.Item>
         </Form>
       </Modal>

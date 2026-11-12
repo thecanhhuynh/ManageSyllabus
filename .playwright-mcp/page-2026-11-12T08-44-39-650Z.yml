@@ -1,0 +1,70 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - banner [ref=e4]:
+      - generic [ref=e5]:
+        - link "H HCMOU Syllabus System" [ref=e6] [cursor=pointer]:
+          - /url: /admin
+          - generic [ref=e7]: H
+          - generic [ref=e8]:
+            - strong [ref=e10]: HCMOU
+            - generic [ref=e11]: Syllabus System
+        - generic [ref=e95]:
+          - link [ref=e96] [cursor=pointer]:
+            - /url: /
+            - button "Trang chủ" [ref=e97]
+          - link [ref=e99] [cursor=pointer]:
+            - /url: /approvals
+            - button "check-square Phê duyệt đề cương" [ref=e100]:
+              - img "check-square" [ref=e102]
+              - generic [ref=e106]: Phê duyệt đề cương
+      - generic [ref=e108] [cursor=pointer]:
+        - strong [ref=e110]: admin
+        - generic [ref=e111]: admin@gmail.com
+    - generic [ref=e114]:
+      - generic [ref=e115]:
+        - heading "Bảng điều khiển Admin" [level=1] [ref=e116]
+        - paragraph [ref=e117]: Chọn một chức năng bên dưới để bắt đầu quản lý hệ thống.
+      - generic [ref=e118]:
+        - generic [ref=e121] [cursor=pointer]:
+          - img "bank" [ref=e123]
+          - generic [ref=e126]:
+            - heading "Quản lý Khoa" [level=3] [ref=e127]
+            - paragraph [ref=e128]: Quản lý thông tin các Khoa trong trường
+        - generic [ref=e131] [cursor=pointer]:
+          - img "book" [ref=e133]
+          - generic [ref=e136]:
+            - heading "Quản lý Môn học" [level=3] [ref=e137]
+            - paragraph [ref=e138]: Quản lý danh sách môn học và số tín chỉ
+        - generic [ref=e141] [cursor=pointer]:
+          - img "read" [ref=e143]
+          - generic [ref=e146]:
+            - heading "Quản lý Ngành" [level=3] [ref=e147]
+            - paragraph [ref=e148]: Quản lý danh mục chuyên ngành đào tạo
+        - generic [ref=e151] [cursor=pointer]:
+          - img "profile" [ref=e153]
+          - generic [ref=e156]:
+            - heading "Chương trình đào tạo" [level=3] [ref=e157]
+            - paragraph [ref=e158]: Quản lý CTĐT theo từng năm học và phân công giảng viên phụ trách đề cương môn học
+        - generic [ref=e161] [cursor=pointer]:
+          - img "team" [ref=e163]
+          - generic [ref=e166]:
+            - heading "Quản lý Người dùng" [level=3] [ref=e167]
+            - paragraph [ref=e168]: Quản lý tài khoản và phân quyền hệ thống
+        - generic [ref=e171] [cursor=pointer]:
+          - img "aim" [ref=e173]
+          - generic [ref=e177]:
+            - heading "Quản lý Chuẩn đầu ra (PLO)" [level=3] [ref=e178]
+            - paragraph [ref=e179]: Quản lý danh sách chuẩn đầu ra của môn học
+        - generic [ref=e182] [cursor=pointer]:
+          - img "tags" [ref=e184]
+          - generic [ref=e187]:
+            - heading "Danh mục Lựa chọn (Selection)" [level=3] [ref=e188]
+            - paragraph [ref=e189]: Quản lý nhóm và các giá trị lựa chọn cho đề cương (Ngôn ngữ, Phương thức giảng dạy...)
+    - contentinfo [ref=e88]:
+      - strong [ref=e90]: Hệ thống quản lý đề cương môn học
+      - generic [ref=e92]:
+        - generic [ref=e93]: Trường Đại học Mở Thành phố Hồ Chí Minh
+        - generic [ref=e94]: © 2026 - Bản quyền thuộc về Tôi Syllabus
+  - generic [ref=e191]:
+    - img "check-circle" [ref=e192]
+    - generic [ref=e195]: Đăng nhập thành công!

@@ -10,6 +10,8 @@ import Apis, {
   CLIENT_SECRET,
 } from "../../config/Apis";
 import {MyUserContext} from "../../config/contexts/MyContext";
+import CleanInput from "../../components/CleanInput";
+import {cleanWhitespace} from "../../utils/stringUtils";
 
 const {Title, Text} = Typography;
 
@@ -25,7 +27,7 @@ const Login = () => {
     const cleanData = {};
 
     const username = values?.username || "";
-    cleanData.username = username.trim();
+    cleanData.username = cleanWhitespace(username);
 
     if (!cleanData.username) {
       errors.username = "Tên đăng nhập không được để trống!";
@@ -178,7 +180,7 @@ const Login = () => {
               ]}
               style={{marginBottom: 20}}
             >
-              <Input
+              <CleanInput
                 prefix={
                   <UserOutlined style={{color: "#9ca3af", marginRight: 8}} />
                 }

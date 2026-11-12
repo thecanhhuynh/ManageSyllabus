@@ -2,6 +2,7 @@ import React from "react";
 import {Form, Input} from "antd";
 import UpdateRequireWrapper from "../../components/wrapper/UpdateRequireWrapper";
 import {useSyllabusStore} from "../../store/useSyllabusStore";
+import {cleanWhitespace, formatTypingWhitespace} from "../../utils/stringUtils";
 const {TextArea} = Input;
 
 const TextEditor = ({item, basePath}) => {
@@ -12,8 +13,14 @@ const TextEditor = ({item, basePath}) => {
   );
 
   const updateLocalBlock = useSyllabusStore((state) => state.updateLocalBlock);
-  const handleChange = (e) => {
-    updateLocalBlock(item.code, {content: e.target.value});
+  const handleChange = (e, multiline = false) => {
+    const formatted = formatTypingWhitespace(e.target.value, multiline);
+    updateLocalBlock(item.code, {content: formatted});
+  };
+
+  const handleBlur = (e, multiline = false) => {
+    const cleaned = cleanWhitespace(e.target.value, multiline);
+    updateLocalBlock(item.code, {content: cleaned});
   };
   const CustomLabel = item.place_holder ? (
     <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">
@@ -48,7 +55,8 @@ const TextEditor = ({item, basePath}) => {
               style={inputStyle}
               required
               value={content}
-              onChange={handleChange}
+              onChange={(e) => handleChange(e, true)}
+              onBlur={(e) => handleBlur(e, true)}
             />
           </Form.Item>
         );
@@ -64,7 +72,8 @@ const TextEditor = ({item, basePath}) => {
               style={inputStyle}
               value={content}
               required
-              onChange={handleChange}
+              onChange={(e) => handleChange(e, false)}
+              onBlur={(e) => handleBlur(e, false)}
             />
           </Form.Item>
         );

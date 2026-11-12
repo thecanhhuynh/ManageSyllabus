@@ -356,12 +356,11 @@ const SyllabusEdit = () => {
 
   return (
     <div
-      className="p-6"
+      className="p-3 sm:p-6"
       style={{background: "#f8fafb", minHeight: "calc(100vh - 76px)"}}
     >
       <div style={{maxWidth: 1200, margin: "0 auto"}}>
         <div
-          className="flex items-center justify-between px-6 py-4 mb-6"
           style={{
             position: "sticky",
             top: 76,
@@ -371,56 +370,100 @@ const SyllabusEdit = () => {
             boxShadow:
               "0 1px 3px rgba(0,0,0,0.02), 0 4px 12px rgba(0,0,0,0.03)",
             border: "1px solid #f0f0f0",
+            padding: "16px 20px",
+            marginBottom: 20,
+            display: "flex",
+            flexDirection: "column",
+            gap: 12,
           }}
         >
-          <div className="flex-1">
-            <div className="flex items-center gap-3">
-              <Title
-                level={4}
-                style={{margin: 0, color: "#1f2937", fontWeight: 700}}
+          <div
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 12,
+            }}
+          >
+            <div style={{flex: "1 1 320px", minWidth: 0}}>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  flexWrap: "wrap",
+                  gap: "8px 12px",
+                }}
               >
-                {syllabusData.name || "Chỉnh sửa Đề cương chi tiết"}
-              </Title>
-              {isApproved ? (
-                <Tooltip
-                  title={
-                    syllabusData.approved_by_name
-                      ? `Được phê duyệt bởi ${syllabusData.approved_by_name}${syllabusData.approved_date ? ` lúc ${syllabusData.approved_date}` : ""}`
-                      : "Đề cương đã được phê duyệt"
-                  }
+                <Title
+                  level={4}
+                  style={{
+                    margin: 0,
+                    color: "#1f2937",
+                    fontWeight: 700,
+                    lineHeight: 1.4,
+                    wordBreak: "normal",
+                    overflowWrap: "break-word",
+                  }}
                 >
-                  <Tag color="success" icon={<CheckCircleOutlined />}>
-                    Đã phê duyệt
+                  {syllabusData.name || "Chỉnh sửa Đề cương chi tiết"}
+                </Title>
+                {isApproved ? (
+                  <Tooltip
+                    title={
+                      syllabusData.approved_by_name
+                        ? `Được phê duyệt bởi ${syllabusData.approved_by_name}${syllabusData.approved_date ? ` lúc ${syllabusData.approved_date}` : ""}`
+                        : "Đề cương đã được phê duyệt"
+                    }
+                  >
+                    <Tag color="success" icon={<CheckCircleOutlined />}>
+                      Đã phê duyệt
+                    </Tag>
+                  </Tooltip>
+                ) : (
+                  <Tag
+                    color={isSubmitted ? "orange" : "warning"}
+                    icon={<ClockCircleOutlined />}
+                  >
+                    {isSubmitted ? "Chờ phê duyệt" : "Bản nháp"}
                   </Tag>
-                </Tooltip>
-              ) : (
-                <Tag
-                  color={isSubmitted ? "orange" : "warning"}
-                  icon={<ClockCircleOutlined />}
-                >
-                  {isSubmitted ? "Chờ phê duyệt" : "Bản nháp"}
-                </Tag>
-              )}
+                )}
+              </div>
+              <div
+                style={{
+                  color: "#6b7280",
+                  fontSize: 13,
+                  marginTop: 4,
+                  lineHeight: 1.5,
+                  wordBreak: "normal",
+                  overflowWrap: "break-word",
+                }}
+              >
+                Khoa: {syllabusData.faculty_name || "N/A"} | Giảng viên:{" "}
+                {syllabusData.lecturer_name || "N/A"}
+                {isApproved && syllabusData.approved_by_name && (
+                  <span>
+                    {" "}
+                    | Phê duyệt bởi:{" "}
+                    <strong style={{color: "#16a34a"}}>
+                      {syllabusData.approved_by_name}
+                    </strong>
+                    {syllabusData.approved_date
+                      ? ` (${syllabusData.approved_date})`
+                      : ""}
+                  </span>
+                )}
+              </div>
             </div>
-            <div style={{color: "#6b7280", fontSize: 13, marginTop: 4}}>
-              Khoa: {syllabusData.faculty_name || "N/A"} | Giảng viên:{" "}
-              {syllabusData.lecturer_name || "N/A"}
-              {isApproved && syllabusData.approved_by_name && (
-                <span>
-                  {" "}
-                  | Phê duyệt bởi:{" "}
-                  <strong style={{color: "#16a34a"}}>
-                    {syllabusData.approved_by_name}
-                  </strong>
-                  {syllabusData.approved_date
-                    ? ` (${syllabusData.approved_date})`
-                    : ""}
-                </span>
-              )}
-            </div>
-          </div>
 
-          <div className="flex items-center gap-3">
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                flexWrap: "wrap",
+                gap: 10,
+              }}
+            >
             {canSignAndSubmit && (
               <Tooltip title="Ký xác nhận và nộp đề cương lên Lãnh đạo Khoa phê duyệt">
                 <Button
@@ -485,6 +528,7 @@ const SyllabusEdit = () => {
             </Button>
           </div>
         </div>
+      </div>
 
         {isApproved && (
           <Alert

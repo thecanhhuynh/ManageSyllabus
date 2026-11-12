@@ -1,19 +1,26 @@
 import React, {useEffect, useState} from "react";
-import {Table, Button, Modal, Form, Input, message, Space, Select, InputNumber} from "antd";
+import {Table, Button, Modal, Form, message, Space, Select, InputNumber} from "antd";
 import {
   EditOutlined,
   DeleteOutlined,
   InfoOutlined,
   PlusOutlined,
   ArrowLeftOutlined,
+  SearchOutlined,
 } from "@ant-design/icons";
 import {authApis, endpoints} from "../../config/Apis";
 import {useNavigate} from "react-router-dom";
+import CleanInput from "../../components/CleanInput";
+import {cleanFormData} from "../../utils/stringUtils";
 
 const TrainingProgramManagement = () => {
   const [programs, setPrograms] = useState([]);
   const [loading, setLoading] = useState(false);
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const [searchText, setSearchText] = useState("");
+  const [majorFilter, setMajorFilter] = useState(null);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
   const [form] = Form.useForm();
   const nav = useNavigate();
 
@@ -22,29 +29,46 @@ const TrainingProgramManagement = () => {
   const loadMajors = async () => {
     try {
       const res = await authApis().get(endpoints["majors"]);
-      setMajors(res.data.results);
+      setMajors(res.data.results || res.data || []);
     } catch (err) {
       message.error("Lỗi tải danh sách Chuyên ngành");
     }
   };
 
-  const loadPrograms = async () => {
+  const loadPrograms = async (currentPage = 1, query = "", major = null) => {
     setLoading(true);
     try {
-      const res = await authApis().get(endpoints["training-programs"]);
-      setPrograms(res.data.results);
+      let url = `${endpoints["training-programs"]}?page=${currentPage}`;
+      if (query.trim()) {
+        url += `&q=${encodeURIComponent(query.trim())}`;
+      }
+      if (major) {
+        url += `&major=${major}`;
+      }
+      const res = await authApis().get(url);
+      setPrograms(res.data.results || res.data || []);
+      setTotal(res.data.count || (res.data.results ? res.data.results.length : 0));
+      setPage(currentPage);
     } catch (err) {
       message.error("Lỗi tải danh sách CTDT");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   useEffect(() => {
-    loadPrograms();
     loadMajors();
   }, []);
 
-  const handleSave = async (values) => {
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      loadPrograms(1, searchText, majorFilter);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [searchText, majorFilter]);
+
+  const handleSave = async (rawValues) => {
+    const values = cleanFormData(rawValues);
     const isDuplicate = programs.some(
       (p) =>
         p.id !== values.id &&
@@ -96,25 +120,28 @@ const TrainingProgramManagement = () => {
   };
 
   const columns = [
-    {title: "ID", dataIndex: "id", key: "id", width: 80},
-    {title: "Tên chương trình", dataIndex: "name", key: "name"},
-    {title: "Năm học", dataIndex: "academic_year", key: "academic_year"},
+    {title: "ID", dataIndex: "id", key: "id", width: 70},
+    {title: "Tên chương trình", dataIndex: "name", key: "name", width: 240},
+    {title: "Năm học", dataIndex: "academic_year", key: "academic_year", width: 110},
     {
       title: "Chuyên ngành",
       dataIndex: "major",
       key: "major",
+      width: 180,
       render: (major) => (major ? major.name : "N/A"),
     },
     {
       title: "Khoa",
       key: "faculty",
+      width: 180,
       render: (_, record) =>
         record.major?.faculty?.name ? record.major.faculty.name : "N/A",
     },
     {
       title: "Hành động",
       key: "action",
-      width: 150,
+      width: 130,
+      fixed: "right",
       render: (_, record) => (
         <Space>
           <Button
@@ -174,11 +201,45 @@ const TrainingProgramManagement = () => {
         </Button>
       </div>
 
+      <div className="flex flex-wrap items-center gap-4 mb-4">
+        <div className="max-w-md flex-1">
+          <CleanInput
+            placeholder="Tìm kiếm chương trình theo tên hoặc năm học..."
+            prefix={<SearchOutlined className="text-gray-400" />}
+            allowClear
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+          />
+        </div>
+        <Select
+          placeholder="Lọc theo Chuyên ngành"
+          allowClear
+          style={{width: 250}}
+          value={majorFilter}
+          onChange={(val) => setMajorFilter(val)}
+        >
+          {majors.map((m) => (
+            <Select.Option key={m.id} value={m.id}>
+              {m.name}
+            </Select.Option>
+          ))}
+        </Select>
+      </div>
+
       <Table
         dataSource={programs}
         columns={columns}
         rowKey="id"
         loading={loading}
+        scroll={{x: 910}}
+        pagination={{
+          current: page,
+          pageSize: 10,
+          total: total,
+          showTotal: (t) => `Tổng cộng ${t} chương trình đào tạo`,
+          showSizeChanger: false,
+          onChange: (p) => loadPrograms(p, searchText, majorFilter),
+        }}
       />
 
       <Modal
@@ -199,7 +260,7 @@ const TrainingProgramManagement = () => {
             label="Tên chương trình đào tạo"
             rules={[{required: true, message: "Vui lòng nhập tên CTĐT"}]}
           >
-            <Input placeholder="VD: CTĐT-KHMT 2024..." />
+            <CleanInput placeholder="VD: CTĐT-KHMT 2024..." />
           </Form.Item>
 
           <Form.Item

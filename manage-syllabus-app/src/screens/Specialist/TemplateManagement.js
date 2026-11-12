@@ -19,41 +19,52 @@ import {
   CheckCircleOutlined,
   BuildOutlined,
   CloseCircleOutlined,
+  SearchOutlined,
 } from "@ant-design/icons";
 import {authApis, endpoints, springApi} from "../../config/Apis";
 import {useNavigate} from "react-router-dom";
+import CleanInput from "../../components/CleanInput";
+import {cleanFormData} from "../../utils/stringUtils";
 
 const TemplateManagement = () => {
   const [templates, setTemplates] = useState([]);
   const [loading, setLoading] = useState(false);
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const [searchText, setSearchText] = useState("");
   const [form] = Form.useForm();
   const [page, setPage] = useState(1);
-  const [hasNext, setHasNext] = useState(false);
+  const [total, setTotal] = useState(0);
   const nav = useNavigate();
 
-  const loadTemplates = async () => {
+  const loadTemplates = async (currentPage = 1, query = "") => {
     setLoading(true);
     try {
-      const res = await authApis().get(
-        `${endpoints["templates"]}?page=${page}`,
-      );
+      let url = `${endpoints["templates"]}?page=${currentPage}`;
+      if (query.trim()) {
+        url += `&q=${encodeURIComponent(query.trim())}`;
+      }
+      const res = await authApis().get(url);
       if (res.status === 200) {
-        if (page === 1) setTemplates(res.data.results);
-        else setTemplates([...templates, ...res.data.results]);
-        setHasNext(res.data.next !== null);
+        setTemplates(res.data.results || res.data || []);
+        setTotal(res.data.count || (res.data.results ? res.data.results.length : 0));
+        setPage(currentPage);
       }
     } catch (err) {
       message.error("Lỗi tải danh sách Template");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   useEffect(() => {
-    loadTemplates();
-  }, [page]);
+    const timer = setTimeout(() => {
+      loadTemplates(1, searchText);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [searchText]);
 
-  const handleSave = async (values) => {
+  const handleSave = async (rawValues) => {
+    const values = cleanFormData(rawValues);
     try {
       if (values.id) {
         await authApis().patch(
@@ -136,7 +147,7 @@ const TemplateManagement = () => {
 
   const columns = [
     {title: "ID", dataIndex: "id", key: "id", width: 60},
-    {title: "Tên Template", dataIndex: "name", key: "name"},
+    {title: "Tên Template", dataIndex: "name", key: "name", width: 240},
     {
       title: "Phiên bản",
       dataIndex: "version",
@@ -179,6 +190,7 @@ const TemplateManagement = () => {
       title: "Hành động",
       key: "action",
       width: 250,
+      fixed: "right",
       render: (_, record) => (
         <Space>
           <Button
@@ -255,25 +267,31 @@ const TemplateManagement = () => {
         </Button>
       </div>
 
+      <div className="mb-4 max-w-md">
+        <CleanInput
+          placeholder="Tìm kiếm mẫu đề cương theo tên hoặc phiên bản..."
+          prefix={<SearchOutlined className="text-gray-400" />}
+          allowClear
+          value={searchText}
+          onChange={(e) => setSearchText(e.target.value)}
+        />
+      </div>
+
       <Table
         dataSource={templates}
         columns={columns}
         rowKey="id"
         loading={loading}
-        pagination={false}
+        scroll={{x: 940}}
+        pagination={{
+          current: page,
+          pageSize: 10,
+          total: total,
+          showTotal: (t) => `Tổng cộng ${t} mẫu đề cương`,
+          showSizeChanger: false,
+          onChange: (p) => loadTemplates(p, searchText),
+        }}
       />
-
-      {hasNext === true && (
-        <div className="mt-4 flex justify-center">
-          <Button
-            type="default"
-            loading={loading}
-            onClick={() => setPage(page + 1)}
-          >
-            Tải thêm
-          </Button>
-        </div>
-      )}
 
       <Modal
         title={form.getFieldValue("id") ? "Sửa Template" : "Thêm Template mới"}
@@ -317,7 +335,7 @@ const TemplateManagement = () => {
             label="Tên Template"
             rules={[{required: true, message: "Vui lòng nhập tên Template"}]}
           >
-            <Input placeholder="VD: Mẫu Đề cương Khoa CNTT..." />
+            <CleanInput placeholder="VD: Mẫu Đề cương Khoa CNTT..." />
           </Form.Item>
 
           <Form.Item
@@ -331,7 +349,7 @@ const TemplateManagement = () => {
               },
             ]}
           >
-            <Input placeholder="VD: v1.0" />
+            <CleanInput placeholder="VD: v1.0" />
           </Form.Item>
         </Form>
       </Modal>

@@ -1,50 +1,72 @@
 import React, {useEffect, useState} from "react";
-import {Table, Button, Modal, Form, Input, message, Space, Select} from "antd";
+import {Table, Button, Modal, Form, message, Space, Select} from "antd";
 import {
   EditOutlined,
   DeleteOutlined,
   PlusOutlined,
   ArrowLeftOutlined,
+  SearchOutlined,
 } from "@ant-design/icons";
 import {authApis, endpoints} from "../../config/Apis";
 import {useNavigate} from "react-router-dom";
+import CleanInput from "../../components/CleanInput";
+import {cleanFormData} from "../../utils/stringUtils";
 
 const MajorManagement = () => {
   const [faculties, setFaculties] = useState([]);
   const [majors, setMajors] = useState([]);
   const [loading, setLoading] = useState(false);
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const [searchText, setSearchText] = useState("");
+  const [facultyFilter, setFacultyFilter] = useState(null);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
   const [form] = Form.useForm();
   const nav = useNavigate();
 
   const loadFaculties = async () => {
-    setLoading(true);
     try {
       const res = await authApis().get(endpoints["faculties"]);
-      setFaculties(res.data.results);
+      setFaculties(res.data.results || res.data || []);
     } catch (err) {
       message.error("Lỗi tải danh sách Khoa");
     }
-    setLoading(false);
   };
 
-  const loadMajors = async () => {
+  const loadMajors = async (currentPage = 1, query = "", faculty = null) => {
     setLoading(true);
     try {
-      const res = await authApis().get(endpoints["majors"]);
-      setMajors(res.data.results);
+      let url = `${endpoints["majors"]}?page=${currentPage}`;
+      if (query.trim()) {
+        url += `&q=${encodeURIComponent(query.trim())}`;
+      }
+      if (faculty) {
+        url += `&faculty=${faculty}`;
+      }
+      const res = await authApis().get(url);
+      setMajors(res.data.results || res.data || []);
+      setTotal(res.data.count || (res.data.results ? res.data.results.length : 0));
+      setPage(currentPage);
     } catch (err) {
       message.error("Lỗi tải danh sách chuyên ngành");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   useEffect(() => {
-    loadMajors();
     loadFaculties();
   }, []);
 
-  const handleSave = async (values) => {
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      loadMajors(1, searchText, facultyFilter);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [searchText, facultyFilter]);
+
+  const handleSave = async (rawValues) => {
+    const values = cleanFormData(rawValues);
     try {
       const faculty = faculties.find((f) => f.id === values.faculty);
 
@@ -84,19 +106,21 @@ const MajorManagement = () => {
   };
 
   const columns = [
-    {title: "ID", dataIndex: "id", key: "id", width: 80},
-    {title: "Tên chuyên ngành", dataIndex: "name", key: "name"},
-    {title: "Mã chuyên ngành", dataIndex: "code", key: "code"},
+    {title: "ID", dataIndex: "id", key: "id", width: 70},
+    {title: "Tên chuyên ngành", dataIndex: "name", key: "name", width: 220},
+    {title: "Mã chuyên ngành", dataIndex: "code", key: "code", width: 140},
     {
       title: "Khoa",
       dataIndex: "faculty",
       key: "faculty",
+      width: 180,
       render: (faculty) => (faculty ? faculty.name : "N/A"),
     },
     {
       title: "Hành động",
       key: "action",
-      width: 150,
+      width: 130,
+      fixed: "right",
       render: (_, record) => (
         <Space>
           <Button
@@ -148,11 +172,45 @@ const MajorManagement = () => {
         </Button>
       </div>
 
+      <div className="flex flex-wrap items-center gap-4 mb-4">
+        <div className="max-w-md flex-1">
+          <CleanInput
+            placeholder="Tìm kiếm chuyên ngành theo tên..."
+            prefix={<SearchOutlined className="text-gray-400" />}
+            allowClear
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+          />
+        </div>
+        <Select
+          placeholder="Lọc theo Khoa"
+          allowClear
+          style={{width: 220}}
+          value={facultyFilter}
+          onChange={(val) => setFacultyFilter(val)}
+        >
+          {faculties.map((f) => (
+            <Select.Option key={f.id} value={f.id}>
+              {f.name}
+            </Select.Option>
+          ))}
+        </Select>
+      </div>
+
       <Table
         dataSource={majors}
         columns={columns}
         rowKey="id"
         loading={loading}
+        scroll={{x: 740}}
+        pagination={{
+          current: page,
+          pageSize: 10,
+          total: total,
+          showTotal: (t) => `Tổng cộng ${t} chuyên ngành`,
+          showSizeChanger: false,
+          onChange: (p) => loadMajors(p, searchText, facultyFilter),
+        }}
       />
 
       <Modal
@@ -176,7 +234,7 @@ const MajorManagement = () => {
               },
             ]}
           >
-            <Input placeholder="VD: CNTT, KHMT, HTTT" />
+            <CleanInput placeholder="VD: CNTT, KHMT, HTTT" />
           </Form.Item>
           <Form.Item
             name="name"
@@ -185,7 +243,7 @@ const MajorManagement = () => {
               {required: true, message: "Vui lòng nhập tên chuyên ngành"},
             ]}
           >
-            <Input placeholder="Nhập tên chuyên ngành..." />
+            <CleanInput placeholder="Nhập tên chuyên ngành..." />
           </Form.Item>
           <Form.Item
             name="faculty"

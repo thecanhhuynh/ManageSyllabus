@@ -1,0 +1,33 @@
+- generic [active] [ref=f15e1]:
+  - generic [ref=f15e3]:
+    - banner [ref=f15e4]:
+      - link "H HCMOU Syllabus System" [ref=f15e6] [cursor=pointer]:
+        - /url: /specialist
+        - generic [ref=f15e7]: H
+        - generic [ref=f15e8]:
+          - strong [ref=f15e10]: HCMOU
+          - generic [ref=f15e11]: Syllabus System
+      - generic [ref=f15e13] [cursor=pointer]
+    - generic [ref=f15e18]:
+      - generic [ref=f15e19]:
+        - heading "Bảng điều khiển Specialist Template" [level=1] [ref=f15e20]
+        - paragraph [ref=f15e21]: Chọn một chức năng bên dưới để bắt đầu.
+      - generic [ref=f15e22]:
+        - generic [ref=f15e25] [cursor=pointer]:
+          - img "bank" [ref=f15e27]
+          - generic [ref=f15e30]:
+            - heading "Quản lý Phiên bản đề cương" [level=3] [ref=f15e31]
+            - paragraph [ref=f15e32]: Quản lý thông tin các phiên bản đề cương
+        - generic [ref=f15e35] [cursor=pointer]:
+          - img "tags" [ref=f15e37]
+          - generic [ref=f15e40]:
+            - heading "Danh mục Lựa chọn (Selection)" [level=3] [ref=f15e41]
+            - paragraph [ref=f15e42]: Quản lý các nhóm và giá trị lựa chọn cho đề cương
+    - contentinfo [ref=f15e43]:
+      - strong [ref=f15e45]: Hệ thống quản lý đề cương môn học
+      - generic [ref=f15e47]:
+        - generic [ref=f15e48]: Trường Đại học Mở Thành phố Hồ Chí Minh
+        - generic [ref=f15e49]: © 2026 - Bản quyền thuộc về Tôi Syllabus
+  - generic [ref=f15e51]:
+    - img "check-circle" [ref=f15e52]
+    - generic [ref=f15e55]: Đăng nhập thành công!

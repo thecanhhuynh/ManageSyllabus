@@ -3445,6 +3445,59 @@ class TemplateBlockSyncServiceTestCase(TestCase):
         self.assertEqual(sel_block.block_type, "selection")
         self.assertEqual(sel_block.config.get("attribute_group_id"), 42)
 
+    def test_table_init_preserves_columns_rows_and_first_column_header(self):
+        """Kiểm tra TableStrategy.init_syllabus_sub_section bảo toàn đầy đủ columns, rows và firstColumnHeader."""
+        from syllabuses.models import (
+            TemplateTableSubSection, TableSubSection, Syllabus, MainSection,
+            Subject, Credit, Faculty, Lecturer, User
+        )
+        from syllabuses.strategies import TableStrategy
+
+        test_schema = {
+            "firstColumnHeader": "Tiêu đề hàng mẫu",
+            "columns": [
+                {"id": "c1", "headerName": "Cột 1", "field": "c1"},
+                {"id": "c2", "headerName": "Cột 2", "field": "c2"},
+            ],
+            "rows": [
+                {"id": "r1", "rowTitle": "Hàng 1", "c1": "Val 1", "c2": "Val 2"},
+                {"id": "r2", "rowTitle": "Hàng 2", "c1": "Val 3", "c2": "Val 4"},
+            ],
+        }
+
+        tpl_sub = TemplateTableSubSection.objects.create(
+            main_section=self.main_sec,
+            name="Bảng mẫu chuẩn",
+            code="CUSTOM_TBL_FULL",
+            type="table",
+            position=4,
+            table_schema=test_schema,
+        )
+
+        faculty = Faculty.objects.create(name="Khoa CNTT Test Table")
+        user = User.objects.create_user(username="u_test_tbl", password="123")
+        lecturer = Lecturer.objects.create(user=user, faculty=faculty)
+        credit = Credit.objects.create(number_theory=3, number_practice=0, hour_self_study=90)
+        subject = Subject.objects.create(name="Môn Test Table", code="TBL001", credit=credit)
+        syl = Syllabus.objects.create(
+            name="Đề cương test bảng",
+            template=self.template,
+            subject=subject,
+            faculty=faculty,
+            lecturer=lecturer
+        )
+        syl_main = MainSection.objects.create(syllabus=syl, code="SEC_TEST", name="Mục test", position=1)
+
+        strategy = TableStrategy()
+        table_sub = strategy.init_syllabus_sub_section(tpl_sub, syl_main)
+
+        self.assertIsInstance(table_sub, TableSubSection)
+        self.assertEqual(len(table_sub.data.get("columns", [])), 2)
+        self.assertEqual(len(table_sub.data.get("rows", [])), 2)
+        self.assertEqual(table_sub.data.get("firstColumnHeader"), "Tiêu đề hàng mẫu")
+        self.assertEqual(table_sub.data["rows"][0]["c1"], "Val 1")
+        self.assertEqual(table_sub.data["rows"][1]["c2"], "Val 4")
+
 
 class SelectionSubRendererTestCase(TestCase):
     """Bộ kiểm thử cho SelectionSubRenderer dynamic."""

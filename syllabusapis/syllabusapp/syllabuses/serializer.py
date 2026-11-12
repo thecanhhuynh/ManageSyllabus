@@ -243,12 +243,19 @@ class SubjectSerializer(serializers.ModelSerializer):
     def delete(self, instance, validated_data):
         pass
 
+class TrainingProgramBasicSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TrainingProgram
+        fields = ['id', 'name', 'academic_year']
+
+
 class SyllabusSerializer(serializers.ModelSerializer):
     subject = SubjectSerializer(read_only=True)
     lecturer = LecturerBasicSerializer(read_only=True)
     is_approved = serializers.BooleanField(read_only=True)
     approved_by_name = serializers.SerializerMethodField()
     approved_date = serializers.DateTimeField(format="%d/%m/%Y %H:%M", read_only=True)
+    training_programs = TrainingProgramBasicSerializer(many=True, read_only=True)
 
     subject_obj = serializers.PrimaryKeyRelatedField(
         queryset=Subject.objects.all(), write_only=True, source="subject",
@@ -274,7 +281,7 @@ class SyllabusSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'name', 'status', 'created_date',
             'is_approved', 'approved_by', 'approved_by_name', 'approved_date',
-            'subject', 'lecturer',
+            'subject', 'lecturer', 'training_programs',
             'subject_obj', 'template_obj', 'faculty_obj', 'lecturer_obj', 'training_program_obj'
         ]
 
@@ -444,6 +451,7 @@ class SyllabusDetailSerializer(serializers.ModelSerializer):
     faculty_name = serializers.CharField(source='faculty.name', read_only=True, default="N/A")
     lecturer_name = serializers.SerializerMethodField()
     lecturer_id = serializers.IntegerField(read_only=True)
+    training_programs = TrainingProgramBasicSerializer(many=True, read_only=True)
 
     class Meta:
         model = Syllabus
@@ -451,7 +459,7 @@ class SyllabusDetailSerializer(serializers.ModelSerializer):
             'id', 'name', 'template', 'subject', 'status', 'is_approved', 'approved_by',
             'approved_by_name', 'approved_date', 'faculty_name', 'lecturer_name', 'lecturer_id',
             'signatures', 'main_sections', 'start_date_edition', 'end_date_edition',
-            'revision', 'label_overrides'
+            'revision', 'label_overrides', 'training_programs'
         ]
 
     def get_lecturer_name(self, obj):
@@ -1096,18 +1104,20 @@ class MajorSerializer(serializers.ModelSerializer):
 
 class SyllabusSimpleSerializer(serializers.ModelSerializer):
     subject_name = serializers.CharField(source='subject.name', read_only=True)
+    subject_code = serializers.CharField(source='subject.code', read_only=True)
     lecturer_id = serializers.IntegerField()
     lecturer_name = serializers.SerializerMethodField()
     is_approved = serializers.BooleanField(read_only=True)
     approved_by_name = serializers.SerializerMethodField()
     approved_date = serializers.DateTimeField(format="%d/%m/%Y %H:%M", read_only=True)
+    training_programs = TrainingProgramBasicSerializer(many=True, read_only=True)
 
     class Meta:
         model = Syllabus
         fields = [
             'id', 'name', 'status', 'is_approved', 'approved_by', 'approved_by_name',
-            'approved_date', 'subject_name', 'lecturer_id', 'lecturer_name', 'created_date',
-            'start_date_edition', 'end_date_edition', 'edit_date'
+            'approved_date', 'subject_name', 'subject_code', 'lecturer_id', 'lecturer_name', 'created_date',
+            'start_date_edition', 'end_date_edition', 'edit_date', 'training_programs'
         ]
 
     def get_lecturer_name(self, obj):

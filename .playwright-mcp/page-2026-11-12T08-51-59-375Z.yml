@@ -1,0 +1,20 @@
+- generic [ref=f6e3]:
+  - banner [ref=f6e4]:
+    - generic [ref=f6e5]:
+      - link "H HCMOU Syllabus System" [ref=f6e6] [cursor=pointer]:
+        - /url: /specialist
+        - generic [ref=f6e7]: H
+        - generic [ref=f6e8]:
+          - strong [ref=f6e10]: HCMOU
+          - generic [ref=f6e11]: Syllabus System
+      - link [ref=f6e13] [cursor=pointer]:
+        - /url: /
+        - button "Trang chủ" [ref=f6e14]
+    - generic [ref=f6e18] [cursor=pointer]:
+      - strong [ref=f6e20]: test
+      - generic [ref=f6e21]: huynhthecanhpvh@gmail.com
+  - contentinfo [ref=f6e25]:
+    - strong [ref=f6e27]: Hệ thống quản lý đề cương môn học
+    - generic [ref=f6e29]:
+      - generic [ref=f6e30]: Trường Đại học Mở Thành phố Hồ Chí Minh
+      - generic [ref=f6e31]: © 2026 - Bản quyền thuộc về Tôi Syllabus

@@ -2,7 +2,18 @@ import django_filters
 from django.db.models import Q, Value, CharField
 from django.db.models.functions import Concat
 
-from syllabuses.models import Syllabus, Subject, LearningMaterial, User, Lecturer
+from syllabuses.models import (
+    Faculty,
+    LearningMaterial,
+    Lecturer,
+    Major,
+    ProgrammeLearningOutcome,
+    Subject,
+    Syllabus,
+    TemplateSyllabus,
+    TrainingProgram,
+    User,
+)
 
 
 class SyllabusFilter(django_filters.FilterSet):
@@ -87,3 +98,77 @@ class LearningMaterialsFilter(django_filters.FilterSet):
     class Meta:
         model = LearningMaterial
         fields = ['q']
+
+
+class FacultyFilter(django_filters.FilterSet):
+    q = django_filters.CharFilter(method="custom_search")
+
+    class Meta:
+        model = Faculty
+        fields = ["q"]
+
+    def custom_search(self, queryset, name, value):
+        if not value:
+            return queryset
+        return queryset.filter(name__icontains=value)
+
+
+class MajorFilter(django_filters.FilterSet):
+    q = django_filters.CharFilter(method="custom_search")
+    faculty = django_filters.NumberFilter(field_name="faculty__id")
+
+    class Meta:
+        model = Major
+        fields = ["q", "faculty"]
+
+    def custom_search(self, queryset, name, value):
+        if not value:
+            return queryset
+        return queryset.filter(name__icontains=value)
+
+
+class TrainingProgramFilter(django_filters.FilterSet):
+    q = django_filters.CharFilter(method="custom_search")
+    major = django_filters.NumberFilter(field_name="major__id")
+
+    class Meta:
+        model = TrainingProgram
+        fields = ["q", "major"]
+
+    def custom_search(self, queryset, name, value):
+        if not value:
+            return queryset
+        return queryset.filter(
+            Q(name__icontains=value) | Q(academic_year__icontains=value)
+        )
+
+
+class ProgrammeLearningOutcomeFilter(django_filters.FilterSet):
+    q = django_filters.CharFilter(method="custom_search")
+
+    class Meta:
+        model = ProgrammeLearningOutcome
+        fields = ["q"]
+
+    def custom_search(self, queryset, name, value):
+        if not value:
+            return queryset
+        return queryset.filter(
+            Q(name__icontains=value) | Q(description__icontains=value)
+        )
+
+
+class TemplateFilter(django_filters.FilterSet):
+    q = django_filters.CharFilter(method="custom_search")
+
+    class Meta:
+        model = TemplateSyllabus
+        fields = ["q"]
+
+    def custom_search(self, queryset, name, value):
+        if not value:
+            return queryset
+        return queryset.filter(
+            Q(name__icontains=value) | Q(version__icontains=value)
+        )
+

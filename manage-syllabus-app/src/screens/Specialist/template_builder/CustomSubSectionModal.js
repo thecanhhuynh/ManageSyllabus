@@ -16,6 +16,20 @@ const REFERENCE_OPTIONS = [
   { value: "teaching_schedule", label: "Kế hoạch giảng dạy" },
 ];
 
+const DEFAULT_TABLE_SCHEMA = {
+  firstColumnHeader: "Tiêu đề hàng",
+  columns: [
+    { id: "c_1", headerName: "Cột 1", field: "c_1" },
+    { id: "c_2", headerName: "Cột 2", field: "c_2" },
+    { id: "c_3", headerName: "Cột 3", field: "c_3" },
+  ],
+  rows: [
+    { id: "r_1", rowTitle: "Hàng 1", customHeight: 60, c_1: "", c_2: "", c_3: "" },
+    { id: "r_2", rowTitle: "Hàng 2", customHeight: 60, c_1: "", c_2: "", c_3: "" },
+    { id: "r_3", rowTitle: "Hàng 3", customHeight: 60, c_1: "", c_2: "", c_3: "" },
+  ],
+};
+
 const CustomSubSectionModal = ({
   isOpen,
   onClose,
@@ -166,7 +180,11 @@ const CustomSubSectionModal = ({
         )}
 
         {selectedType === "table" && (
-          <Form.Item name="table_schema" className="mb-0">
+          <Form.Item
+            name="table_schema"
+            className="mb-0"
+            initialValue={DEFAULT_TABLE_SCHEMA}
+          >
             <TableSchemaBuilder />
           </Form.Item>
         )}

@@ -1,0 +1,39 @@
+- generic [active] [ref=f5e1]:
+  - generic [ref=f5e3]:
+    - banner [ref=f5e4]:
+      - generic [ref=f5e5]:
+        - link "H HCMOU Syllabus System" [ref=f5e6] [cursor=pointer]:
+          - /url: /specialist
+          - generic [ref=f5e7]: H
+          - generic [ref=f5e8]:
+            - strong [ref=f5e10]: HCMOU
+            - generic [ref=f5e11]: Syllabus System
+        - link [ref=f5e13] [cursor=pointer]:
+          - /url: /
+          - button "Trang chủ" [ref=f5e14]
+      - generic [ref=f5e26] [cursor=pointer]:
+        - strong [ref=f5e28]: test
+        - generic [ref=f5e29]: huynhthecanhpvh@gmail.com
+    - generic [ref=f5e110]:
+      - generic [ref=f5e111]:
+        - heading "Bảng điều khiển Specialist Template" [level=1] [ref=f5e112]
+        - paragraph [ref=f5e113]: Chọn một chức năng bên dưới để bắt đầu.
+      - generic [ref=f5e114]:
+        - generic [ref=f5e117] [cursor=pointer]:
+          - img "bank" [ref=f5e119]
+          - generic [ref=f5e122]:
+            - heading "Quản lý Phiên bản đề cương" [level=3] [ref=f5e123]
+            - paragraph [ref=f5e124]: Quản lý thông tin các phiên bản đề cương
+        - generic [ref=f5e127] [cursor=pointer]:
+          - img "tags" [ref=f5e129]
+          - generic [ref=f5e132]:
+            - heading "Danh mục Lựa chọn (Selection)" [level=3] [ref=f5e133]
+            - paragraph [ref=f5e134]: Quản lý các nhóm và giá trị lựa chọn cho đề cương
+    - contentinfo [ref=f5e92]:
+      - strong [ref=f5e94]: Hệ thống quản lý đề cương môn học
+      - generic [ref=f5e96]:
+        - generic [ref=f5e97]: Trường Đại học Mở Thành phố Hồ Chí Minh
+        - generic [ref=f5e98]: © 2026 - Bản quyền thuộc về Tôi Syllabus
+  - generic [ref=f5e136]:
+    - img "check-circle" [ref=f5e137]
+    - generic [ref=f5e140]: Đăng nhập thành công!

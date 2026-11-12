@@ -33,25 +33,25 @@ public class TableSubSectionStrategy implements CustomSubSectionStrategy {
     @Override
     public void cloneData(Long oldSubId, SyllabusesSubsection savedNewSub) {
         SyllabusesTablesubsection oldTable = this.tableSubSectionRepo.findById(oldSubId).orElse(null);
-        if (oldTable == null) {
-            return;
-        }
+        String data = (oldTable != null && oldTable.getData() != null)
+                ? oldTable.getData()
+                : "{\"columns\":[],\"rows\":[]}";
         SyllabusesTablesubsection newTable = new SyllabusesTablesubsection();
         newTable.setSubsectionPtrId(savedNewSub.getId());
-        newTable.setData(oldTable.getData());
+        newTable.setData(data);
         this.tableSubSectionRepo.save(newTable);
     }
 
     @Override
     public void initNewData(Long subId, SyllabusesSubsection newSub) {
         SyllabusesTemplatetablesubsection subTable = this.templateTableRepo.findById(subId).orElse(null);
-        if (subTable != null) {
-            SyllabusesTablesubsection tableSub = new SyllabusesTablesubsection();
-            tableSub.setSubsectionPtrId(newSub.getId());
-            tableSub.setData(subTable.getTableSchema());
-            tableSubSectionRepo.save(tableSub);
-        }
-
+        String data = (subTable != null && subTable.getTableSchema() != null)
+                ? subTable.getTableSchema()
+                : "{\"columns\":[],\"rows\":[]}";
+        SyllabusesTablesubsection tableSub = new SyllabusesTablesubsection();
+        tableSub.setSubsectionPtrId(newSub.getId());
+        tableSub.setData(data);
+        this.tableSubSectionRepo.save(tableSub);
     }
 
 }

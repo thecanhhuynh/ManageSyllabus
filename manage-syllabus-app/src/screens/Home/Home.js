@@ -1,8 +1,5 @@
 import {
   Button,
-  Card,
-  Input,
-  List,
   message,
   Select,
   Space,
@@ -10,16 +7,13 @@ import {
   Tooltip,
   Tabs,
   Modal,
+  Table,
 } from "antd";
 import {useContext, useEffect, useState} from "react";
 import {authApis, endpoints} from "../../config/Apis";
-import Text from "antd/es/typography/Text";
 import {
   SearchOutlined,
   EditOutlined,
-  BookOutlined,
-  UserOutlined,
-  CalendarOutlined,
   DownloadOutlined,
   CheckCircleOutlined,
   ClockCircleOutlined,
@@ -29,6 +23,7 @@ import {useNavigate} from "react-router-dom";
 import cookies from "react-cookies";
 import {MyUserContext} from "../../config/contexts/MyContext";
 import SignatureService from "../../services/signatureService";
+import CleanInput from "../../components/CleanInput";
 
 const Home = () => {
   const [user] = useContext(MyUserContext);
@@ -100,7 +95,6 @@ const Home = () => {
 
     try {
       setLoading(true);
-      await new Promise((resolve) => setTimeout(resolve, 500));
       let url = `${endpoints["syllabuses-programs"](tabId)}?page=${pageToLoad}`;
 
       if (q) {
@@ -114,21 +108,19 @@ const Home = () => {
       }
       const res = await authApis().get(url);
       if (res.status === 200) {
-        const newData = res.data.results;
+        const newData = res.data.results || res.data || [];
         const hasNext = res.data.next != null;
-        setTabCache((prev) => {
-          const existingItems = prev[tabId]?.items || [];
-          return {
-            ...prev,
-            [tabId]: {
-              items:
-                pageToLoad === 1 ? newData : [...existingItems, ...newData],
-              page: pageToLoad,
-              hasNext: hasNext,
-              loading: false,
-            },
-          };
-        });
+        const total = res.data.count || newData.length;
+        setTabCache((prev) => ({
+          ...prev,
+          [tabId]: {
+            items: newData,
+            total: total,
+            page: pageToLoad,
+            hasNext: hasNext,
+            loading: false,
+          },
+        }));
       } else {
         message.error("Tải danh sách đề cương môn học thất bại");
       }
@@ -295,28 +287,257 @@ const Home = () => {
     loadDropdown();
   }, [facultyPage, subjectPage]);
 
+  const canApproveItem = (item) => {
+    if (!isFacultyLeader) return false;
+    if (item.status !== "Submitted" || item.is_approved) return false;
+    const isSelfAuthored = Boolean(
+      (item.lecturer_id &&
+        (item.lecturer_id === user?.lecturer?.id ||
+          item.lecturer_id === user?.id)) ||
+      (item.lecturer?.id && item.lecturer.id === user?.lecturer?.id) ||
+      (item.lecturer?.user?.id && item.lecturer.user.id === user?.id),
+    );
+    const isAdmin = user?.is_superuser || user?.user_role === "admin";
+    if (isSelfAuthored && !isAdmin) return false;
+    return true;
+  };
+
+  const columns = [
+    {
+      title: "Mã môn",
+      key: "subject_code",
+      width: 110,
+      render: (_, record) => {
+        const code = record.subject_code || record.subject?.code;
+        return (
+          <div style={{minWidth: 80, whiteSpace: "nowrap"}}>
+            <Tag color="blue" style={{fontWeight: 600}}>
+              {code || "N/A"}
+            </Tag>
+          </div>
+        );
+      },
+    },
+    {
+      title: "Tên Đề cương / Học phần",
+      key: "name",
+      width: 320,
+      render: (_, record) => (
+        <div style={{minWidth: 260, wordBreak: "normal"}}>
+          <div
+            style={{
+              fontWeight: 600,
+              color: "#1f2937",
+              fontSize: 14,
+              cursor: "pointer",
+              wordBreak: "normal",
+              overflowWrap: "break-word",
+            }}
+            onClick={() => nav(`/syllabuses/${record.id}`)}
+          >
+            {record.name}
+          </div>
+          <div
+            style={{
+              fontSize: 12,
+              color: "#6b7280",
+              marginTop: 2,
+              wordBreak: "normal",
+              overflowWrap: "break-word",
+            }}
+          >
+            Học phần: {record.subject_name || record.subject?.name || "N/A"}
+          </div>
+          {record.training_programs && record.training_programs.length > 0 && (
+            <div
+              style={{marginTop: 4, display: "flex", flexWrap: "wrap", gap: 4}}
+            >
+              {record.training_programs.map((tp) => (
+                <Tag
+                  key={tp.id}
+                  color="purple"
+                  style={{fontSize: 11, margin: 0, whiteSpace: "nowrap"}}
+                >
+                  {tp.name}-{tp.academic_year}
+                </Tag>
+              ))}
+            </div>
+          )}
+        </div>
+      ),
+    },
+    {
+      title: "Giảng viên biên soạn",
+      key: "lecturer",
+      width: 200,
+      render: (_, record) => {
+        const lecName =
+          record.lecturer_name ||
+          (record.lecturer?.last_name
+            ? `${record.lecturer.last_name} ${record.lecturer.first_name}`.trim()
+            : "N/A");
+        return (
+          <div style={{minWidth: 150, wordBreak: "normal"}}>
+            <div style={{fontWeight: 500, color: "#374151"}}>{lecName}</div>
+            {record.created_date && (
+              <div style={{fontSize: 11, color: "#9ca3af", marginTop: 2}}>
+                Tạo: {new Date(record.created_date).toLocaleDateString("vi-VN")}
+              </div>
+            )}
+          </div>
+        );
+      },
+    },
+    {
+      title: "Trạng thái",
+      key: "status",
+      width: 150,
+      render: (_, record) => {
+        const isApproved = Boolean(
+          record.is_approved || record.status === "Approved",
+        );
+        if (isApproved) {
+          return (
+            <Tooltip
+              title={
+                record.approved_by_name
+                  ? `Được duyệt bởi ${record.approved_by_name}${record.approved_date ? ` lúc ${record.approved_date}` : ""}`
+                  : "Đề cương đã được phê duyệt"
+              }
+            >
+              <Tag color="success" icon={<CheckCircleOutlined />}>
+                Đã phê duyệt
+              </Tag>
+            </Tooltip>
+          );
+        }
+        if (record.status === "Submitted") {
+          return (
+            <Tag color="warning" icon={<ClockCircleOutlined />}>
+              Chờ phê duyệt
+            </Tag>
+          );
+        }
+        return (
+          <Tag color="default" icon={<ClockCircleOutlined />}>
+            Bản nháp
+          </Tag>
+        );
+      },
+    },
+    {
+      title: "Người phê duyệt",
+      key: "approver",
+      width: 180,
+      render: (_, record) => {
+        const isApproved = Boolean(
+          record.is_approved || record.status === "Approved",
+        );
+        if (!isApproved) {
+          return (
+            <span style={{color: "#9ca3af", fontStyle: "italic"}}>
+              Chưa phê duyệt
+            </span>
+          );
+        }
+        return (
+          <div>
+            <div style={{fontWeight: 600, color: "#16a34a"}}>
+              {record.approved_by_name || "Lãnh đạo Khoa"}
+            </div>
+            {record.approved_date && (
+              <div style={{fontSize: 11, color: "#6b7280"}}>
+                {record.approved_date}
+              </div>
+            )}
+          </div>
+        );
+      },
+    },
+    {
+      title: "Thao tác",
+      key: "actions",
+      width: 250,
+      fixed: "right",
+      render: (_, item) => {
+        const canApprove = canApproveItem(item);
+        const isApproved = Boolean(
+          item.status === "Approved" || item.is_approved,
+        );
+        return (
+          <Space size="small" wrap={false} style={{whiteSpace: "nowrap"}}>
+            <Tooltip title="Chỉnh sửa đề cương">
+              <Button
+                size="small"
+                icon={<EditOutlined />}
+                type="primary"
+                ghost
+                onClick={() => nav(`/syllabuses/${item.id}`)}
+              >
+                Chỉnh sửa
+              </Button>
+            </Tooltip>
+            {canApprove && (
+              <Tooltip title="Phê duyệt đề cương">
+                <Button
+                  size="small"
+                  type="primary"
+                  icon={<CheckCircleOutlined />}
+                  style={{backgroundColor: "#16a34a", borderColor: "#16a34a"}}
+                  onClick={() => handleQuickApprove(item)}
+                >
+                  Phê duyệt
+                </Button>
+              </Tooltip>
+            )}
+            <Tooltip
+              title={
+                isApproved
+                  ? "Tải xuống file Word"
+                  : "Đề cương chưa được phê duyệt"
+              }
+            >
+              <Button
+                size="small"
+                icon={<DownloadOutlined />}
+                loading={exportingId === item.id}
+                style={{color: "#52c41a", borderColor: "#52c41a"}}
+                onClick={() => handleExportDocx(item)}
+              >
+                Xuất file
+              </Button>
+            </Tooltip>
+          </Space>
+        );
+      },
+    },
+  ];
+
   return (
     <div style={{maxWidth: 1200, margin: "40px auto", padding: "0 20px"}}>
       <Space direction="vertical" size="large" style={{width: "100%"}}>
         <div
           style={{
             display: "flex",
-            justifyContent: "space-between",
+            gap: 12,
+            flexWrap: "wrap",
             alignItems: "center",
           }}
         >
-          <Input
-            placeholder="Tìm kiếm đề cương..."
-            prefix={<SearchOutlined />}
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            style={{width: 300, borderRadius: 20}}
-            allowClear
-          />
+          <div style={{flex: "1 1 250px", minWidth: 200}}>
+            <CleanInput
+              placeholder="Tìm kiếm đề cương..."
+              prefix={<SearchOutlined />}
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              style={{width: "100%", borderRadius: 20}}
+              allowClear
+            />
+          </div>
           <Select
             loading={loading}
             placeholder="Chọn Khoa"
-            style={{width: 200}}
+            style={{flex: "1 1 180px", minWidth: 150}}
             allowClear
             onChange={setFacultyId}
             onPopupScroll={(e) => {
@@ -339,7 +560,7 @@ const Home = () => {
           <Select
             loading={loading}
             placeholder="Chọn môn học"
-            style={{width: 200}}
+            style={{flex: "1 1 180px", minWidth: 150}}
             allowClear
             onChange={setSubjectId}
             onPopupScroll={(e) => {
@@ -362,7 +583,7 @@ const Home = () => {
 
           <Select
             placeholder="Lọc trạng thái"
-            style={{width: 170}}
+            style={{flex: "1 1 160px", minWidth: 140}}
             allowClear
             value={statusFilter}
             onChange={(val) => setStatusFilter(val || "all")}
@@ -412,324 +633,21 @@ const Home = () => {
                   {isFirstLoad ? (
                     <MySpinner />
                   ) : (
-                    <>
-                      {displayItems.length === 0 ? (
-                        <div
-                          style={{
-                            textAlign: "center",
-                            color: "#8c8c8c",
-                            marginTop: 40,
-                          }}
-                        >
-                          Không có đề cương nào phù hợp.
-                        </div>
-                      ) : (
-                        <List
-                          className="syllabus-card-grid"
-                          grid={{
-                            gutter: [24, 24],
-                            xs: 1,
-                            sm: 2,
-                            md: 2,
-                            lg: 3,
-                            xl: 3,
-                            xxl: 4,
-                          }}
-                          dataSource={displayItems}
-                          renderItem={(item) => (
-                            <List.Item
-                              style={{
-                                height: "100%",
-                                marginBottom: 0,
-                                display: "flex",
-                                flexDirection: "column",
-                              }}
-                            >
-                              <Card
-                                hoverable
-                                style={{
-                                  width: "100%",
-                                  height: "100%",
-                                  display: "flex",
-                                  flexDirection: "column",
-                                  borderRadius: 12,
-                                  overflow: "hidden",
-                                  border: "1px solid #e8e8e8",
-                                }}
-                                headStyle={{
-                                  height: 80,
-                                  minHeight: 80,
-                                  display: "flex",
-                                  alignItems: "center",
-                                  padding: "0 16px",
-                                  borderBottom: "1px solid #f0f0f0",
-                                }}
-                                bodyStyle={{
-                                  flex: 1,
-                                  display: "flex",
-                                  flexDirection: "column",
-                                  justifyContent: "space-between",
-                                  padding: "16px 20px",
-                                }}
-                                extra={
-                                  (item.status === "Approved" || item.is_approved) && item.approved_by ? (
-                                    <Tooltip
-                                      title={
-                                        item.approved_by_name
-                                          ? `Được phê duyệt bởi ${item.approved_by_name}${item.approved_date ? ` lúc ${item.approved_date}` : ""}`
-                                          : "Đề cương đã được Lãnh đạo Khoa phê duyệt"
-                                      }
-                                    >
-                                      <Tag
-                                        color="success"
-                                        icon={<CheckCircleOutlined />}
-                                        style={{ margin: 0, flexShrink: 0 }}
-                                      >
-                                        Đã phê duyệt
-                                      </Tag>
-                                    </Tooltip>
-                                  ) : (
-                                    <Tag
-                                      color="warning"
-                                      icon={<ClockCircleOutlined />}
-                                      style={{ margin: 0, flexShrink: 0 }}
-                                    >
-                                      {item.status === "Submitted"
-                                        ? "Chờ phê duyệt"
-                                        : "Bản nháp"}
-                                    </Tag>
-                                  )
-                                }
-                                title={
-                                  <div style={{ paddingRight: 8 }}>
-                                    <Tooltip title={item.name} placement="topLeft">
-                                      <Text
-                                        strong
-                                        style={{
-                                          fontSize: 15,
-                                          color: "#00529C",
-                                          display: "-webkit-box",
-                                          WebkitLineClamp: 2,
-                                          WebkitBoxOrient: "vertical",
-                                          overflow: "hidden",
-                                          textOverflow: "ellipsis",
-                                          lineHeight: 1.35,
-                                          wordBreak: "break-word",
-                                        }}
-                                      >
-                                        {item.name}
-                                      </Text>
-                                    </Tooltip>
-                                  </div>
-                                }
-                                actions={[
-                                  <Tooltip title="Chỉnh sửa đề cương">
-                                    <Button
-                                      type="text"
-                                      icon={<EditOutlined />}
-                                      style={{color: "#1890ff"}}
-                                      onClick={() =>
-                                        nav(`/syllabuses/${item.id}`)
-                                      }
-                                    >
-                                      Chỉnh sửa
-                                    </Button>
-                                  </Tooltip>,
-                                  ...(isFacultyLeader &&
-                                  !((item.status === "Approved" || item.is_approved) && item.approved_by)
-                                    ? [
-                                        <Tooltip title="Phê duyệt đề cương">
-                                          <Button
-                                            type="text"
-                                            icon={<CheckCircleOutlined />}
-                                            style={{
-                                              color: "#16a34a",
-                                              fontWeight: 600,
-                                            }}
-                                            onClick={() =>
-                                              handleQuickApprove(item)
-                                            }
-                                          >
-                                            Phê duyệt
-                                          </Button>
-                                        </Tooltip>,
-                                      ]
-                                    : []),
-                                  <Tooltip
-                                    title={
-                                      item.status === "Approved" ||
-                                      item.is_approved
-                                        ? "Tải xuống file Word"
-                                        : "Đề cương chưa được phê duyệt"
-                                    }
-                                  >
-                                    <Button
-                                      type="text"
-                                      icon={<DownloadOutlined />}
-                                      loading={exportingId === item.id}
-                                      style={{color: "#52c41a"}}
-                                      onClick={() => handleExportDocx(item)}
-                                    >
-                                      Xuất file
-                                    </Button>
-                                  </Tooltip>,
-                                ]}
-                              >
-                                <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
-                                  <Space
-                                    direction="vertical"
-                                    size="middle"
-                                    style={{width: "100%"}}
-                                  >
-                                    <div
-                                      style={{
-                                        display: "flex",
-                                        alignItems: "flex-start",
-                                        gap: 8,
-                                      }}
-                                    >
-                                      <BookOutlined
-                                        style={{color: "#8c8c8c", marginTop: 4, flexShrink: 0}}
-                                      />
-                                      <Text
-                                        type="secondary"
-                                        ellipsis={{ tooltip: item.subject_name }}
-                                      >
-                                        {item.subject_name}
-                                      </Text>
-                                    </div>
-
-                                    <div
-                                      style={{
-                                        display: "flex",
-                                        alignItems: "center",
-                                        gap: 8,
-                                      }}
-                                    >
-                                      <UserOutlined style={{color: "#8c8c8c", flexShrink: 0}} />
-                                      <Text
-                                        strong
-                                        ellipsis={{ tooltip: item.lecturer_name }}
-                                      >
-                                        Giảng viên: {item.lecturer_name}
-                                      </Text>
-                                    </div>
-
-                                    {Boolean(
-                                      (item.status === "Approved" ||
-                                        item.is_approved) &&
-                                        item.approved_by &&
-                                        item.approved_by_name,
-                                    ) ? (
-                                      <div
-                                        style={{
-                                          display: "flex",
-                                          alignItems: "center",
-                                          gap: 8,
-                                          fontSize: 13,
-                                          color: "#16a34a",
-                                          minHeight: 22,
-                                        }}
-                                      >
-                                        <CheckCircleOutlined
-                                          style={{color: "#16a34a", flexShrink: 0}}
-                                        />
-                                        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                                          Phê duyệt bởi:{" "}
-                                          <strong>{item.approved_by_name}</strong>
-                                        </span>
-                                      </div>
-                                    ) : (
-                                      <div
-                                        style={{
-                                          display: "flex",
-                                          alignItems: "center",
-                                          gap: 8,
-                                          fontSize: 13,
-                                          color: "#8c8c8c",
-                                          minHeight: 22,
-                                        }}
-                                      >
-                                        <ClockCircleOutlined
-                                          style={{color: "#8c8c8c", flexShrink: 0}}
-                                        />
-                                        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                                          Phê duyệt bởi:{" "}
-                                          <span style={{ fontStyle: "italic", color: "#8c8c8c" }}>
-                                            Chưa phê duyệt
-                                          </span>
-                                        </span>
-                                      </div>
-                                    )}
-
-                                    <div
-                                      style={{
-                                        display: "flex",
-                                        alignItems: "center",
-                                        gap: 8,
-                                      }}
-                                    >
-                                      <CalendarOutlined
-                                        style={{color: "#8c8c8c", flexShrink: 0}}
-                                      />
-                                      <Text
-                                        type="secondary"
-                                        style={{fontSize: 13}}
-                                      >
-                                        Ngày tạo:{" "}
-                                        {item.created_date
-                                          ? new Date(
-                                              item.created_date,
-                                            ).toLocaleDateString("vi-VN")
-                                          : "N/A"}
-                                      </Text>
-                                    </div>
-                                  </Space>
-
-                                  <div style={{ minHeight: 20, marginTop: 12 }}>
-                                    {item.edit_date && (
-                                      <div
-                                        style={{
-                                          fontSize: 12,
-                                          color: "#fa8c16",
-                                          fontStyle: "italic",
-                                          overflow: "hidden",
-                                          textOverflow: "ellipsis",
-                                          whiteSpace: "nowrap",
-                                        }}
-                                        title={item.edit_date}
-                                      >
-                                        * {item.edit_date}
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>
-                              </Card>
-                            </List.Item>
-                          )}
-                        />
-                      )}
-
-                      {currentCache.hasNext && (
-                        <div style={{textAlign: "center", marginTop: 20}}>
-                          <Button
-                            type="primary"
-                            shape="round"
-                            size="large"
-                            loading={isLoading}
-                            onClick={() =>
-                              loadSyllabuses(prog.id, currentCache.page + 1)
-                            }
-                            style={{
-                              backgroundColor: "#00529C",
-                              padding: "0 40px",
-                            }}
-                          >
-                            Tải thêm đề cương
-                          </Button>
-                        </div>
-                      )}
-                    </>
+                    <Table
+                      rowKey="id"
+                      loading={isLoading}
+                      dataSource={displayItems}
+                      columns={columns}
+                      pagination={{
+                        current: currentCache.page || 1,
+                        pageSize: 10,
+                        total: currentCache.total || displayItems.length,
+                        showTotal: (total) => `Tổng cộng ${total} đề cương`,
+                        showSizeChanger: false,
+                        onChange: (newPage) => loadSyllabuses(prog.id, newPage),
+                      }}
+                      scroll={{x: 1240}}
+                    />
                   )}
                 </div>
               ),

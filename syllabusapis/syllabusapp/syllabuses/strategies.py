@@ -1,3 +1,5 @@
+import copy
+import json
 from rest_framework import serializers
 
 from syllabuses.models import TemplateSelectionSubSection, TemplateTableSubSection, TemplateTextSubSection, \
@@ -135,14 +137,34 @@ class TableStrategy(SubSectionStrategy):
         )
 
     def init_syllabus_sub_section(self, tpl_sub, main_sec):
-        table_cols = []
-        if hasattr(tpl_sub, 'templatetablesubsection') and tpl_sub.templatetablesubsection.table_schema:
-            table_cols = tpl_sub.templatetablesubsection.table_schema.get("columns", [])
+        schema = self._get_template_schema(tpl_sub)
         return TableSubSection.objects.create(
-            main_section=main_sec, code=tpl_sub.code, type=tpl_sub.type,
-            name=tpl_sub.name, position=tpl_sub.position,
-            data={"columns": table_cols, "rows": []}
+            main_section=main_sec,
+            code=tpl_sub.code,
+            type=tpl_sub.type,
+            name=tpl_sub.name,
+            position=tpl_sub.position,
+            data=schema
         )
+
+    def _get_template_schema(self, tpl_sub):
+        raw_schema = None
+        if hasattr(tpl_sub, 'table_schema'):
+            raw_schema = tpl_sub.table_schema
+        elif hasattr(tpl_sub, 'templatetablesubsection'):
+            raw_schema = tpl_sub.templatetablesubsection.table_schema
+
+        if not raw_schema:
+            return {"columns": [], "rows": []}
+        if isinstance(raw_schema, str):
+            try:
+                raw_schema = json.loads(raw_schema)
+            except Exception:
+                return {"columns": [], "rows": []}
+        schema = copy.deepcopy(raw_schema) if isinstance(raw_schema, dict) else {}
+        schema.setdefault("columns", [])
+        schema.setdefault("rows", [])
+        return schema
 
 
 class SelectionStrategy(SubSectionStrategy):

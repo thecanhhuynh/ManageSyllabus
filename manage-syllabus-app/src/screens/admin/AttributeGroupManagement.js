@@ -4,7 +4,6 @@ import {
   Button,
   Modal,
   Form,
-  Input,
   message,
   Space,
   Tag,
@@ -19,15 +18,19 @@ import {
   PlusOutlined,
   ArrowLeftOutlined,
   TagsOutlined,
+  SearchOutlined,
 } from "@ant-design/icons";
 import { authApis, endpoints } from "../../config/Apis";
 import { useNavigate } from "react-router-dom";
+import CleanInput from "../../components/CleanInput";
+import { cleanWhitespace } from "../../utils/stringUtils";
 
 const { Title, Text } = Typography;
 
 const AttributeGroupManagement = () => {
   const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [searchText, setSearchText] = useState("");
   const [groupModal, setGroupModal] = useState({ open: false, record: null });
   const [valuesModal, setValuesModal] = useState({ open: false, group: null });
   const [newValueName, setNewValueName] = useState("");
@@ -68,7 +71,7 @@ const AttributeGroupManagement = () => {
   const handleSaveGroup = async () => {
     try {
       const values = await form.validateFields();
-      const name = values.name.trim();
+      const name = cleanWhitespace(values.name);
 
       if (groupModal.record) {
         await authApis().patch(
@@ -80,7 +83,7 @@ const AttributeGroupManagement = () => {
         const rawVals = values.initial_values || "";
         const initialValues = rawVals
           .split("\n")
-          .map((v) => v.trim())
+          .map((v) => cleanWhitespace(v))
           .filter(Boolean);
 
         await authApis().post(endpoints["attribute-groups"], {
@@ -116,7 +119,7 @@ const AttributeGroupManagement = () => {
   };
 
   const handleAddValue = async () => {
-    const valText = newValueName.trim();
+    const valText = cleanWhitespace(newValueName);
     if (!valText) {
       message.warning("Vui lòng nhập tên giá trị!");
       return;
@@ -148,7 +151,7 @@ const AttributeGroupManagement = () => {
   };
 
   const handleUpdateValue = async (valId) => {
-    const newName = editValueName.trim();
+    const newName = cleanWhitespace(editValueName);
     if (!newName) {
       message.warning("Tên giá trị không được để trống!");
       return;
@@ -210,12 +213,13 @@ const AttributeGroupManagement = () => {
       title: "Tên nhóm danh mục lựa chọn",
       dataIndex: "name",
       key: "name",
-      width: 280,
+      width: 260,
       render: (text) => <Text strong style={{ color: "#1e3a8a" }}>{text}</Text>,
     },
     {
       title: "Các giá trị tùy chọn (Options)",
       key: "values",
+      minWidth: 260,
       render: (_, record) => {
         const vals = record.attribute_values || [];
         if (vals.length === 0) {
@@ -245,6 +249,7 @@ const AttributeGroupManagement = () => {
       title: "Thao tác",
       key: "actions",
       width: 180,
+      fixed: "right",
       align: "center",
       render: (_, record) => (
         <Space size="small">
@@ -299,12 +304,33 @@ const AttributeGroupManagement = () => {
       </div>
 
       <Card bordered={false} style={{ borderRadius: 12, boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
+        <div className="mb-4 max-w-md">
+          <CleanInput
+            placeholder="Tìm kiếm nhóm thuộc tính theo tên hoặc mã..."
+            prefix={<SearchOutlined className="text-gray-400" />}
+            allowClear
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+          />
+        </div>
         <Table
           rowKey="id"
-          dataSource={groups}
+          dataSource={groups.filter((g) => {
+            if (!searchText.trim()) return true;
+            const q = searchText.toLowerCase().trim();
+            return (
+              (g.name || "").toLowerCase().includes(q) ||
+              (g.code || "").toLowerCase().includes(q)
+            );
+          })}
           columns={columns}
           loading={loading}
-          pagination={{ pageSize: 10 }}
+          scroll={{x: 870}}
+          pagination={{
+            pageSize: 10,
+            showTotal: (total) => `Tổng cộng ${total} nhóm thuộc tính`,
+            showSizeChanger: false,
+          }}
         />
       </Card>
 
@@ -324,7 +350,7 @@ const AttributeGroupManagement = () => {
             label="Tên nhóm danh mục"
             rules={[{ required: true, message: "Vui lòng nhập tên nhóm danh mục!" }]}
           >
-            <Input placeholder="VD: Hình thức thực tập, Phương thức kiểm tra..." />
+            <CleanInput placeholder="VD: Hình thức thực tập, Phương thức kiểm tra..." />
           </Form.Item>
 
           {!groupModal.record && (
@@ -332,7 +358,7 @@ const AttributeGroupManagement = () => {
               name="initial_values"
               label="Các giá trị khởi tạo (Mỗi giá trị 1 dòng)"
             >
-              <Input.TextArea
+              <CleanInput.TextArea
                 rows={4}
                 placeholder={"Ví dụ:\nTrực tiếp tại doanh nghiệp\nLàm việc từ xa (Remote)\nThực tập tại phòng Lab"}
               />
@@ -358,7 +384,7 @@ const AttributeGroupManagement = () => {
       >
         <div className="py-2">
           <div className="flex gap-2 mb-4">
-            <Input
+            <CleanInput
               placeholder="Nhập tên giá trị mới..."
               value={newValueName}
               onChange={(e) => setNewValueName(e.target.value)}
@@ -424,7 +450,7 @@ const AttributeGroupManagement = () => {
                 ]}
               >
                 {editingValue?.id === item.id ? (
-                  <Input
+                  <CleanInput
                     size="small"
                     value={editValueName}
                     onChange={(e) => setEditValueName(e.target.value)}

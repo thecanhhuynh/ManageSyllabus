@@ -6,7 +6,6 @@ import {
   Button,
   Typography,
   Space,
-  Input,
   Select,
   Tooltip,
   Modal,
@@ -33,6 +32,8 @@ import {authApis, endpoints} from "../../config/Apis";
 import SignatureService from "../../services/signatureService";
 import {resolveMediaUrl} from "../../utils/mediaUtils";
 import MySpinner from "../../components/MySpinner";
+import CleanInput from "../../components/CleanInput";
+import {cleanWhitespace} from "../../utils/stringUtils";
 
 const {Title, Text} = Typography;
 
@@ -183,7 +184,7 @@ const FacultyApprovals = () => {
   const loadSyllabuses = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await authApis().get(endpoints["syllabuses"]);
+      const res = await authApis().get(`${endpoints["syllabuses"]}?page_size=1000`);
       const list = res.data?.results || res.data || [];
       setSyllabuses(list);
       mergeOptionsFromSyllabuses(list);
@@ -315,13 +316,14 @@ const FacultyApprovals = () => {
   const handleConfirmUnapprove = async () => {
     const {record, reason} = unapproveModal;
     if (!record?.id) return;
-    if (!reason.trim()) {
+    const cleanReason = cleanWhitespace(reason);
+    if (!cleanReason) {
       message.warning("Vui lòng nhập lý do hoặc ghi chú yêu cầu chỉnh sửa!");
       return;
     }
     try {
       setUnapproveModal((prev) => ({...prev, loading: true}));
-      await SignatureService.unapproveSyllabus(record.id, reason.trim());
+      await SignatureService.unapproveSyllabus(record.id, cleanReason);
       message.success(
         `Đã chuyển đề cương #${record.id} về Bản nháp để giảng viên chỉnh sửa.`,
       );
@@ -397,25 +399,43 @@ const FacultyApprovals = () => {
       title: "Mã môn",
       dataIndex: ["subject", "code"],
       key: "code",
-      width: 110,
+      width: 100,
       render: (code) => (
-        <Tag color="blue" style={{fontWeight: 600}}>
-          {code || "N/A"}
-        </Tag>
+        <div style={{minWidth: 80, whiteSpace: "nowrap"}}>
+          <Tag color="blue" style={{fontWeight: 600}}>
+            {code || "N/A"}
+          </Tag>
+        </div>
       ),
     },
     {
       title: "Tên Đề cương / Học phần",
       key: "name",
+      width: 320,
       render: (_, record) => (
-        <div>
-          <div style={{fontWeight: 600, color: "#1f2937", fontSize: 14}}>
+        <div style={{minWidth: 260, wordBreak: "normal"}}>
+          <div
+            style={{
+              fontWeight: 600,
+              color: "#1f2937",
+              fontSize: 14,
+              wordBreak: "normal",
+              overflowWrap: "break-word",
+            }}
+          >
             {record.name || record.subject?.name || "Đề cương chi tiết"}
           </div>
-          <div style={{fontSize: 12, color: "#6b7280"}}>
+          <div
+            style={{
+              fontSize: 12,
+              color: "#6b7280",
+              wordBreak: "normal",
+              overflowWrap: "break-word",
+            }}
+          >
             Học phần: {record.subject?.name || "N/A"}
           </div>
-          {record.training_programs && record.training_programs.length > 0 && (
+          {record.training_programs && record.training_programs.length > 0 ? (
             <div
               style={{marginTop: 4, display: "flex", flexWrap: "wrap", gap: 4}}
             >
@@ -423,11 +443,17 @@ const FacultyApprovals = () => {
                 <Tag
                   key={tp.id}
                   color="purple"
-                  style={{fontSize: 11, margin: 0}}
+                  style={{fontSize: 11, margin: 0, whiteSpace: "nowrap"}}
                 >
                   {tp.name}-{tp.academic_year}
                 </Tag>
               ))}
+            </div>
+          ) : (
+            <div style={{marginTop: 4}}>
+              <Tag color="orange" style={{fontSize: 11, margin: 0}}>
+                Chưa gán CTĐT
+              </Tag>
             </div>
           )}
         </div>
@@ -444,7 +470,7 @@ const FacultyApprovals = () => {
           record.lecturer_name ||
           "N/A";
         return (
-          <div>
+          <div style={{minWidth: 160, wordBreak: "normal"}}>
             <div style={{fontWeight: 500, color: "#374151"}}>{name}</div>
             <div style={{marginTop: 3}}>
               {lec?.has_signature ? (
@@ -535,7 +561,7 @@ const FacultyApprovals = () => {
         const canApprove = !isSelfAuthored || isAdmin;
 
         return (
-          <Space size="small">
+          <Space size="small" wrap={false} style={{whiteSpace: "nowrap"}}>
             <Tooltip title="Xem nội dung chi tiết">
               <Button
                 size="small"
@@ -551,6 +577,8 @@ const FacultyApprovals = () => {
                 title={
                   !canApprove
                     ? "Bạn là giảng viên biên soạn đề cương này, không thể tự phê duyệt theo quy định BR-04."
+                    : record.status !== "Submitted"
+                    ? "Đề cương đang là bản nháp / chờ giảng viên chỉnh sửa và ký nộp lại."
                     : "Ký duyệt đề cương"
                 }
               >
@@ -558,11 +586,17 @@ const FacultyApprovals = () => {
                   <Button
                     size="small"
                     type="primary"
-                    disabled={!canApprove}
+                    disabled={!canApprove || record.status !== "Submitted"}
                     icon={<SafetyCertificateOutlined />}
                     style={{
-                      backgroundColor: canApprove ? "#16a34a" : undefined,
-                      borderColor: canApprove ? "#16a34a" : undefined,
+                      backgroundColor:
+                        canApprove && record.status === "Submitted"
+                          ? "#16a34a"
+                          : undefined,
+                      borderColor:
+                        canApprove && record.status === "Submitted"
+                          ? "#16a34a"
+                          : undefined,
                     }}
                     onClick={() => handleOpenApproveModal(record)}
                   >
@@ -734,8 +768,8 @@ const FacultyApprovals = () => {
       >
         <div className="mb-4">
           <Row gutter={[12, 12]} align="middle">
-            <Col xs={24} lg={8}>
-              <Input
+            <Col xs={24} md={8}>
+              <CleanInput
                 placeholder="Tìm mã môn, tên môn, đề cương, giảng viên..."
                 prefix={<SearchOutlined style={{color: "#bfbfbf"}} />}
                 value={searchText}
@@ -743,7 +777,7 @@ const FacultyApprovals = () => {
                 allowClear
               />
             </Col>
-            <Col xs={12} sm={6} lg={4}>
+            <Col xs={12} sm={12} md={6} lg={4}>
               <Select
                 value={programFilter}
                 onChange={setProgramFilter}
@@ -761,7 +795,7 @@ const FacultyApprovals = () => {
                 }
               />
             </Col>
-            <Col xs={12} sm={6} lg={4}>
+            <Col xs={12} sm={12} md={6} lg={4}>
               <Select
                 value={subjectFilter}
                 onChange={setSubjectFilter}
@@ -779,7 +813,7 @@ const FacultyApprovals = () => {
                 }
               />
             </Col>
-            <Col xs={12} sm={6} lg={4}>
+            <Col xs={12} sm={12} md={6} lg={4}>
               <Select
                 value={lecturerFilter}
                 onChange={setLecturerFilter}
@@ -797,7 +831,7 @@ const FacultyApprovals = () => {
                 }
               />
             </Col>
-            <Col xs={12} sm={6} lg={4}>
+            <Col xs={12} sm={12} md={6} lg={4}>
               <Select
                 value={statusFilter}
                 onChange={setStatusFilter}
@@ -843,8 +877,9 @@ const FacultyApprovals = () => {
             pagination={{
               pageSize: 10,
               showTotal: (total) => `Tổng cộng ${total} đề cương`,
+              showSizeChanger: false,
             }}
-            scroll={{x: 1000}}
+            scroll={{x: 1280}}
           />
         )}
       </Card>
@@ -954,7 +989,7 @@ const FacultyApprovals = () => {
           <p style={{color: "#4b5563", fontSize: 13, marginBottom: 8}}>
             Vui lòng nhập lý do hoặc các điểm cần sửa đổi để giảng viên nắm rõ:
           </p>
-          <Input.TextArea
+          <CleanInput.TextArea
             rows={4}
             placeholder="Ví dụ: Cần cập nhật lại chuẩn đầu ra CLO 2.1 và bổ sung giáo trình mới..."
             value={unapproveModal.reason}

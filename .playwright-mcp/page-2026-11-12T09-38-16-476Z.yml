@@ -1,0 +1,197 @@
+- generic [ref=f12e1]:
+  - generic [ref=f12e9]:
+    - banner [ref=f12e10]:
+      - link "H HCMOU Syllabus System" [ref=f12e12] [cursor=pointer]:
+        - /url: /
+        - generic [ref=f12e13]: H
+        - generic [ref=f12e14]:
+          - strong [ref=f12e16]: HCMOU
+          - generic [ref=f12e17]: Syllabus System
+      - img "user" [ref=f12e21] [cursor=pointer]
+    - generic [ref=f12e26]:
+      - generic [ref=f12e27]:
+        - generic [ref=f12e28]:
+          - heading "Phê duyệt Đề cương Khoa" [level=3] [ref=f12e29]
+          - generic [ref=f12e30]: "Đơn vị: Khoa Công nghệ thông tin | Người phụ trách: Trưởng Khoa CNTT"
+        - button "reload Làm mới" [ref=f12e31] [cursor=pointer]:
+          - img "reload" [ref=f12e33]
+          - generic [ref=f12e36]: Làm mới
+      - generic [ref=f12e37]:
+        - generic [ref=f12e41]:
+          - generic [ref=f12e42]: Tổng số đề cương
+          - generic [ref=f12e44]: "12"
+        - generic [ref=f12e49]:
+          - generic [ref=f12e50]: Chờ phê duyệt
+          - generic [ref=f12e52]: "3"
+        - generic [ref=f12e57]:
+          - generic [ref=f12e58]: Đã phê duyệt
+          - generic [ref=f12e60]: "0"
+        - generic [ref=f12e65]:
+          - generic [ref=f12e66]: Bản nháp
+          - generic [ref=f12e68]: "9"
+      - generic [ref=f12e71]:
+        - generic [ref=f12e72]:
+          - generic [ref=f12e73]:
+            - generic [ref=f12e75]:
+              - img "search" [ref=f12e77]
+              - textbox "Tìm mã môn, tên môn, đề cương, giảng viên..." [ref=f12e80]
+            - generic [ref=f12e83]:
+              - generic "Tất cả CTĐT" [ref=f12e84]:
+                - text: Tất cả CTĐT
+                - combobox [ref=f12e85]
+              - img "down" [ref=f12e87]
+            - generic [ref=f12e91]:
+              - generic "Tất cả môn học" [ref=f12e92]:
+                - text: Tất cả môn học
+                - combobox [ref=f12e93]
+              - img "down" [ref=f12e95]
+            - generic [ref=f12e99]:
+              - generic "Tất cả giảng viên" [ref=f12e100]:
+                - text: Tất cả giảng viên
+                - combobox [ref=f12e101]
+              - img "down" [ref=f12e103]
+            - generic [ref=f12e106]:
+              - generic: Chờ phê duyệt
+              - generic [ref=f12e107] [cursor=pointer]:
+                - generic "Chờ phê duyệt" [ref=f12e541]:
+                  - text: Chờ phê duyệt
+                  - combobox [active] [ref=f12e109]
+                - img "down" [ref=f12e111]
+          - generic [ref=f12e542]:
+            - generic [ref=f12e543]:
+              - text: "Đang áp dụng bộ lọc: Tìm thấy"
+              - strong [ref=f12e544]: "3"
+              - text: / 12 đề cương
+            - button "clear Đặt lại bộ lọc" [ref=f12e545] [cursor=pointer]:
+              - img "clear" [ref=f12e547]
+              - generic [ref=f12e550]: Đặt lại bộ lọc
+        - generic [ref=f12e116]:
+          - table [ref=f12e120]:
+            - rowgroup [ref=f12e128]:
+              - row [ref=f12e129]:
+                - columnheader "Mã môn" [ref=f12e130]
+                - columnheader "Tên Đề cương / Học phần" [ref=f12e131]
+                - columnheader "Giảng viên biên soạn" [ref=f12e132]
+                - columnheader "Trạng thái" [ref=f12e133]
+                - columnheader "Người phê duyệt" [ref=f12e134]
+                - columnheader "Thao tác" [ref=f12e135]
+            - rowgroup [ref=f12e136]:
+              - row [ref=f12e425]:
+                - cell "CSE101" [ref=f12e426]
+                - 'cell "Đề cương chi tiết học phần CTDL & GT - v1.0_copy Học phần: Cấu trúc dữ liệu và giải thuật CTĐT-KHMT-2023" [ref=f12e429]':
+                  - generic [ref=f12e430]:
+                    - generic [ref=f12e431]: Đề cương chi tiết học phần CTDL & GT - v1.0_copy
+                    - generic [ref=f12e432]: "Học phần: Cấu trúc dữ liệu và giải thuật"
+                    - generic [ref=f12e433]: CTĐT-KHMT-2023
+                - cell "Thị Trần Đã có chữ ký" [ref=f12e435]:
+                  - generic [ref=f12e436]:
+                    - generic [ref=f12e437]: Thị Trần
+                    - generic [ref=f12e438]: Đã có chữ ký
+                - cell [ref=f12e440]:
+                  - generic [ref=f12e441]:
+                    - img "clock-circle" [ref=f12e442]
+                    - text: Chờ phê duyệt
+                - cell "Chưa duyệt" [ref=f12e446]
+                - cell [ref=f12e447]:
+                  - generic [ref=f12e448]:
+                    - button "eye Chi tiết" [ref=f12e450] [cursor=pointer]:
+                      - img "eye" [ref=f12e452]
+                      - generic [ref=f12e455]: Chi tiết
+                    - button "safety-certificate Phê duyệt" [ref=f12e458] [cursor=pointer]:
+                      - img "safety-certificate" [ref=f12e460]
+                      - generic [ref=f12e463]: Phê duyệt
+                    - button "file-word Xuất file" [disabled] [ref=f12e465]:
+                      - generic:
+                        - img "file-word"
+                      - generic: Xuất file
+              - row [ref=f12e551]:
+                - cell "DBM201" [ref=f12e552]
+                - 'cell "Đề cương chi tiết học phần Cơ sở dữ liệu Học phần: Cơ sở dữ liệu CTĐT-KHMT-2023 CTĐT-CNTT-2026 CTĐT-KHMT-2026" [ref=f12e555]':
+                  - generic [ref=f12e556]:
+                    - generic [ref=f12e557]: Đề cương chi tiết học phần Cơ sở dữ liệu
+                    - generic [ref=f12e558]: "Học phần: Cơ sở dữ liệu"
+                    - generic [ref=f12e559]:
+                      - generic [ref=f12e560]: CTĐT-KHMT-2023
+                      - generic [ref=f12e561]: CTĐT-CNTT-2026
+                      - generic [ref=f12e562]: CTĐT-KHMT-2026
+                - cell "Văn Lê Đã có chữ ký" [ref=f12e563]:
+                  - generic [ref=f12e564]:
+                    - generic [ref=f12e565]: Văn Lê
+                    - generic [ref=f12e566]: Đã có chữ ký
+                - cell [ref=f12e568]:
+                  - generic [ref=f12e569]:
+                    - img "clock-circle" [ref=f12e570]
+                    - text: Chờ phê duyệt
+                - cell "Chưa duyệt" [ref=f12e574]
+                - cell [ref=f12e575]:
+                  - generic [ref=f12e576]:
+                    - button "eye Chi tiết" [ref=f12e578] [cursor=pointer]:
+                      - img "eye" [ref=f12e580]
+                      - generic [ref=f12e583]: Chi tiết
+                    - button "safety-certificate Phê duyệt" [ref=f12e586] [cursor=pointer]:
+                      - img "safety-certificate" [ref=f12e588]
+                      - generic [ref=f12e591]: Phê duyệt
+                    - button "file-word Xuất file" [disabled] [ref=f12e593]:
+                      - generic:
+                        - img "file-word"
+                      - generic: Xuất file
+              - row [ref=f12e594]:
+                - cell "CSE101" [ref=f12e595]
+                - 'cell "Đề cương chi tiết học phần CTDL & GT Học phần: Cấu trúc dữ liệu và giải thuật CTĐT-KHMT-2023 CTĐT-CNTT-2026 CTĐT-KHMT-2026" [ref=f12e598]':
+                  - generic [ref=f12e599]:
+                    - generic [ref=f12e600]: Đề cương chi tiết học phần CTDL & GT
+                    - generic [ref=f12e601]: "Học phần: Cấu trúc dữ liệu và giải thuật"
+                    - generic [ref=f12e602]:
+                      - generic [ref=f12e603]: CTĐT-KHMT-2023
+                      - generic [ref=f12e604]: CTĐT-CNTT-2026
+                      - generic [ref=f12e605]: CTĐT-KHMT-2026
+                - cell "Thị Trần Đã có chữ ký" [ref=f12e606]:
+                  - generic [ref=f12e607]:
+                    - generic [ref=f12e608]: Thị Trần
+                    - generic [ref=f12e609]: Đã có chữ ký
+                - cell [ref=f12e611]:
+                  - generic [ref=f12e612]:
+                    - img "clock-circle" [ref=f12e613]
+                    - text: Chờ phê duyệt
+                - cell "Chưa duyệt" [ref=f12e617]
+                - cell [ref=f12e618]:
+                  - generic [ref=f12e619]:
+                    - button "eye Chi tiết" [ref=f12e621] [cursor=pointer]:
+                      - img "eye" [ref=f12e623]
+                      - generic [ref=f12e626]: Chi tiết
+                    - button "safety-certificate Phê duyệt" [ref=f12e629] [cursor=pointer]:
+                      - img "safety-certificate" [ref=f12e631]
+                      - generic [ref=f12e634]: Phê duyệt
+                    - button "file-word Xuất file" [disabled] [ref=f12e636]:
+                      - generic:
+                        - img "file-word"
+                      - generic: Xuất file
+          - list [ref=f12e504]:
+            - listitem [ref=f12e505]: Tổng cộng 3 đề cương
+            - listitem "Previous Page" [ref=f12e506]:
+              - button [disabled] [ref=f12e507]:
+                - img "left" [ref=f12e508]
+            - listitem "1" [ref=f12e511] [cursor=pointer]
+            - listitem "Next Page" [ref=f12e515]:
+              - button [disabled] [ref=f12e516]:
+                - img "right" [ref=f12e517]
+    - contentinfo [ref=f12e520]:
+      - strong [ref=f12e522]: Hệ thống quản lý đề cương môn học
+      - generic [ref=f12e524]:
+        - generic [ref=f12e525]: Trường Đại học Mở Thành phố Hồ Chí Minh
+        - generic [ref=f12e526]: © 2026 - Bản quyền thuộc về Tôi Syllabus
+  - generic:
+    - generic:
+      - generic:
+        - listbox:
+          - option "Tất cả trạng thái": ALL
+          - option "Chờ phê duyệt" [selected]: Submitted
+          - option "Đã phê duyệt": Approved
+        - generic:
+          - generic:
+            - generic:
+              - generic:
+                - generic "Tất cả trạng thái"
+                - generic "Chờ phê duyệt"
+                - generic "Đã phê duyệt"
+                - generic "Bản nháp"

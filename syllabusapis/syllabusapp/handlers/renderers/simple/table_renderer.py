@@ -68,8 +68,18 @@ class TableSubRenderer(BaseSubRenderer):
 
     @staticmethod
     def _create_table_element(doc: Document, schema: dict):
-        columns = schema.get("columns", [])
+        raw_columns = list(schema.get("columns", []))
+        first_col_header = schema.get("firstColumnHeader")
         rows = schema.get("rows", [])
+
+        columns = []
+        if first_col_header or any("rowTitle" in r for r in rows if isinstance(r, dict)):
+            columns.append({"field": "rowTitle", "headerName": first_col_header or "Tiêu đề hàng"})
+        columns.extend(raw_columns)
+
+        if not columns:
+            return None
+
         if not rows:
             rows = [{col.get("field") or col.get("id"): "" for col in columns}]
 

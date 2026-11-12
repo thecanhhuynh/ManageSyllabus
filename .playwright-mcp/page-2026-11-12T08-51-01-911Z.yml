@@ -1,0 +1,64 @@
+- generic [ref=f5e1]:
+  - generic [ref=f5e3]:
+    - banner [ref=f5e4]:
+      - generic [ref=f5e5]:
+        - link "H HCMOU Syllabus System" [ref=f5e6] [cursor=pointer]:
+          - /url: /admin
+          - generic [ref=f5e7]: H
+          - generic [ref=f5e8]:
+            - strong [ref=f5e10]: HCMOU
+            - generic [ref=f5e11]: Syllabus System
+        - generic [ref=f5e12]:
+          - link [ref=f5e13] [cursor=pointer]:
+            - /url: /
+            - button "Trang chủ" [ref=f5e14]
+          - link [ref=f5e16] [cursor=pointer]:
+            - /url: /approvals
+            - button "check-square Phê duyệt đề cương" [ref=f5e17]:
+              - img "check-square" [ref=f5e19]
+              - generic [ref=f5e23]: Phê duyệt đề cương
+      - generic [ref=f5e25] [cursor=pointer]:
+        - generic [ref=f5e26]:
+          - strong [ref=f5e28]: admin
+          - generic [ref=f5e29]: admin@gmail.com
+        - img "user" [ref=f5e31]
+    - generic [ref=f5e37]:
+      - generic [ref=f5e39]:
+        - generic [ref=f5e40]:
+          - img "book" [ref=f5e42]
+          - heading "Management Syllabus System" [level=3] [ref=f5e45]
+        - generic [ref=f5e46]:
+          - generic [ref=f5e48]:
+            - generic [ref=f5e50]:
+              - text: "*"
+              - generic [ref=f5e51]: USERNAME
+            - generic [ref=f5e55]:
+              - img "user" [ref=f5e57]
+              - textbox "* USERNAME" [ref=f5e60]:
+                - /placeholder: Enter your username
+                - text: specialist_101
+          - generic [ref=f5e62]:
+            - generic [ref=f5e64]:
+              - text: "*"
+              - generic [ref=f5e65]: PASSWORD
+            - generic [ref=f5e69]:
+              - img "lock" [ref=f5e71]
+              - textbox "* PASSWORD" [ref=f5e74]:
+                - /placeholder: ••••••••
+                - text: "123"
+              - img "eye-invisible" [ref=f5e76] [cursor=pointer]
+          - button "loading Đăng nhập" [active] [ref=f5e99] [cursor=pointer]:
+            - img "loading" [ref=f5e100]
+            - generic [ref=f5e86]: Đăng nhập
+        - separator [ref=f5e87]
+        - link "Đăng ký tài khoản" [ref=f5e89] [cursor=pointer]:
+          - /url: /register
+      - generic [ref=f5e90]: © 2026 Syllabus Management System. University Faculty Administration Portal.
+    - contentinfo [ref=f5e92]:
+      - strong [ref=f5e94]: Hệ thống quản lý đề cương môn học
+      - generic [ref=f5e96]:
+        - generic [ref=f5e97]: Trường Đại học Mở Thành phố Hồ Chí Minh
+        - generic [ref=f5e98]: © 2026 - Bản quyền thuộc về Tôi Syllabus
+  - generic [ref=f5e104]:
+    - img "close-circle" [ref=f5e105]
+    - generic [ref=f5e108]: Tên đăng nhập hoặc mật khẩu không chính xác!
