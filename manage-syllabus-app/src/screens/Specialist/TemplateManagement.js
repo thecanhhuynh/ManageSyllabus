@@ -8,7 +8,6 @@ import {
   message,
   Space,
   Tag,
-  Select,
 } from "antd";
 import {
   EditOutlined,
@@ -20,11 +19,13 @@ import {
   BuildOutlined,
   CloseCircleOutlined,
   SearchOutlined,
+  WarningOutlined,
 } from "@ant-design/icons";
 import {authApis, endpoints, springApi} from "../../config/Apis";
 import {useNavigate} from "react-router-dom";
 import CleanInput from "../../components/CleanInput";
 import {cleanFormData} from "../../utils/stringUtils";
+import LazySelect from "../../components/common/LazySelect";
 
 const TemplateManagement = () => {
   const [templates, setTemplates] = useState([]);
@@ -122,8 +123,9 @@ const TemplateManagement = () => {
             Bạn đang chuẩn bị ban hành Mẫu:{" "}
             <strong>{record?.name} ({record?.version})</strong>.
           </p>
-          <p className="text-amber-600 font-medium text-xs mt-2">
-            ⚠️ Lưu ý quan trọng: Khi ban hành, hệ thống sẽ kích hoạt nhân bản đề cương cho toàn bộ các môn học thuộc mẫu cha tương ứng sang mẫu mới này. Tiến trình này không thể hoàn tác.
+          <p className="text-amber-600 font-medium text-xs mt-2 flex items-start gap-1">
+            <WarningOutlined className="text-amber-500 mt-0.5 shrink-0" />
+            <span>Lưu ý quan trọng: Khi ban hành, hệ thống sẽ kích hoạt nhân bản đề cương cho toàn bộ các môn học thuộc mẫu cha tương ứng sang mẫu mới này. Tiến trình này không thể hoàn tác.</span>
           </p>
           <p className="mt-2 text-xs text-gray-500">Bạn có chắc chắn muốn tiếp tục ban hành?</p>
         </div>
@@ -319,14 +321,15 @@ const TemplateManagement = () => {
                 {required: true, message: "Vui lòng chọn mẫu để nhân bản!"},
               ]}
             >
-              <Select placeholder="-- Chọn Mẫu Chuẩn --">
-                {templates.map((tpl) => (
-                  <Select.Option key={tpl.id} value={tpl.id}>
-                    {tpl.id === 1 ? `⭐ [Hệ thống] ${tpl.name}` : tpl.name} -{" "}
-                    {tpl.version}
-                  </Select.Option>
-                ))}
-              </Select>
+              <LazySelect
+                endpoint={endpoints["templates"]}
+                placeholder="-- Chọn Mẫu Chuẩn --"
+                labelField={(tpl) =>
+                  tpl.id === 1
+                    ? `[Hệ thống] ${tpl.name} - ${tpl.version}`
+                    : `${tpl.name} - ${tpl.version}`
+                }
+              />
             </Form.Item>
           )}
 

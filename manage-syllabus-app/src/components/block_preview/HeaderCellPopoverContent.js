@@ -51,8 +51,8 @@ export const HeaderCellPopoverContent = ({
       </div>
 
       <div>
-        <label className="text-[11px] font-semibold text-gray-600 block mb-1">
-          Tên hiển thị trên Word:
+        <label className="text-[11px] font-semibold text-gray-700 block mb-1">
+          Tên cột hiển thị (Đồng bộ Word &amp; Giao diện):
         </label>
         <Input
           size="small"

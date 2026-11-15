@@ -1,5 +1,5 @@
 import React, {useEffect, useState} from "react";
-import {Table, Button, Modal, Form, message, Space, Select} from "antd";
+import {Table, Button, Modal, Form, message, Space} from "antd";
 import {
   EditOutlined,
   DeleteOutlined,
@@ -11,6 +11,7 @@ import {authApis, endpoints} from "../../config/Apis";
 import {useNavigate} from "react-router-dom";
 import CleanInput from "../../components/CleanInput";
 import {cleanFormData} from "../../utils/stringUtils";
+import LazySelect from "../../components/common/LazySelect";
 
 const MajorManagement = () => {
   const [faculties, setFaculties] = useState([]);
@@ -148,7 +149,7 @@ const MajorManagement = () => {
 
   return (
     <div className="bg-white p-6 rounded-xl shadow-sm">
-      <div className="flex justify-between items-center mb-4">
+      <div className="flex justify-between items-center mb-6">
         <div className="flex items-center gap-3">
           <Button
             type="text"
@@ -167,6 +168,7 @@ const MajorManagement = () => {
             form.resetFields();
             setIsModalVisible(true);
           }}
+          className="h-9 px-4 rounded-lg"
         >
           Thêm chuyên ngành
         </Button>
@@ -182,19 +184,14 @@ const MajorManagement = () => {
             onChange={(e) => setSearchText(e.target.value)}
           />
         </div>
-        <Select
+        <LazySelect
+          endpoint={endpoints["faculties"]}
           placeholder="Lọc theo Khoa"
           allowClear
           style={{width: 220}}
           value={facultyFilter}
           onChange={(val) => setFacultyFilter(val)}
-        >
-          {faculties.map((f) => (
-            <Select.Option key={f.id} value={f.id}>
-              {f.name}
-            </Select.Option>
-          ))}
-        </Select>
+        />
       </div>
 
       <Table
@@ -250,13 +247,10 @@ const MajorManagement = () => {
             label="Khoa"
             rules={[{required: true, message: "Vui lòng chọn khoa"}]}
           >
-            <Select placeholder="Chọn khoa">
-              {faculties.map((faculty) => (
-                <Select.Option key={faculty.id} value={faculty.id}>
-                  {faculty.name}
-                </Select.Option>
-              ))}
-            </Select>
+            <LazySelect
+              endpoint={endpoints["faculties"]}
+              placeholder="Chọn khoa"
+            />
           </Form.Item>
         </Form>
       </Modal>

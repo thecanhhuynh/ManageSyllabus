@@ -1,11 +1,11 @@
 import React from "react";
 import { Card, Button, Input, Popconfirm } from "antd";
-import { PlusOutlined, DeleteOutlined } from "@ant-design/icons";
+import { PlusOutlined, DeleteOutlined, BankOutlined } from "@ant-design/icons";
 import TypographyPopover from "./TypographyPopover";
 
 export const TextLineListCard = ({
   title,
-  icon = "🏛️",
+  icon = <BankOutlined className="mr-1.5" />,
   lines = [],
   placeholderPrefix = "Dòng",
   defaultStyle = {},
@@ -17,12 +17,16 @@ export const TextLineListCard = ({
   <Card
     title={
       <div className="flex justify-between items-center">
-        <span>{icon} {title}</span>
+        <span className="text-xs font-semibold text-gray-700 flex items-center">
+          {icon}
+          {title}
+        </span>
         <Button
           size="small"
           type="dashed"
           icon={<PlusOutlined />}
           onClick={onAddLine}
+          className="text-xs"
         >
           Thêm dòng
         </Button>
@@ -34,7 +38,11 @@ export const TextLineListCard = ({
     <div className="space-y-2">
       {lines.map((line, idx) => (
         <div key={line.id || idx} className="flex gap-2 items-center">
+          <span className="text-[11px] font-mono text-gray-400 w-5 text-right flex-shrink-0">
+            #{idx + 1}
+          </span>
           <Input
+            size="small"
             value={line.text}
             onChange={(e) => onUpdateText(idx, e.target.value)}
             placeholder={`${placeholderPrefix} ${idx + 1}`}
@@ -59,7 +67,7 @@ export const TextLineListCard = ({
         </div>
       ))}
       {lines.length === 0 && (
-        <p className="text-xs text-gray-400 italic">Chưa có dòng nào.</p>
+        <p className="text-xs text-gray-400 italic m-0">Chưa có dòng nào.</p>
       )}
     </div>
   </Card>

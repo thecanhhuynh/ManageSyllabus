@@ -1205,7 +1205,13 @@ class TemplateSyllabusView(viewsets.ModelViewSet):
     @action(detail=True, methods=['patch'], url_path=r'main-sections/(?P<ms_id>[^/.]+)/style')
     def update_main_section_style(self, request, pk=None, ms_id=None):
         template = self.get_object()
-        ms = get_object_or_404(TemplateMainSection, id=ms_id, template=template)
+        ms = None
+        if str(ms_id).isdigit():
+            ms = TemplateMainSection.objects.filter(id=int(ms_id), template=template).first()
+        if not ms:
+            ms = TemplateMainSection.objects.filter(code=str(ms_id), template=template).first()
+        if not ms:
+            return Response({"error": "Không tìm thấy Phần lớn (MainSection)."}, status=status.HTTP_404_NOT_FOUND)
 
         style_config = request.data.get("style_config")
         if style_config is not None and not isinstance(style_config, dict):
@@ -1214,6 +1220,8 @@ class TemplateSyllabusView(viewsets.ModelViewSet):
         layout = dict(template.block_layout or {})
         main_styles = dict(layout.get("main_sections_style", {}))
         main_styles[str(ms.id)] = style_config or {}
+        if ms.code:
+            main_styles[str(ms.code)] = style_config or {}
         layout["main_sections_style"] = main_styles
         template.block_layout = layout
         template.save(update_fields=["block_layout"])
@@ -1539,15 +1547,38 @@ class TrainingProgramView(mixins.ListModelMixin,
     @action(detail=True, methods=['get'], url_path="syllabuses")
     def get_program_syllabuses(self, request, pk=None):
         user = self.request.user
-        program = self.get_object()
-        syllabuses = Syllabus.objects.filter(trainingprogramsyllabus__training_program=program)
-        if not user.is_superuser:
-            syllabuses = syllabuses.filter(
-                lecturer__user=user
-            )
+        program = get_object_or_404(TrainingProgram, pk=pk)
+        syllabuses = Syllabus.objects.filter(
+            trainingprogramsyllabus__training_program=program
+        ).select_related(
+            'subject', 'faculty', 'lecturer__user', 'approved_by'
+        ).prefetch_related('training_programs')
+
+        if not (user.is_superuser or getattr(user, 'user_role', None) in ['admin', 'specialist']):
+            lecturer = getattr(user, 'lecturer_profile', None)
+            if lecturer and lecturer.is_leader and lecturer.faculty_id:
+                syllabuses = syllabuses.filter(Q(lecturer__user=user) | Q(faculty_id=lecturer.faculty_id))
+            else:
+                syllabuses = syllabuses.filter(lecturer__user=user)
+
         q = self.request.query_params.get('q')
         if q:
-            syllabuses = syllabuses.filter(name__icontains=q)
+            syllabuses = syllabuses.filter(
+                Q(name__icontains=q) |
+                Q(subject__name__icontains=q) |
+                Q(subject__code__icontains=q) |
+                Q(lecturer__user__first_name__icontains=q) |
+                Q(lecturer__user__last_name__icontains=q)
+            )
+
+        faculty_id = self.request.query_params.get('faculty')
+        if faculty_id:
+            syllabuses = syllabuses.filter(faculty_id=faculty_id)
+
+        subject_id = self.request.query_params.get('subject')
+        if subject_id:
+            syllabuses = syllabuses.filter(subject_id=subject_id)
+
         syllabuses = syllabuses.order_by('-created_date', '-id')
         page = self.paginate_queryset(syllabuses)
         if page is not None:

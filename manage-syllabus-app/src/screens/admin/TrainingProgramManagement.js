@@ -1,5 +1,5 @@
 import React, {useEffect, useState} from "react";
-import {Table, Button, Modal, Form, message, Space, Select, InputNumber} from "antd";
+import {Table, Button, Modal, Form, message, Space, InputNumber} from "antd";
 import {
   EditOutlined,
   DeleteOutlined,
@@ -12,6 +12,7 @@ import {authApis, endpoints} from "../../config/Apis";
 import {useNavigate} from "react-router-dom";
 import CleanInput from "../../components/CleanInput";
 import {cleanFormData} from "../../utils/stringUtils";
+import LazySelect from "../../components/common/LazySelect";
 
 const TrainingProgramManagement = () => {
   const [programs, setPrograms] = useState([]);
@@ -177,7 +178,7 @@ const TrainingProgramManagement = () => {
 
   return (
     <div className="bg-white p-6 rounded-xl shadow-sm">
-      <div className="flex justify-between items-center mb-4">
+      <div className="flex justify-between items-center mb-6">
         <div className="flex items-center gap-3">
           <Button
             type="text"
@@ -196,6 +197,7 @@ const TrainingProgramManagement = () => {
             form.resetFields();
             setIsModalVisible(true);
           }}
+          className="h-9 px-4 rounded-lg"
         >
           Thêm CTĐT
         </Button>
@@ -211,19 +213,14 @@ const TrainingProgramManagement = () => {
             onChange={(e) => setSearchText(e.target.value)}
           />
         </div>
-        <Select
+        <LazySelect
+          endpoint={endpoints["majors"]}
           placeholder="Lọc theo Chuyên ngành"
           allowClear
           style={{width: 250}}
           value={majorFilter}
           onChange={(val) => setMajorFilter(val)}
-        >
-          {majors.map((m) => (
-            <Select.Option key={m.id} value={m.id}>
-              {m.name}
-            </Select.Option>
-          ))}
-        </Select>
+        />
       </div>
 
       <Table
@@ -289,13 +286,11 @@ const TrainingProgramManagement = () => {
             label="Chuyên ngành"
             rules={[{required: true, message: "Vui lòng chọn chuyên ngành"}]}
           >
-            <Select placeholder="Chọn chuyên ngành">
-              {majors.map((m) => (
-                <Select.Option key={m.id} value={m.id}>
-                  {m.name} ({m.code})
-                </Select.Option>
-              ))}
-            </Select>
+            <LazySelect
+              endpoint={endpoints["majors"]}
+              placeholder="Chọn chuyên ngành"
+              labelField={(m) => `${m.name} (${m.code})`}
+            />
           </Form.Item>
 
           {!form.getFieldValue("id") && (
@@ -304,20 +299,11 @@ const TrainingProgramManagement = () => {
               label="Kế thừa đề cương từ CTĐT cũ (Tùy chọn)"
               tooltip="Nếu chọn, tất cả đề cương của CTĐT này sẽ được copy sang CTĐT mới"
             >
-              <Select
+              <LazySelect
+                endpoint={endpoints["training-programs"]}
                 placeholder="Chọn CTĐT muốn kế thừa"
-                allowClear
-                showSearch
-                optionFilterProp="children"
-              >
-                {programs
-                  .filter((p) => p.id !== form.getFieldValue("id"))
-                  .map((p) => (
-                    <Select.Option key={p.id} value={p.id}>
-                      {p.name} - {p.academic_year}
-                    </Select.Option>
-                  ))}
-              </Select>
+                labelField={(p) => `${p.name} - ${p.academic_year}`}
+              />
             </Form.Item>
           )}
         </Form>

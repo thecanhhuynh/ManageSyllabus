@@ -1,8 +1,10 @@
-import React, {useState, useEffect, useRef, memo} from "react";
-import {Select, Button, message} from "antd";
+import React, {useState, useEffect, memo} from "react";
+import {Button, message} from "antd";
 import {PlusOutlined, BookOutlined, CloseOutlined} from "@ant-design/icons";
 import {AppServices} from "../../services/AppServices";
 import {useSyllabusStore} from "../../store/useSyllabusStore";
+import {endpoints} from "../../config/Apis";
+import LazySelect from "../../components/common/LazySelect";
 
 const EMPTY_ARRAY = [];
 
@@ -33,77 +35,25 @@ const SubjectBadge = ({item, onRemove}) => {
 };
 
 const SubjectSearchTag = ({onSelect, onCancel}) => {
-  const [subjectsList, setSubjectsList] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [page, setPage] = useState(1);
-  const [hasNext, setHasNext] = useState(false);
-  const [q, setQ] = useState("");
-  const searchTimeoutRef = useRef(null);
-
-  const fetchSubjects = async () => {
-    try {
-      setLoading(true);
-      const res = await AppServices.getSubjects(page, q);
-      if (res.status === 200) {
-        const newData = res.data.results || res.data || [];
-        setHasNext(res.data.next != null);
-        if (page === 1) setSubjectsList(newData);
-        else setSubjectsList((prev) => [...prev, ...newData]);
-      }
-    } catch (error) {
-      console.error("Lỗi tải môn học:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    const timer = setTimeout(() => fetchSubjects(), 300);
-    return () => clearTimeout(timer);
-  }, [page, q]);
-
-  const handleSearch = (keyword) => {
-    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
-    searchTimeoutRef.current = setTimeout(() => {
-      setQ(keyword);
-      setPage(1);
-    }, 300);
-  };
-
-  const handlePopupScroll = (e) => {
-    const {target} = e;
-    if (target.scrollTop + target.offsetHeight >= target.scrollHeight - 10) {
-      if (hasNext && !loading) setPage((prev) => prev + 1);
-    }
-  };
-
   return (
     <div className="flex items-center bg-white border border-blue-400 rounded-full pl-3 pr-1 h-8 shadow-sm">
-      <Select
-        showSearch
+      <LazySelect
+        endpoint={endpoints["subjects"]}
         autoFocus
         defaultOpen
         bordered={false}
         placeholder="Tìm môn..."
-        filterOption={false}
-        loading={loading}
-        onSearch={handleSearch}
-        onPopupScroll={handlePopupScroll}
         style={{width: 180}}
         className="text-[13px]"
+        labelField={(sub) => `${sub.code} - ${sub.name}`}
         onChange={(val, opt) => {
+          const raw = opt?.raw || {};
           onSelect({
-            subject_id: opt.value,
-            subject_name: opt.subjectName,
-            subject_code: opt.subjectCode,
+            subject_id: val,
+            subject_name: raw.name || opt?.label,
+            subject_code: raw.code,
           });
         }}
-        options={subjectsList.map((sub) => ({
-          label: `${sub.code} - ${sub.name}`,
-          value: sub.id,
-          subjectName: sub.name,
-          subjectCode: sub.code,
-        }))}
       />
       <Button
         type="text"

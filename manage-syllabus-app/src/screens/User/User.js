@@ -9,7 +9,6 @@ import {
   Col,
   Typography,
   message,
-  Select,
   Tag,
   Divider,
   Modal,
@@ -31,6 +30,7 @@ import {resolveMediaUrl} from "../../utils/mediaUtils";
 import {MyUserContext} from "../../config/contexts/MyContext";
 import {authApis, endpoints} from "../../config/Apis";
 import MySpinner from "../../components/MySpinner";
+import LazySelect from "../../components/common/LazySelect";
 import dayjs from "dayjs";
 import CleanInput from "../../components/CleanInput";
 import {cleanFormData} from "../../utils/stringUtils";
@@ -677,18 +677,17 @@ const User = () => {
                           </span>
                         }
                       >
-                        <Select
-                          showSearch
-                          filterOption={(input, option) =>
-                            (option?.label ?? "")
-                              .toLowerCase()
-                              .includes(input.toLowerCase())
+                        <LazySelect
+                          endpoint={endpoints["faculties"]}
+                          placeholder="Chọn khoa"
+                          initialOption={
+                            user?.lecturer?.faculty
+                              ? {
+                                  value: user.lecturer.faculty.id,
+                                  label: user.lecturer.faculty.name,
+                                }
+                              : null
                           }
-                          loading={loading}
-                          options={faculties.map((f) => ({
-                            value: f.id,
-                            label: f.name,
-                          }))}
                           style={{borderRadius: 6}}
                         />
                       </Form.Item>

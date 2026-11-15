@@ -23,10 +23,10 @@ export const SpacingControls = ({ style = {}, defaultStyle = {}, onUpdate }) => 
     <div className="text-xs font-semibold text-gray-700">Khoảng cách:</div>
     <div className="grid grid-cols-3 gap-2">
       <div>
-        <div className="flex items-center justify-between mb-1">
-          <label className="text-[11px] text-gray-600">Giãn dòng:</label>
+        <div className="flex items-baseline justify-between mb-1">
+          <label className="text-[11px] text-gray-600 leading-tight">Giãn dòng:</label>
           {!style.line_spacing && (
-            <span className="text-[9px] text-gray-400 italic">(Mặc định)</span>
+            <span className="text-[9px] text-gray-400 italic leading-tight">(Mặc định)</span>
           )}
         </div>
         <Select
@@ -43,10 +43,10 @@ export const SpacingControls = ({ style = {}, defaultStyle = {}, onUpdate }) => 
         />
       </div>
       <div>
-        <div className="flex items-center justify-between mb-1">
-          <label className="text-[11px] text-gray-600">Trước (pt):</label>
+        <div className="flex items-baseline justify-between mb-1">
+          <label className="text-[11px] text-gray-600 leading-tight">Trước (pt):</label>
           {style.space_before_pt === undefined && (
-            <span className="text-[9px] text-gray-400 italic">(Mặc định)</span>
+            <span className="text-[9px] text-gray-400 italic leading-tight">(Mặc định)</span>
           )}
         </div>
         <InputNumber
@@ -63,10 +63,10 @@ export const SpacingControls = ({ style = {}, defaultStyle = {}, onUpdate }) => 
         />
       </div>
       <div>
-        <div className="flex items-center justify-between mb-1">
-          <label className="text-[11px] text-gray-600">Sau (pt):</label>
+        <div className="flex items-baseline justify-between mb-1">
+          <label className="text-[11px] text-gray-600 leading-tight">Sau (pt):</label>
           {style.space_after_pt === undefined && (
-            <span className="text-[9px] text-gray-400 italic">(Mặc định)</span>
+            <span className="text-[9px] text-gray-400 italic leading-tight">(Mặc định)</span>
           )}
         </div>
         <InputNumber
@@ -99,10 +99,10 @@ export const StyleControls = ({
   return (
     <div className="space-y-3">
       <div>
-        <div className="flex items-center justify-between mb-1">
-          <label className="text-xs text-gray-600">Phông chữ:</label>
+        <div className="flex items-baseline justify-between mb-1">
+          <label className="text-xs text-gray-600 leading-tight">Phông chữ:</label>
           {!style.font_name && (
-            <span className="text-[10px] text-gray-400 italic">(Mặc định)</span>
+            <span className="text-[10px] text-gray-400 italic leading-tight">(Mặc định)</span>
           )}
         </div>
         <Select
@@ -114,12 +114,12 @@ export const StyleControls = ({
         />
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="flex items-start gap-3">
         <div className="flex-1">
-          <div className="flex items-center justify-between mb-1">
-            <label className="text-xs text-gray-600">Cỡ chữ (pt):</label>
+          <div className="flex items-baseline justify-between mb-1">
+            <label className="text-xs text-gray-600 leading-tight">Cỡ chữ (pt):</label>
             {!style.font_size_pt && (
-              <span className="text-[10px] text-gray-400 italic">(Mặc định)</span>
+              <span className="text-[10px] text-gray-400 italic leading-tight">(Mặc định)</span>
             )}
           </div>
           <InputNumber
@@ -132,10 +132,10 @@ export const StyleControls = ({
           />
         </div>
         <div className="flex-1">
-          <div className="flex items-center justify-between mb-1">
-            <label className="text-xs text-gray-600">Căn lề:</label>
+          <div className="flex items-baseline justify-between mb-1">
+            <label className="text-xs text-gray-600 leading-tight">Căn lề:</label>
             {!style.alignment && (
-              <span className="text-[10px] text-gray-400 italic">(Mặc định)</span>
+              <span className="text-[10px] text-gray-400 italic leading-tight">(Mặc định)</span>
             )}
           </div>
           <Select

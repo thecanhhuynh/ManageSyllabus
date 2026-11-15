@@ -7,13 +7,11 @@ import {
   message,
   DatePicker,
   Tag,
-  Typography,
   Input,
   Modal,
   Space,
   Checkbox,
   Form,
-  Select,
   Tooltip,
 } from "antd";
 import {
@@ -22,12 +20,12 @@ import {
   SaveOutlined,
   CheckCircleOutlined,
   ClockCircleOutlined,
+  SearchOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
-import {Option} from "antd/es/mentions";
+import LazySelect from "../../components/common/LazySelect";
 
 const {RangePicker} = DatePicker;
-const {Title} = Typography;
 
 const SyllabusesProgram = () => {
   const params = useParams();
@@ -58,25 +56,6 @@ const SyllabusesProgram = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [creating, setCreating] = useState(false);
   const [form] = Form.useForm();
-
-  const [subjects, setSubjects] = useState([]);
-  const [templates, setTemplates] = useState([]);
-  const [faculties, setFaculties] = useState([]);
-
-  const loadReferenceData = async () => {
-    try {
-      const [subRes, tplRes, facRes] = await Promise.all([
-        authApis().get(endpoints["subjects"]),
-        authApis().get(endpoints["templates"]),
-        authApis().get(endpoints["faculties"]),
-      ]);
-      setSubjects(subRes.data.results || subRes.data);
-      setTemplates(tplRes.data.results || tplRes.data);
-      setFaculties(facRes.data.results || facRes.data);
-    } catch (error) {
-      message.error("Lỗi khi tải dữ liệu tham chiếu (Môn học, Mẫu, Khoa)");
-    }
-  };
 
   const loadLecturers = async () => {
     try {
@@ -196,7 +175,6 @@ const SyllabusesProgram = () => {
   };
 
   const openCreateModal = () => {
-    loadReferenceData();
     setIsCreateModalOpen(true);
   };
 
@@ -446,31 +424,37 @@ const SyllabusesProgram = () => {
 
   return (
     <div className="bg-white p-6 rounded-xl shadow-sm min-h-screen">
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-4">
+      <div className="flex justify-between items-center mb-6">
+        <div className="flex items-center gap-3">
           <Button
             type="text"
-            icon={<ArrowLeftOutlined />}
-            onClick={() => nav(-1)}
+            icon={<ArrowLeftOutlined className="text-lg" />}
+            onClick={() => nav("/admin/training-programs")}
+            className="text-gray-500 hover:text-blue-600 hover:bg-blue-50"
           />
-          <Title level={4} className="!m-0">
+          <h2 className="text-xl font-bold text-gray-700 m-0">
             Phân công biên soạn - CTĐT #{programId}
-          </Title>
+          </h2>
         </div>
 
-        <Input
-          placeholder="Tìm kiếm theo tên đề cương..."
-          allowClear
-          onChange={(e) => setQ(e.target.value)}
-          style={{width: 300}}
-        />
         <Button
           type="primary"
           icon={<PlusOutlined />}
           onClick={openCreateModal}
+          className="h-9 px-4 rounded-lg"
         >
           Thêm đề cương
         </Button>
+      </div>
+
+      <div className="mb-4 max-w-md">
+        <Input
+          placeholder="Tìm kiếm theo tên đề cương..."
+          prefix={<SearchOutlined className="text-gray-400" />}
+          allowClear
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+        />
       </div>
 
       {selectedRowKeys.length > 0 && (
@@ -534,21 +518,11 @@ const SyllabusesProgram = () => {
             name="subject_obj"
             rules={[{required: true, message: "Vui lòng chọn môn học!"}]}
           >
-            <Select
-              showSearch
+            <LazySelect
+              endpoint={endpoints["subjects"]}
               placeholder="Chọn môn học"
-              filterOption={(input, option) =>
-                (option?.children ?? "")
-                  .toLowerCase()
-                  .includes(input.toLowerCase())
-              }
-            >
-              {subjects.map((sub) => (
-                <Option key={sub.id} value={sub.id}>
-                  {sub.name} - {sub.code}
-                </Option>
-              ))}
-            </Select>
+              labelField={(sub) => `${sub.name} - ${sub.code}`}
+            />
           </Form.Item>
 
           <Form.Item
@@ -556,13 +530,11 @@ const SyllabusesProgram = () => {
             name="template_obj"
             rules={[{required: true, message: "Vui lòng chọn mẫu đề cương!"}]}
           >
-            <Select placeholder="Chọn mẫu đề cương">
-              {templates.map((tpl) => (
-                <Option key={tpl.id} value={tpl.id}>
-                  {tpl.name} (v{tpl.version})
-                </Option>
-              ))}
-            </Select>
+            <LazySelect
+              endpoint={endpoints["templates"]}
+              placeholder="Chọn mẫu đề cương"
+              labelField={(tpl) => `${tpl.name} (v${tpl.version})`}
+            />
           </Form.Item>
 
           <Form.Item
@@ -570,13 +542,10 @@ const SyllabusesProgram = () => {
             name="faculty_obj"
             rules={[{required: true, message: "Vui lòng chọn khoa!"}]}
           >
-            <Select placeholder="Chọn khoa">
-              {faculties.map((fac) => (
-                <Option key={fac.id} value={fac.id}>
-                  {fac.name}
-                </Option>
-              ))}
-            </Select>
+            <LazySelect
+              endpoint={endpoints["faculties"]}
+              placeholder="Chọn khoa"
+            />
           </Form.Item>
 
           <Form.Item
@@ -584,21 +553,14 @@ const SyllabusesProgram = () => {
             name="lecturer_obj"
             rules={[{required: true, message: "Vui lòng chọn giảng viên!"}]}
           >
-            <Select
-              showSearch
+            <LazySelect
+              endpoint={endpoints["lecturers"]}
               placeholder="Chọn giảng viên"
-              filterOption={(input, option) =>
-                (option?.children ?? "")
-                  .toLowerCase()
-                  .includes(input.toLowerCase())
+              labelField={(lec) =>
+                `${lec.last_name || ""} ${lec.first_name || ""}`.trim() ||
+                lec.name
               }
-            >
-              {lecturers.map((lec) => (
-                <Option key={lec.id} value={lec.id}>
-                  {lec.last_name} {lec.first_name}
-                </Option>
-              ))}
-            </Select>
+            />
           </Form.Item>
 
           <Form.Item className="text-right mb-0">

@@ -3,6 +3,7 @@ import {AutoComplete, Button, message} from "antd";
 import {PlusOutlined, BookOutlined, CloseOutlined} from "@ant-design/icons";
 import Apis, {authApis, endpoints} from "../../config/Apis";
 import {useSyllabusStore} from "../../store/useSyllabusStore";
+import MySpinner from "../../components/MySpinner";
 
 const EMPTY_ARRAY = [];
 
@@ -85,6 +86,20 @@ const MaterialTagItem = ({
         value={material.name || ""}
         onSearch={onSearch}
         onPopupScroll={onPopupScroll}
+        dropdownRender={(menu) => (
+          <>
+            {menu}
+            {loading && materialOptions.length > 0 && (
+              <div className="py-2 flex justify-center border-t border-gray-100 bg-white">
+                <MySpinner
+                  fullScreen={false}
+                  size="small"
+                  message="Đang tải thêm..."
+                />
+              </div>
+            )}
+          </>
+        )}
         onChange={(val) => {
           console.log(">>> [AUTOCOMPLETE ON_CHANGE]:", val);
           latestNameRef.current = val;
@@ -111,7 +126,19 @@ const MaterialTagItem = ({
           onConfirm();
         }}
         className="w-[220px] text-[13px]"
-        notFoundContent={loading ? "Đang tìm..." : "Gõ để tạo sách mới"}
+        notFoundContent={
+          loading ? (
+            <MySpinner
+              fullScreen={false}
+              size="small"
+              message="Đang tải dữ liệu..."
+            />
+          ) : (
+            <div className="py-2 text-center text-gray-400 text-xs">
+              Gõ để tạo sách mới
+            </div>
+          )
+        }
       />
       <Button
         type="text"
@@ -164,6 +191,7 @@ const LearningMaterialEditor = ({item, basePath}) => {
     const loadMaterials = async () => {
       try {
         setLoading(true);
+        const startTime = Date.now();
         let url = `${endpoints["learning-materials"]}?page=${page}`;
         if (q) url += `&q=${q}`;
 
@@ -173,6 +201,12 @@ const LearningMaterialEditor = ({item, basePath}) => {
             value: mat.name,
             id: mat.id,
           }));
+
+          const elapsed = Date.now() - startTime;
+          const remainingDelay = Math.max(0, 500 - elapsed);
+          if (remainingDelay > 0) {
+            await new Promise((r) => setTimeout(r, remainingDelay));
+          }
 
           setHasNext(res.data.next != null);
           if (page === 1) setMaterialOptions(newData);

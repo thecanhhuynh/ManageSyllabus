@@ -7,6 +7,8 @@ export const DrawerFooterActions = ({
   onResetContent,
   onClose,
   onSave,
+  disabled = false,
+  saving = false,
 }) => (
   <div className="flex flex-col gap-2">
     <div className="flex items-center justify-between gap-2">
@@ -19,7 +21,7 @@ export const DrawerFooterActions = ({
     </div>
     <div className="flex items-center justify-end gap-2 pt-1 border-t border-gray-100">
       <Button onClick={onClose}>Hủy</Button>
-      <Button type="primary" onClick={onSave}>
+      <Button type="primary" onClick={onSave} disabled={disabled} loading={saving}>
         Lưu
       </Button>
     </div>

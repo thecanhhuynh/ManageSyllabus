@@ -48,9 +48,10 @@ class StyleManager:
                     p_style["alignment"] = "CENTER"
                 _apply_paragraph_style(p._p, p_style)
                 
+            is_bullet_heading = p.text.strip().startswith("•")
             for r in p.runs:
                 run_style = dict(effective)
-                if r.bold and (content_style or {}).get("bold") is None:
+                if is_bullet_heading or (r.bold and (content_style or {}).get("bold") is None):
                     run_style["bold"] = True
                 _apply_run_style(r._r, run_style)
 

@@ -93,24 +93,24 @@ export const CustomColumnSection = ({
   onEditColumn,
   onDeleteColumn,
 }) => {
+  if (!supportsCustomColumn) return null;
+
   return (
     <div>
       <Divider className="my-3" />
       <div className="flex items-center justify-between mb-2">
         <h4 className="text-xs font-bold uppercase text-gray-500 m-0">Cột trong bảng</h4>
-        {supportsCustomColumn && (
-          <Button
-            type="dashed"
-            size="small"
-            icon={<PlusOutlined />}
-            onClick={onOpenAdd}
-          >
-            Thêm cột tùy biến
-          </Button>
-        )}
+        <Button
+          type="dashed"
+          size="small"
+          icon={<PlusOutlined />}
+          onClick={onOpenAdd}
+        >
+          Thêm cột tùy biến
+        </Button>
       </div>
 
-      {tableCode === "teaching_schedule" && supportsCustomColumn && (
+      {tableCode === "teaching_schedule" && (
         <Alert
           type="info"
           showIcon
@@ -120,7 +120,7 @@ export const CustomColumnSection = ({
         />
       )}
 
-      {tableCode === "teaching_schedule" && supportsCustomColumn && draftCustomColumns.length < 10 && (
+      {tableCode === "teaching_schedule" && draftCustomColumns.length < 10 && (
         <div className="mb-3">
           <span className="text-[11px] text-gray-500 font-medium block mb-1.5">
             Gợi ý thêm nhanh:
@@ -142,17 +142,11 @@ export const CustomColumnSection = ({
         </div>
       )}
 
-      {!supportsCustomColumn && (
-        <div className="text-xs text-blue-700 bg-blue-50 p-3 rounded border border-blue-100">
-          ℹ️ Khối Học liệu hiển thị dưới dạng danh mục văn bản/đoạn văn, không sử dụng bảng nên không hỗ trợ thêm cột tùy biến.
-        </div>
-      )}
-
-      {supportsCustomColumn && draftCustomColumns.length === 0 && (
+      {draftCustomColumns.length === 0 && (
         <p className="text-xs text-gray-400 italic">Chưa có cột tùy biến nào.</p>
       )}
 
-      {supportsCustomColumn && draftCustomColumns.length > 0 && (
+      {draftCustomColumns.length > 0 && (
         <div className="space-y-2">
           {draftCustomColumns.map((col, index) => (
             <CustomColumnItem

@@ -19,8 +19,8 @@ import {
   ClockCircleOutlined,
 } from "@ant-design/icons";
 import MySpinner from "../../components/MySpinner";
+import LazySelect from "../../components/common/LazySelect";
 import {useNavigate} from "react-router-dom";
-import cookies from "react-cookies";
 import {MyUserContext} from "../../config/contexts/MyContext";
 import SignatureService from "../../services/signatureService";
 import CleanInput from "../../components/CleanInput";
@@ -35,14 +35,8 @@ const Home = () => {
     item: null,
     loading: false,
   });
-  const [faculties, setFaculties] = useState([]);
   const [facultyId, setFacultyId] = useState(null);
-  const [facultyPage, setFacultyPage] = useState(1);
-  const [hasNextFaculties, setHasNextFaculties] = useState(false);
-  const [subjects, setSubjects] = useState([]);
   const [subjectId, setSubjectId] = useState(null);
-  const [subjectPage, setSubjectPage] = useState(1);
-  const [hasNextSubjects, setHasNextSubjects] = useState(false);
   const [q, setQ] = useState("");
 
   const [programs, setPrograms] = useState([]);
@@ -52,40 +46,6 @@ const Home = () => {
   const [tabCache, setTabCache] = useState({});
 
   const nav = useNavigate();
-
-  const loadDropdown = async () => {
-    try {
-      const token = cookies.load("token");
-      if (!token) return;
-      setLoading(true);
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      const [resFaculties, resSubjects] = await Promise.all([
-        authApis().get(`${endpoints["faculties"]}?page=${facultyPage}`),
-        authApis().get(`${endpoints["subjects"]}?page=${subjectPage}`),
-      ]);
-      if (resFaculties.status === 200) {
-        setHasNextFaculties(resFaculties.data.next != null);
-        if (facultyPage === 1) {
-          setFaculties(resFaculties.data.results);
-        } else {
-          setFaculties([...faculties, ...resFaculties.data.results]);
-        }
-      }
-      if (resSubjects.status === 200) {
-        setHasNextSubjects(resSubjects.data.next != null);
-        if (subjectPage === 1) {
-          setSubjects(resSubjects.data.results);
-        } else {
-          setSubjects([...subjects, ...resSubjects.data.results]);
-        }
-      }
-    } catch (error) {
-      console.error(error);
-      message.error("Lỗi khi tải danh sách dropdown");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const loadSyllabuses = async (tabId, pageToLoad = 1) => {
     setTabCache((prev) => ({
@@ -97,8 +57,8 @@ const Home = () => {
       setLoading(true);
       let url = `${endpoints["syllabuses-programs"](tabId)}?page=${pageToLoad}`;
 
-      if (q) {
-        url += `&q=${q}`;
+      if (q && q.trim()) {
+        url += `&q=${encodeURIComponent(q.trim())}`;
       }
       if (facultyId) {
         url += `&faculty=${facultyId}`;
@@ -126,6 +86,16 @@ const Home = () => {
       }
     } catch (error) {
       console.error(error);
+      setTabCache((prev) => ({
+        ...prev,
+        [tabId]: {
+          items: [],
+          total: 0,
+          page: pageToLoad,
+          hasNext: false,
+          loading: false,
+        },
+      }));
     } finally {
       setLoading(false);
     }
@@ -282,10 +252,6 @@ const Home = () => {
 
     return () => clearTimeout(timer);
   }, [q, facultyId, subjectId]);
-
-  useEffect(() => {
-    loadDropdown();
-  }, [facultyPage, subjectPage]);
 
   const canApproveItem = (item) => {
     if (!isFacultyLeader) return false;
@@ -534,52 +500,22 @@ const Home = () => {
               allowClear
             />
           </div>
-          <Select
-            loading={loading}
+          <LazySelect
+            endpoint={endpoints["faculties"]}
             placeholder="Chọn Khoa"
             style={{flex: "1 1 180px", minWidth: 150}}
             allowClear
+            value={facultyId}
             onChange={setFacultyId}
-            onPopupScroll={(e) => {
-              const {target} = e;
-              if (
-                target.scrollTop + target.offsetHeight ===
-                  target.scrollHeight &&
-                hasNextFaculties
-              ) {
-                setFacultyPage((prev) => prev + 1);
-              }
-            }}
-          >
-            {faculties.map((f) => (
-              <Select.Option key={f.id} value={f.id}>
-                {f.name}
-              </Select.Option>
-            ))}
-          </Select>
-          <Select
-            loading={loading}
+          />
+          <LazySelect
+            endpoint={endpoints["subjects"]}
             placeholder="Chọn môn học"
             style={{flex: "1 1 180px", minWidth: 150}}
             allowClear
+            value={subjectId}
             onChange={setSubjectId}
-            onPopupScroll={(e) => {
-              const {target} = e;
-              if (
-                target.scrollTop + target.offsetHeight ===
-                  target.scrollHeight &&
-                hasNextSubjects
-              ) {
-                setSubjectPage((prev) => prev + 1);
-              }
-            }}
-          >
-            {subjects.map((s) => (
-              <Select.Option key={s.id} value={s.id}>
-                {s.name}
-              </Select.Option>
-            ))}
-          </Select>
+          />
 
           <Select
             placeholder="Lọc trạng thái"

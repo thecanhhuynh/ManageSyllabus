@@ -4,7 +4,7 @@ export const TABLE_DEFAULT_COLUMNS = {
   requirement_subject: ["STT/No.", "Môn học điều kiện", "Mã môn học/Code"],
   objectives_and_outcomes: ["Mục tiêu/Objective", "Mô tả/Content", "CĐR CTĐT (PLO)"],
   course_learning_outcomes: ["CĐR HP (CLO)", "Mô tả chuẩn đầu ra", "Mức độ giảng dạy"],
-  assessment_method: ["Thành phần", "Bài đánh giá", "Phương pháp", "Trọng số", "CĐR HP"],
+  assessment_method: ["Thành phần đánh giá", "Bài đánh giá", "Thời điểm", "CĐR môn học", "Tỷ lệ %"],
   teaching_schedule: [
     "Tuần/Buổi", "Nội dung", "CĐR môn học",
     "Tự học (HĐ)", "Tự học (Giờ)",
@@ -58,13 +58,17 @@ export const DEFAULT_COLUMN_LABELS = {
     { key: "col_weight", defaultLabel: "Tỷ lệ %/Weight %" },
   ],
   teaching_schedule: [
-    { key: "col_session", defaultLabel: "Buổi/Session" },
+    { key: "col_session", defaultLabel: "Tuần/Buổi/Session" },
     { key: "col_content", defaultLabel: "Nội dung/Content" },
-    { key: "col_offline", defaultLabel: "Offline (giờ)" },
-    { key: "col_online", defaultLabel: "Online (giờ)" },
-    { key: "col_self", defaultLabel: "Tự học (giờ)" },
-    { key: "col_clo", defaultLabel: "CLO" },
-    { key: "col_material", defaultLabel: "Học liệu" },
+    { key: "col_clo", defaultLabel: "CĐR môn học/CLO" },
+    { key: "col_self_act", defaultLabel: "Tự học (HĐ)" },
+    { key: "col_self_hrs", defaultLabel: "Tự học (Giờ)" },
+    { key: "col_ftf_act", defaultLabel: "Trực tiếp/FTF (HĐ)" },
+    { key: "col_ftf_hrs", defaultLabel: "Trực tiếp/FTF (Giờ)" },
+    { key: "col_online_act", defaultLabel: "Trực tuyến (HĐ)" },
+    { key: "col_online_hrs", defaultLabel: "Trực tuyến (Giờ)" },
+    { key: "col_assessment", defaultLabel: "Bài đánh giá/Assessment" },
+    { key: "col_material", defaultLabel: "Tài liệu chính và tham khảo" },
   ],
 };
 

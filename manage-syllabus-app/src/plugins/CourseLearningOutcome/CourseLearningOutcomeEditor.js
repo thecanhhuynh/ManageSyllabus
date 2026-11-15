@@ -243,7 +243,7 @@ const CourseLearningOutcomeEditor = ({item, basePath}) => {
   useEffect(() => {
     const fetchPLOs = async () => {
       try {
-        const res = await AppServices.getPLOs();
+        const res = await AppServices.getPLOs({page_size: 100});
         const dataArray = res.data?.results || res.data || [];
         setPloOptions(
           dataArray.map((plo) => ({

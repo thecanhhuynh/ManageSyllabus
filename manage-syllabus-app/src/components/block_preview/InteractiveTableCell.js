@@ -1,5 +1,6 @@
 import React from "react";
 import {Popover, Tag} from "antd";
+import {EditOutlined} from "@ant-design/icons";
 import ParagraphRenderer from "./ParagraphRenderer";
 import {CellAlignPopoverContent} from "./CellAlignmentPopover";
 import {HeaderCellPopoverContent} from "./HeaderCellPopoverContent";
@@ -10,7 +11,25 @@ import {
   getEffectiveAlignment,
 } from "./TablePreviewHelpers";
 
-export const TableCellContent = ({cell, isMatrix, effectiveAlign}) => {
+export const TableCellContent = ({ cell, isMatrix, effectiveAlign, overrideText }) => {
+  if (overrideText !== undefined && overrideText !== null) {
+    return (
+      <p
+        style={{
+          margin: "0",
+          marginTop: `${cell.space_before_pt || 0}pt`,
+          marginBottom: `${cell.space_after_pt || 0}pt`,
+          lineHeight: cell.line_spacing || 1.15,
+          textAlign: effectiveAlign,
+          whiteSpace: isMatrix ? "nowrap" : undefined,
+          fontWeight: cell.bold ? "bold" : "inherit",
+          fontStyle: cell.italic ? "italic" : "normal",
+        }}
+      >
+        {overrideText}
+      </p>
+    );
+  }
   if (cell.paragraphs && cell.paragraphs.length > 0) {
     return cell.paragraphs.map((p, pi) => (
       <ParagraphRenderer
@@ -26,9 +45,9 @@ export const TableCellContent = ({cell, isMatrix, effectiveAlign}) => {
     <p
       style={{
         margin: "0",
-        marginTop: `${cell.space_before_pt}pt`,
-        marginBottom: `${cell.space_after_pt}pt`,
-        lineHeight: cell.line_spacing,
+        marginTop: `${cell.space_before_pt || 0}pt`,
+        marginBottom: `${cell.space_after_pt || 0}pt`,
+        lineHeight: cell.line_spacing || 1.15,
         textAlign: effectiveAlign,
         whiteSpace: isMatrix ? "nowrap" : undefined,
       }}
@@ -87,11 +106,22 @@ const HeaderCellWrapper = ({
   onResetColumnLabel,
   onSelectAlign,
   onClearAlign,
+  onClosePopover,
 }) => (
   <Popover
     open={popoverOpen}
     trigger="click"
     placement="bottom"
+    onOpenChange={(visible) => {
+      if (!visible && onClosePopover) {
+        onClosePopover();
+      }
+    }}
+    getPopupContainer={(trigger) =>
+      trigger.closest(".preview-container") ||
+      trigger.closest(".ant-drawer-body") ||
+      document.body
+    }
     content={
       <HeaderCellPopoverContent
         colMeta={colMeta}
@@ -105,8 +135,8 @@ const HeaderCellWrapper = ({
   >
     <div className="w-full h-full min-h-[22px] flex items-center relative pointer-events-none">
       <div className="flex-1">{content}</div>
-      <span className="absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 transition-opacity text-[9px] text-blue-600 bg-blue-100/90 rounded px-1 shadow-xs">
-        ✏️
+      <span className="absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 transition-opacity text-[9px] text-blue-600 bg-blue-100/90 rounded px-1 shadow-xs flex items-center">
+        <EditOutlined />
       </span>
     </div>
   </Popover>
@@ -120,6 +150,7 @@ const StandardCellWrapper = ({
   currentAlign,
   onSelectAlign,
   onClearAlign,
+  onClosePopover,
 }) => {
   const popoverTitle = (
     <div className="text-[11px] font-semibold text-gray-800 flex items-center justify-between gap-2">
@@ -137,6 +168,16 @@ const StandardCellWrapper = ({
       open={popoverOpen}
       trigger="click"
       placement="top"
+      onOpenChange={(visible) => {
+        if (!visible && onClosePopover) {
+          onClosePopover();
+        }
+      }}
+      getPopupContainer={(trigger) =>
+        trigger.closest(".preview-container") ||
+        trigger.closest(".ant-drawer-body") ||
+        document.body
+      }
       title={popoverTitle}
       content={
         <CellAlignPopoverContent
@@ -165,14 +206,17 @@ export const CellInnerWrapper = ({
   onSelectAlign,
   onClearAlign,
   colMeta,
+  overrideText,
   onUpdateColumnLabel,
   onResetColumnLabel,
+  onClosePopover,
 }) => {
   const content = (
     <TableCellContent
       cell={cell}
       isMatrix={isMatrix}
       effectiveAlign={effectiveAlign}
+      overrideText={overrideText}
     />
   );
   if (!interactiveCellAlign) return content;
@@ -190,6 +234,7 @@ export const CellInnerWrapper = ({
         onResetColumnLabel={onResetColumnLabel}
         onSelectAlign={onSelectAlign}
         onClearAlign={onClearAlign}
+        onClosePopover={onClosePopover}
       />
     );
   }
@@ -203,6 +248,7 @@ export const CellInnerWrapper = ({
       currentAlign={currentAlign}
       onSelectAlign={onSelectAlign}
       onClearAlign={onClearAlign}
+      onClosePopover={onClosePopover}
     />
   );
 };
@@ -213,16 +259,19 @@ export const resolveCellAlign = (
   ci,
   totalRows,
   isSchedule,
+  gridCol,
 ) => {
-  const cellKey = `${ri},${ci}`;
-  const isLastRow = ri === totalRows - 1;
-  const direct = cellAlignments?.[cellKey];
+  const effectiveCi = gridCol !== undefined ? gridCol : ci;
+  const cellKey = `${ri},${effectiveCi}`;
+  const direct = cellAlignments?.[cellKey] || cellAlignments?.[`${ri},${ci}`];
   if (direct) return direct;
-  if (isLastRow && cellAlignments?.[`-1,${ci}`])
-    return cellAlignments[`-1,${ci}`];
+  const isLastRow = ri === totalRows - 1;
+  if (isLastRow && (cellAlignments?.[`-1,${effectiveCi}`] || cellAlignments?.[`-1,${ci}`]))
+    return cellAlignments[`-1,${effectiveCi}`] || cellAlignments[`-1,${ci}`];
   if (isSchedule && ri >= 4 && !isLastRow) {
     for (let r = 4; r < totalRows; r++) {
-      if (cellAlignments?.[`${r},${ci}`]) return cellAlignments[`${r},${ci}`];
+      if (cellAlignments?.[`${r},${effectiveCi}`] || cellAlignments?.[`${r},${ci}`])
+        return cellAlignments[`${r},${effectiveCi}`] || cellAlignments[`${r},${ci}`];
     }
   }
   return null;
@@ -249,35 +298,54 @@ export const InteractiveTableCell = ({
   columnsMetadata,
   onUpdateColumnLabel,
   onResetColumnLabel,
+  onClosePopover,
 }) => {
   const cellKey = `${ri},${ci}`;
   const isLastRow = ri === totalRows - 1;
+  const effectiveCi = cell.grid_col !== undefined ? cell.grid_col : ci;
   const currentAlign = resolveCellAlign(
     cellAlignments,
     ri,
     ci,
     totalRows,
     isSchedule,
+    cell.grid_col,
   );
   const effectiveAlign = getEffectiveAlignment(
     isMatrix,
     currentAlign,
     cell.alignment,
   );
+  const isSpanningHeader = cell.colspan && cell.colspan > 1;
+  const isBadgeCell = /^\s*\(\d+\)\s*$/.test(cell.text || "");
+  const isHeaderRow = ri === 0 || cell.is_header;
+
   const colMeta =
-    (ri === 0 || cell.is_header) && columnsMetadata
-      ? columnsMetadata[ci]
+    isHeaderRow && !isSpanningHeader && !isBadgeCell && columnsMetadata
+      ? (columnsMetadata.find((c) => c.ci === effectiveCi) ||
+         columnsMetadata.find(
+           (c) =>
+             c.defaultLabel &&
+             cell.text &&
+             cell.text.toLowerCase().includes(c.defaultLabel.toLowerCase())
+         ) ||
+         columnsMetadata[effectiveCi])
       : null;
 
+  const overrideText =
+    colMeta && (colMeta.isCustom || colMeta.isModified)
+      ? colMeta.currentLabel
+      : undefined;
+
   const style = getInteractiveCellStyle({
-    width: getCellWidth(customPercentages, isKeyValue, isMatrix, ci),
+    width: getCellWidth(customPercentages, isKeyValue, isMatrix, effectiveCi),
     minWidth: getCellMinWidth(
       isMatrix,
       Boolean(customPercentages || isKeyValue || isMatrix || isLegend),
-      ci,
+      effectiveCi,
       isLegend,
     ),
-    maxWidth: isMatrix ? (ci === 0 ? "60px" : "64px") : undefined,
+    maxWidth: isMatrix ? (effectiveCi === 0 ? "60px" : "64px") : undefined,
     isBorderless,
     isMatrix,
     isLegend,
@@ -310,11 +378,13 @@ export const InteractiveTableCell = ({
         ci={ci}
         popoverOpen={showSinglePopover}
         interactiveCellAlign={interactiveCellAlign}
-        onSelectAlign={(align) => onSelectAlign(cellKey, align, isLastRow, ci)}
-        onClearAlign={() => onClearAlign(cellKey, isLastRow, ci)}
+        onSelectAlign={(align) => onSelectAlign(cellKey, align, isLastRow, effectiveCi)}
+        onClearAlign={() => onClearAlign(cellKey, isLastRow, effectiveCi)}
         colMeta={colMeta}
+        overrideText={overrideText}
         onUpdateColumnLabel={onUpdateColumnLabel}
         onResetColumnLabel={onResetColumnLabel}
+        onClosePopover={onClosePopover}
       />
     </td>
   );

@@ -174,7 +174,13 @@ def _split_runs_by_role(p: etree._Element) -> tuple[list, list]:
     return title_runs, content_runs
 
 
-def _format_xml_paragraph(p: etree._Element, t_style: dict, c_style: dict, fb_style: dict) -> None:
+def _format_xml_paragraph(
+    p: etree._Element,
+    t_style: dict,
+    c_style: dict,
+    fb_style: dict,
+    t_fb_style: dict | None = None,
+) -> None:
     """Apply style cho 1 paragraph và các runs bên trong theo vai trò title/content."""
     effective_para = {**fb_style, **c_style}
     _apply_paragraph_style(p, effective_para)
@@ -184,7 +190,8 @@ def _format_xml_paragraph(p: etree._Element, t_style: dict, c_style: dict, fb_st
         content_runs = title_runs
         title_runs = []
 
-    effective_title = {**fb_style, **t_style}
+    actual_title_fb = t_fb_style if t_fb_style is not None else fb_style
+    effective_title = {**actual_title_fb, **t_style}
     effective_content = {**fb_style, **c_style}
 
     for r in title_runs:
@@ -211,6 +218,7 @@ def _apply_style_to_xml(
     title_style: dict | None = None,
     content_style: dict | None = None,
     fallback_style: dict | None = None,
+    title_fallback: dict | None = None,
 ) -> str:
     if not xml_snippet or not xml_snippet.strip():
         return xml_snippet
@@ -218,7 +226,7 @@ def _apply_style_to_xml(
     t_style, c_style, fb_style = _normalize_apply_styles(
         title_style, content_style, fallback_style
     )
-    if not t_style and not c_style and not fb_style:
+    if not t_style and not c_style and not fb_style and not title_fallback:
         return xml_snippet
 
     try:
@@ -226,7 +234,7 @@ def _apply_style_to_xml(
         root = etree.fromstring(wrapped.encode("utf-8"))
 
         for p in root.findall(f".//{{{W_NS}}}p"):
-            _format_xml_paragraph(p, t_style, c_style, fb_style)
+            _format_xml_paragraph(p, t_style, c_style, fb_style, title_fallback)
 
         return "".join(
             etree.tostring(child, encoding="utf-8").decode("utf-8")

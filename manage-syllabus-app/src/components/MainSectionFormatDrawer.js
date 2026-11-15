@@ -1,7 +1,23 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Drawer, Button, Tag, message } from "antd";
-import { UndoOutlined, EyeOutlined } from "@ant-design/icons";
+import { UndoOutlined, EyeOutlined, FormatPainterOutlined } from "@ant-design/icons";
 import { StyleControls } from "./BlockFormatDrawer";
+
+const areObjectsEqual = (a, b) => {
+  if (a === b) return true;
+  if (!a && !b) return true;
+  if (!a || !b) return false;
+  const cleanA = Object.fromEntries(
+    Object.entries(a).filter(([_, v]) => v !== undefined && v !== null && v !== "")
+  );
+  const cleanB = Object.fromEntries(
+    Object.entries(b).filter(([_, v]) => v !== undefined && v !== null && v !== "")
+  );
+  const keysA = Object.keys(cleanA);
+  const keysB = Object.keys(cleanB);
+  if (keysA.length !== keysB.length) return false;
+  return keysA.every((k) => cleanA[k] === cleanB[k]);
+};
 
 const DEFAULT_MAIN_SECTION_STYLE = {
   font_name: "Times New Roman",
@@ -51,8 +67,11 @@ const MainSectionFormatDrawer = ({
     if (open && mainSection?.id) {
       setStyle(styleConfig || {});
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, mainSection?.id]);
+  }, [open, mainSection?.id, styleConfig]);
+
+  const isDirty = useMemo(() => {
+    return !areObjectsEqual(style, styleConfig || {});
+  }, [style, styleConfig]);
 
   if (!mainSection) return null;
 
@@ -104,7 +123,9 @@ const MainSectionFormatDrawer = ({
     <Drawer
       title={
         <div className="flex items-center gap-2">
-          <span>🎨 Định dạng:</span>
+          <span className="flex items-center gap-1.5 text-blue-700">
+            <FormatPainterOutlined /> Định dạng:
+          </span>
           <span className="font-semibold text-blue-800">{rawName}</span>
           <Tag color="geekblue">Main Section</Tag>
         </div>
@@ -129,12 +150,22 @@ const MainSectionFormatDrawer = ({
       }
       footer={
         <div className="flex items-center justify-between">
-          <Button size="small" icon={<UndoOutlined />} onClick={handleReset}>
+          <Button
+            size="small"
+            icon={<UndoOutlined />}
+            onClick={handleReset}
+            disabled={!style || Object.keys(style).length === 0}
+          >
             Khôi phục mặc định
           </Button>
           <div className="flex items-center gap-2">
             <Button onClick={onClose}>Hủy</Button>
-            <Button type="primary" loading={saving} onClick={handleSave}>
+            <Button
+              type="primary"
+              loading={saving}
+              disabled={!isDirty}
+              onClick={handleSave}
+            >
               Lưu
             </Button>
           </div>

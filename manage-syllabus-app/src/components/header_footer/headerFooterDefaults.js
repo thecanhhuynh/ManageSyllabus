@@ -36,6 +36,7 @@ export const DEFAULT_TITLE_LINES = [
 
 export const DEFAULT_SIG_COLUMNS = [
   {
+    role_key: "faculty_dean",
     title_lines: [
       { text: "PHỤ TRÁCH KHOA CNTT", style: { bold: true, font_size_pt: 12, alignment: "CENTER" } },
       { text: "DEPUTY DEAN", style: { bold: true, font_size_pt: 12, alignment: "CENTER" } },
@@ -45,6 +46,7 @@ export const DEFAULT_SIG_COLUMNS = [
     name_style: { bold: true, font_size_pt: 12, alignment: "CENTER" },
   },
   {
+    role_key: "lecturer",
     title_lines: [
       { text: "GIẢNG VIÊN BIÊN SOẠN", style: { bold: true, font_size_pt: 12, alignment: "CENTER" } },
       { text: "ACADEMIC", style: { bold: true, font_size_pt: 12, alignment: "CENTER" } },
@@ -148,7 +150,7 @@ export const normalizeFooterConfig = (raw = {}) => {
   }
 
   const rawCols = f.signature_table?.columns || DEFAULT_SIG_COLUMNS;
-  const columns = rawCols.map((col) => {
+  const columns = rawCols.map((col, idx) => {
     const rawTitles = col.title_lines || [{ text: "" }, { text: "" }];
     const titleLines = rawTitles.map((tl) => {
       if (typeof tl === "string") {
@@ -162,6 +164,7 @@ export const normalizeFooterConfig = (raw = {}) => {
     });
 
     return {
+      role_key: col.role_key || (idx === 0 ? "faculty_dean" : idx === 1 ? "lecturer" : "custom"),
       title_lines: titleLines,
       subtitle: col.subtitle || "",
       name: col.name || "",

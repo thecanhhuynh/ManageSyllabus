@@ -438,7 +438,7 @@ class PreviewBuilder:
                 cell["rowspan"] = span
         for r in rows:
             for cell in r["cells"]:
-                cell.pop("_grid_col", None)
+                cell["grid_col"] = cell.pop("_grid_col", 0)
 
     @classmethod
     def _serialize_cell(cls, tc_elem: etree._Element, is_header: bool) -> dict:

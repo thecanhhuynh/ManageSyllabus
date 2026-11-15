@@ -136,6 +136,7 @@ class BlockProcessor:
 
         named_styles = block_layout.get("named_styles", {}) if isinstance(block_layout, dict) else {}
         fallback_style = named_styles.get("SYLLABUS_BODY") or named_styles.get("Normal") or {}
+        title_fallback = named_styles.get("SYLLABUS_HEADING_2") or named_styles.get("Heading2") or {"bold": True}
         title_style, content_style = _extract_styles(block.style_config)
 
         xml_rendered = _apply_style_to_xml(
@@ -143,6 +144,7 @@ class BlockProcessor:
             title_style=title_style,
             content_style=content_style,
             fallback_style=fallback_style,
+            title_fallback=title_fallback,
         )
 
         xml_rendered = cls._substitute_variables(xml_rendered, data_context)

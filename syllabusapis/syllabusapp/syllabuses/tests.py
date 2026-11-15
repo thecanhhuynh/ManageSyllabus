@@ -3504,6 +3504,55 @@ class TemplateBlockSyncServiceTestCase(TestCase):
         self.assertEqual(table_sub.data["rows"][0]["c1"], "Val 1")
         self.assertEqual(table_sub.data["rows"][1]["c2"], "Val 4")
 
+    def test_table_serializer_fallback_to_template_rows(self):
+        """Kiểm tra TableSubSectionSerializer tự fallback sang template khi data['rows'] rỗng."""
+        from syllabuses.models import (
+            TemplateTableSubSection, TableSubSection, Syllabus, MainSection,
+            Faculty, User, Lecturer, Credit, Subject
+        )
+        from syllabuses.serializer import TableSubSectionSerializer
+
+        test_schema = {
+            "firstColumnHeader": "Tiêu đề hàng mẫu",
+            "columns": [{"id": "c1", "headerName": "Cột 1", "field": "c1"}],
+            "rows": [{"id": "r1", "rowTitle": "Hàng mẫu 1", "c1": "Nội dung"}],
+        }
+        TemplateTableSubSection.objects.create(
+            main_section=self.main_sec,
+            name="Bảng mẫu fallback",
+            code="CUSTOM_TBL_FB",
+            type="table",
+            position=5,
+            table_schema=test_schema,
+        )
+        faculty = Faculty.objects.create(name="Khoa Test FB Table")
+        user = User.objects.create_user(username="u_test_fb_tbl", password="123")
+        lecturer = Lecturer.objects.create(user=user, faculty=faculty)
+        credit = Credit.objects.create(number_theory=3, number_practice=0, hour_self_study=90)
+        subject = Subject.objects.create(name="Môn Test FB Table", code="FBTBL01", credit=credit)
+        syl = Syllabus.objects.create(
+            name="Đề cương test fallback bảng",
+            template=self.template,
+            subject=subject,
+            faculty=faculty,
+            lecturer=lecturer,
+        )
+        syl_main = MainSection.objects.create(syllabus=syl, code="SEC_FB", name="Mục FB", position=1)
+        empty_table_sub = TableSubSection.objects.create(
+            main_section=syl_main,
+            code="CUSTOM_TBL_FB",
+            type="table",
+            name="Bảng mẫu fallback",
+            position=1,
+            data={"columns": [{"id": "c1", "field": "c1", "headerName": "Cột 1"}], "rows": []},
+            requires_update=True,
+        )
+
+        serializer_data = TableSubSectionSerializer(empty_table_sub).data
+        schema = serializer_data.get("table_schema", {})
+        self.assertEqual(len(schema.get("rows", [])), 1)
+        self.assertEqual(schema["rows"][0]["rowTitle"], "Hàng mẫu 1")
+
 
 class SelectionSubRendererTestCase(TestCase):
     """Bộ kiểm thử cho SelectionSubRenderer dynamic."""
@@ -4677,3 +4726,112 @@ class DigitalSignatureTestCase(TestCase):
         res2 = client.post(f"/templates/{self.template.id}/upload-docx/", {"file": txt_file}, format="multipart")
         self.assertEqual(res2.status_code, 400)
         self.assertIn(".docx", res2.data.get("error", ""))
+
+
+class HeaderFooterSignatureIntegrationTestCase(TestCase):
+    """Kiểm thử tích hợp HeaderFooterRenderer và hệ thống Chữ ký điện tử."""
+
+    def setUp(self):
+        from handlers.header_footer_renderer import HeaderFooterRenderer
+        self.renderer = HeaderFooterRenderer()
+        self.faculty = Faculty.objects.create(name="Khoa CNTT Sig Test")
+        self.u_gv = User.objects.create_user(
+            username="gv_sig_test",
+            email="gv_sig@test.com",
+            password="pwd",
+            first_name="Thành",
+            last_name="Dương Hữu",
+        )
+        self.lecturer_gv, _ = Lecturer.objects.get_or_create(
+            user=self.u_gv,
+            defaults={"faculty": self.faculty}
+        )
+        self.u_dean = User.objects.create_user(
+            username="dean_sig_test",
+            email="dean_sig@test.com",
+            password="pwd",
+            first_name="Vinh",
+            last_name="Trương Hoàng",
+        )
+        self.lecturer_dean, _ = Lecturer.objects.get_or_create(
+            user=self.u_dean,
+            defaults={"faculty": self.faculty, "faculty_role": "dean"}
+        )
+        self.credit = Credit.objects.create(number_theory=2, number_practice=1, hour_self_study=6)
+        self.subject = Subject.objects.create(
+            name="CTDL & GT Sig", code="IT_SIG_101", credit=self.credit
+        )
+        self.template = TemplateSyllabus.objects.create(name="Template 2027 Sig Test")
+        self.syllabus = Syllabus.objects.create(
+            name="Đề cương CTDL Sig Test",
+            subject=self.subject,
+            template=self.template,
+            faculty=self.faculty,
+            lecturer=self.lecturer_gv,
+            status=Syllabus.Status.DRAFT,
+        )
+
+    def test_date_line_formatting_unapproved(self):
+        text = "Thành phố Hồ Chí Minh, ngày {DD} tháng {MM} năm {YYYY}"
+        formatted = self.renderer._format_date_text(text, self.syllabus)
+        self.assertNotIn("{DD}", formatted)
+        self.assertNotIn("{MM}", formatted)
+        self.assertNotIn("{YYYY}", formatted)
+        self.assertIn("Thành phố Hồ Chí Minh, ngày", formatted)
+
+    def test_date_line_formatting_approved(self):
+        from django.utils import timezone
+        import datetime
+        self.syllabus.status = Syllabus.Status.APPROVED
+        self.syllabus.approved_by = self.u_dean
+        self.syllabus.approved_date = timezone.make_aware(datetime.datetime(2026, 11, 20, 10, 30))
+        self.syllabus.save()
+
+        text = "Thành phố Hồ Chí Minh, ngày 15 tháng 09 năm 2023"
+        formatted = self.renderer._format_date_text(text, self.syllabus)
+        self.assertEqual(formatted, "Thành phố Hồ Chí Minh, ngày 20 tháng 11 năm 2026")
+
+    def test_signature_table_role_resolution(self):
+        doc = Document()
+        config = {
+            "footer": {
+                "date_line": {"text": "TP.HCM, ngày 01 tháng 01 năm 2026"},
+                "signature_table": {
+                    "columns": [
+                        {"role_key": "faculty_dean", "title_lines": [{"text": "LÃNH ĐẠO KHOA"}], "name": "Dean Mẫu"},
+                        {"role_key": "lecturer", "title_lines": [{"text": "GIẢNG VIÊN"}], "name": "GV Mẫu"},
+                        {"role_key": "custom", "title_lines": [{"text": "NGƯỜI LẬP"}], "name": "Tùy Biến Cố Định"},
+                    ]
+                }
+            }
+        }
+        self.renderer.render_footer(doc, config=config, syllabus=self.syllabus)
+        tables = doc.tables
+        self.assertEqual(len(tables), 1)
+        row = tables[0].rows[0]
+        self.assertEqual(len(row.cells), 3)
+
+        self.assertIn("Trương Hoàng Vinh", row.cells[0].text)
+        self.assertIn("Dương Hữu Thành", row.cells[1].text)
+        self.assertIn("Tùy Biến Cố Định", row.cells[2].text)
+
+    def test_signature_snapshot_priority(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        from syllabuses.models import SyllabusSignature
+        dummy_img = SimpleUploadedFile("sig.png", b"\x89PNG\r\n\x1a\nfakecontent", content_type="image/png")
+
+        self.assertIsNone(
+            self.renderer._get_sig_img_path(self.lecturer_dean, check_approved=True, syllabus=self.syllabus, role="faculty_dean")
+        )
+
+        sig = SyllabusSignature.objects.create(
+            syllabus=self.syllabus,
+            role="lecturer",
+            signer=self.u_gv,
+            status=SyllabusSignature.SignatureStatus.SIGNED,
+            signature_image=dummy_img,
+        )
+        img_path = self.renderer._get_sig_img_path(self.lecturer_gv, check_approved=False, syllabus=self.syllabus, role="lecturer")
+        self.assertIsNotNone(img_path)
+        self.assertEqual(img_path, sig.signature_image.path)
+

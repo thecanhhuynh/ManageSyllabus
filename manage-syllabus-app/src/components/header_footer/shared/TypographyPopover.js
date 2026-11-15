@@ -9,6 +9,7 @@ export const TypographyPopover = ({
   defaultStyle = {},
   onUpdate,
   showSpacing = false,
+  size = "small",
   buttonTitle = "Chỉnh định dạng",
 }) => (
   <Popover
@@ -26,7 +27,7 @@ export const TypographyPopover = ({
       </div>
     }
   >
-    <Button icon={<BgColorsOutlined />} title={buttonTitle} />
+    <Button size={size} icon={<BgColorsOutlined />} title={buttonTitle} />
   </Popover>
 );
 

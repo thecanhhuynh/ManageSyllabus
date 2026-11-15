@@ -6,6 +6,7 @@ import {
   Button,
   Typography,
   Space,
+  Input,
   Select,
   Tooltip,
   Modal,
@@ -25,6 +26,7 @@ import {
   SafetyCertificateOutlined,
   RollbackOutlined,
   ClearOutlined,
+  ArrowLeftOutlined,
 } from "@ant-design/icons";
 import {useNavigate} from "react-router-dom";
 import {MyUserContext} from "../../config/contexts/MyContext";
@@ -32,14 +34,18 @@ import {authApis, endpoints} from "../../config/Apis";
 import SignatureService from "../../services/signatureService";
 import {resolveMediaUrl} from "../../utils/mediaUtils";
 import MySpinner from "../../components/MySpinner";
-import CleanInput from "../../components/CleanInput";
-import {cleanWhitespace} from "../../utils/stringUtils";
+import LazySelect from "../../components/common/LazySelect";
 
 const {Title, Text} = Typography;
 
 const FacultyApprovals = () => {
   const [user] = useContext(MyUserContext);
   const nav = useNavigate();
+  const homeRoute =
+    {
+      admin: "/admin",
+      specialist: "/specialist",
+    }[user?.user_role] || "/";
 
   const [loading, setLoading] = useState(false);
   const [syllabuses, setSyllabuses] = useState([]);
@@ -49,10 +55,6 @@ const FacultyApprovals = () => {
   const [programFilter, setProgramFilter] = useState("ALL");
   const [subjectFilter, setSubjectFilter] = useState("ALL");
   const [lecturerFilter, setLecturerFilter] = useState("ALL");
-
-  const [programOptions, setProgramOptions] = useState([]);
-  const [subjectOptions, setSubjectOptions] = useState([]);
-  const [lecturerOptions, setLecturerOptions] = useState([]);
 
   const [selectedSyllabus, setSelectedSyllabus] = useState(null);
   const [approveModalOpen, setApproveModalOpen] = useState(false);
@@ -87,107 +89,14 @@ const FacultyApprovals = () => {
     setLecturerFilter("ALL");
   };
 
-  const loadFilterOptions = useCallback(async () => {
-    try {
-      const [tpRes, subRes, lecRes] = await Promise.allSettled([
-        authApis().get(endpoints["training-programs"]),
-        authApis().get(endpoints["subjects"]),
-        authApis().get(endpoints["lecturers"]),
-      ]);
-
-      if (tpRes.status === "fulfilled") {
-        const list = tpRes.value.data?.results || tpRes.value.data || [];
-        setProgramOptions(
-          list.map((p) => ({
-            value: p.id,
-            label: `${p.name} (${p.academic_year})`,
-          })),
-        );
-      }
-
-      if (subRes.status === "fulfilled") {
-        const list = subRes.value.data?.results || subRes.value.data || [];
-        setSubjectOptions(
-          list.map((s) => ({
-            value: s.id,
-            label: s.code ? `${s.code} - ${s.name}` : s.name,
-          })),
-        );
-      }
-
-      if (lecRes.status === "fulfilled") {
-        const list = lecRes.value.data?.results || lecRes.value.data || [];
-        setLecturerOptions(
-          list.map((l) => ({
-            value: l.id,
-            label:
-              `${l.last_name || ""} ${l.first_name || ""}`.trim() || l.name,
-          })),
-        );
-      }
-    } catch (err) {
-      console.error("Lỗi tải danh mục bộ lọc:", err);
-    }
-  }, []);
-
-  useEffect(() => {
-    loadFilterOptions();
-  }, [loadFilterOptions]);
-
-  const mergeOptionsFromSyllabuses = (list) => {
-    if (!list?.length) return;
-    setProgramOptions((prev) => {
-      const map = new Map(prev.map((p) => [String(p.value), p]));
-      list.forEach((s) => {
-        (s.training_programs || []).forEach((tp) => {
-          if (!map.has(String(tp.id))) {
-            map.set(String(tp.id), {
-              value: tp.id,
-              label: `${tp.name} (${tp.academic_year})`,
-            });
-          }
-        });
-      });
-      return Array.from(map.values());
-    });
-    setSubjectOptions((prev) => {
-      const map = new Map(prev.map((s) => [String(s.value), s]));
-      list.forEach((item) => {
-        if (item.subject?.id && !map.has(String(item.subject.id))) {
-          map.set(String(item.subject.id), {
-            value: item.subject.id,
-            label: item.subject.code
-              ? `${item.subject.code} - ${item.subject.name}`
-              : item.subject.name,
-          });
-        }
-      });
-      return Array.from(map.values());
-    });
-    setLecturerOptions((prev) => {
-      const map = new Map(prev.map((l) => [String(l.value), l]));
-      list.forEach((item) => {
-        const lec = item.lecturer;
-        if (lec?.id && !map.has(String(lec.id))) {
-          map.set(String(lec.id), {
-            value: lec.id,
-            label:
-              `${lec.last_name || ""} ${lec.first_name || ""}`.trim() ||
-              item.lecturer_name,
-          });
-        }
-      });
-      return Array.from(map.values());
-    });
-  };
-
   const loadSyllabuses = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await authApis().get(`${endpoints["syllabuses"]}?page_size=1000`);
+      const res = await authApis().get(endpoints["syllabuses"], {
+        params: { page_size: 1000 },
+      });
       const list = res.data?.results || res.data || [];
       setSyllabuses(list);
-      mergeOptionsFromSyllabuses(list);
     } catch (err) {
       console.error(err);
       message.error("Lỗi khi tải danh sách đề cương của Khoa!");
@@ -205,7 +114,9 @@ const FacultyApprovals = () => {
 
     if (statusFilter !== "ALL") {
       result = result.filter((item) => {
-        const isApproved = Boolean(item.is_approved || item.status === "Approved");
+        const isApproved = Boolean(
+          item.is_approved || item.status === "Approved",
+        );
         if (statusFilter === "Approved") return isApproved;
         if (statusFilter === "Submitted")
           return item.status === "Submitted" && !isApproved;
@@ -316,14 +227,13 @@ const FacultyApprovals = () => {
   const handleConfirmUnapprove = async () => {
     const {record, reason} = unapproveModal;
     if (!record?.id) return;
-    const cleanReason = cleanWhitespace(reason);
-    if (!cleanReason) {
+    if (!reason.trim()) {
       message.warning("Vui lòng nhập lý do hoặc ghi chú yêu cầu chỉnh sửa!");
       return;
     }
     try {
       setUnapproveModal((prev) => ({...prev, loading: true}));
-      await SignatureService.unapproveSyllabus(record.id, cleanReason);
+      await SignatureService.unapproveSyllabus(record.id, reason.trim());
       message.success(
         `Đã chuyển đề cương #${record.id} về Bản nháp để giảng viên chỉnh sửa.`,
       );
@@ -342,7 +252,9 @@ const FacultyApprovals = () => {
   };
 
   const handleExportDocx = async (record) => {
-    const isApproved = Boolean(record.is_approved || record.status === "Approved");
+    const isApproved = Boolean(
+      record.is_approved || record.status === "Approved",
+    );
     if (!isApproved) {
       message.warning(
         "Đề cương chưa được Lãnh đạo Khoa phê duyệt. Không thể xuất file chính thức.",
@@ -383,12 +295,11 @@ const FacultyApprovals = () => {
     }
   };
 
-  const isSyllabusApproved = (item) => Boolean(item?.is_approved || item?.status === "Approved");
+  const isSyllabusApproved = (item) =>
+    Boolean(item?.is_approved || item?.status === "Approved");
 
   const countTotal = syllabuses.length;
-  const countApproved = syllabuses.filter(
-    (s) => isSyllabusApproved(s),
-  ).length;
+  const countApproved = syllabuses.filter((s) => isSyllabusApproved(s)).length;
   const countSubmitted = syllabuses.filter(
     (s) => s.status === "Submitted" && !isSyllabusApproved(s),
   ).length;
@@ -399,43 +310,25 @@ const FacultyApprovals = () => {
       title: "Mã môn",
       dataIndex: ["subject", "code"],
       key: "code",
-      width: 100,
+      width: 110,
       render: (code) => (
-        <div style={{minWidth: 80, whiteSpace: "nowrap"}}>
-          <Tag color="blue" style={{fontWeight: 600}}>
-            {code || "N/A"}
-          </Tag>
-        </div>
+        <Tag color="blue" style={{fontWeight: 600}}>
+          {code || "N/A"}
+        </Tag>
       ),
     },
     {
       title: "Tên Đề cương / Học phần",
       key: "name",
-      width: 320,
       render: (_, record) => (
-        <div style={{minWidth: 260, wordBreak: "normal"}}>
-          <div
-            style={{
-              fontWeight: 600,
-              color: "#1f2937",
-              fontSize: 14,
-              wordBreak: "normal",
-              overflowWrap: "break-word",
-            }}
-          >
+        <div>
+          <div style={{fontWeight: 600, color: "#1f2937", fontSize: 14}}>
             {record.name || record.subject?.name || "Đề cương chi tiết"}
           </div>
-          <div
-            style={{
-              fontSize: 12,
-              color: "#6b7280",
-              wordBreak: "normal",
-              overflowWrap: "break-word",
-            }}
-          >
+          <div style={{fontSize: 12, color: "#6b7280"}}>
             Học phần: {record.subject?.name || "N/A"}
           </div>
-          {record.training_programs && record.training_programs.length > 0 ? (
+          {record.training_programs && record.training_programs.length > 0 && (
             <div
               style={{marginTop: 4, display: "flex", flexWrap: "wrap", gap: 4}}
             >
@@ -443,17 +336,11 @@ const FacultyApprovals = () => {
                 <Tag
                   key={tp.id}
                   color="purple"
-                  style={{fontSize: 11, margin: 0, whiteSpace: "nowrap"}}
+                  style={{fontSize: 11, margin: 0}}
                 >
                   {tp.name}-{tp.academic_year}
                 </Tag>
               ))}
-            </div>
-          ) : (
-            <div style={{marginTop: 4}}>
-              <Tag color="orange" style={{fontSize: 11, margin: 0}}>
-                Chưa gán CTĐT
-              </Tag>
             </div>
           )}
         </div>
@@ -470,7 +357,7 @@ const FacultyApprovals = () => {
           record.lecturer_name ||
           "N/A";
         return (
-          <div style={{minWidth: 160, wordBreak: "normal"}}>
+          <div>
             <div style={{fontWeight: 500, color: "#374151"}}>{name}</div>
             <div style={{marginTop: 3}}>
               {lec?.has_signature ? (
@@ -492,7 +379,9 @@ const FacultyApprovals = () => {
       key: "status",
       width: 150,
       render: (_, record) => {
-        const isApproved = Boolean(record.is_approved || record.status === "Approved");
+        const isApproved = Boolean(
+          record.is_approved || record.status === "Approved",
+        );
         if (isApproved) {
           return (
             <Tooltip
@@ -523,7 +412,9 @@ const FacultyApprovals = () => {
       key: "approver",
       width: 180,
       render: (_, record) => {
-        const isApproved = Boolean(record.is_approved || record.status === "Approved");
+        const isApproved = Boolean(
+          record.is_approved || record.status === "Approved",
+        );
         if (!isApproved) {
           return (
             <span style={{color: "#9ca3af", fontStyle: "italic"}}>
@@ -549,7 +440,9 @@ const FacultyApprovals = () => {
       width: 280,
       fixed: "right",
       render: (_, record) => {
-        const isApproved = Boolean(record.is_approved || record.status === "Approved");
+        const isApproved = Boolean(
+          record.is_approved || record.status === "Approved",
+        );
         const isSelfAuthored = Boolean(
           (record.lecturer_id &&
             (record.lecturer_id === user?.lecturer?.id ||
@@ -561,7 +454,7 @@ const FacultyApprovals = () => {
         const canApprove = !isSelfAuthored || isAdmin;
 
         return (
-          <Space size="small" wrap={false} style={{whiteSpace: "nowrap"}}>
+          <Space size="small">
             <Tooltip title="Xem nội dung chi tiết">
               <Button
                 size="small"
@@ -577,8 +470,6 @@ const FacultyApprovals = () => {
                 title={
                   !canApprove
                     ? "Bạn là giảng viên biên soạn đề cương này, không thể tự phê duyệt theo quy định BR-04."
-                    : record.status !== "Submitted"
-                    ? "Đề cương đang là bản nháp / chờ giảng viên chỉnh sửa và ký nộp lại."
                     : "Ký duyệt đề cương"
                 }
               >
@@ -586,17 +477,11 @@ const FacultyApprovals = () => {
                   <Button
                     size="small"
                     type="primary"
-                    disabled={!canApprove || record.status !== "Submitted"}
+                    disabled={!canApprove}
                     icon={<SafetyCertificateOutlined />}
                     style={{
-                      backgroundColor:
-                        canApprove && record.status === "Submitted"
-                          ? "#16a34a"
-                          : undefined,
-                      borderColor:
-                        canApprove && record.status === "Submitted"
-                          ? "#16a34a"
-                          : undefined,
+                      backgroundColor: canApprove ? "#16a34a" : undefined,
+                      borderColor: canApprove ? "#16a34a" : undefined,
                     }}
                     onClick={() => handleOpenApproveModal(record)}
                   >
@@ -658,7 +543,7 @@ const FacultyApprovals = () => {
           duyệt đề cương.
         </Text>
         <div style={{marginTop: 16}}>
-          <Button type="primary" onClick={() => nav("/")}>
+          <Button type="primary" onClick={() => nav(homeRoute)}>
             Quay về Trang chủ
           </Button>
         </div>
@@ -669,23 +554,32 @@ const FacultyApprovals = () => {
   return (
     <div style={{paddingBottom: 40}}>
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
-        <div>
-          <Title
-            level={3}
-            style={{margin: 0, fontWeight: 700, color: "#1f2937"}}
-          >
-            Phê duyệt Đề cương Khoa
-          </Title>
-          <Text style={{color: "#6b7280", fontSize: 14}}>
-            Đơn vị:{" "}
-            {user?.lecturer?.faculty?.name || "Khoa Công nghệ thông tin"} |
-            Người phụ trách: {user?.last_name} {user?.first_name}
-          </Text>
+        <div className="flex items-center gap-3">
+          <Button
+            type="text"
+            icon={<ArrowLeftOutlined className="text-lg" />}
+            onClick={() => nav(homeRoute)}
+            className="text-gray-500 hover:text-blue-600 hover:bg-blue-50"
+          />
+          <div>
+            <Title
+              level={3}
+              style={{margin: 0, fontWeight: 700, color: "#1f2937"}}
+            >
+              Phê duyệt Đề cương Khoa
+            </Title>
+            <Text style={{color: "#6b7280", fontSize: 14}}>
+              Đơn vị:{" "}
+              {user?.lecturer?.faculty?.name || "Khoa Công nghệ thông tin"} |
+              Người phụ trách: {user?.last_name} {user?.first_name}
+            </Text>
+          </div>
         </div>
         <Button
           icon={<ReloadOutlined />}
           onClick={loadSyllabuses}
           loading={loading}
+          className="h-9 px-4 rounded-lg"
         >
           Làm mới
         </Button>
@@ -768,8 +662,8 @@ const FacultyApprovals = () => {
       >
         <div className="mb-4">
           <Row gutter={[12, 12]} align="middle">
-            <Col xs={24} md={8}>
-              <CleanInput
+            <Col xs={24} lg={8}>
+              <Input
                 placeholder="Tìm mã môn, tên môn, đề cương, giảng viên..."
                 prefix={<SearchOutlined style={{color: "#bfbfbf"}} />}
                 value={searchText}
@@ -777,61 +671,42 @@ const FacultyApprovals = () => {
                 allowClear
               />
             </Col>
-            <Col xs={12} sm={12} md={6} lg={4}>
-              <Select
-                value={programFilter}
-                onChange={setProgramFilter}
-                style={{width: "100%"}}
+            <Col xs={12} sm={6} lg={4}>
+              <LazySelect
+                endpoint={endpoints["training-programs"]}
+                value={programFilter === "ALL" ? undefined : programFilter}
+                onChange={(val) => setProgramFilter(val || "ALL")}
                 placeholder="Chương trình đào tạo"
-                options={[
-                  {value: "ALL", label: "Tất cả CTĐT"},
-                  ...programOptions,
-                ]}
-                showSearch
-                filterOption={(input, option) =>
-                  (option?.label ?? "")
-                    .toLowerCase()
-                    .includes(input.toLowerCase())
-                }
+                labelField={(p) => `${p.name} (${p.academic_year})`}
+                style={{width: "100%"}}
+                allowClear
               />
             </Col>
-            <Col xs={12} sm={12} md={6} lg={4}>
-              <Select
-                value={subjectFilter}
-                onChange={setSubjectFilter}
-                style={{width: "100%"}}
+            <Col xs={12} sm={6} lg={4}>
+              <LazySelect
+                endpoint={endpoints["subjects"]}
+                value={subjectFilter === "ALL" ? undefined : subjectFilter}
+                onChange={(val) => setSubjectFilter(val || "ALL")}
                 placeholder="Môn học / Học phần"
-                options={[
-                  {value: "ALL", label: "Tất cả môn học"},
-                  ...subjectOptions,
-                ]}
-                showSearch
-                filterOption={(input, option) =>
-                  (option?.label ?? "")
-                    .toLowerCase()
-                    .includes(input.toLowerCase())
-                }
-              />
-            </Col>
-            <Col xs={12} sm={12} md={6} lg={4}>
-              <Select
-                value={lecturerFilter}
-                onChange={setLecturerFilter}
+                labelField={(s) => s.code ? `${s.code} - ${s.name}` : s.name}
                 style={{width: "100%"}}
-                placeholder="Giảng viên biên soạn"
-                options={[
-                  {value: "ALL", label: "Tất cả giảng viên"},
-                  ...lecturerOptions,
-                ]}
-                showSearch
-                filterOption={(input, option) =>
-                  (option?.label ?? "")
-                    .toLowerCase()
-                    .includes(input.toLowerCase())
-                }
+                allowClear
               />
             </Col>
-            <Col xs={12} sm={12} md={6} lg={4}>
+            <Col xs={12} sm={6} lg={4}>
+              <LazySelect
+                endpoint={endpoints["lecturers"]}
+                value={lecturerFilter === "ALL" ? undefined : lecturerFilter}
+                onChange={(val) => setLecturerFilter(val || "ALL")}
+                placeholder="Giảng viên biên soạn"
+                labelField={(l) =>
+                  `${l.last_name || ""} ${l.first_name || ""}`.trim() || l.name
+                }
+                style={{width: "100%"}}
+                allowClear
+              />
+            </Col>
+            <Col xs={12} sm={6} lg={4}>
               <Select
                 value={statusFilter}
                 onChange={setStatusFilter}
@@ -877,9 +752,8 @@ const FacultyApprovals = () => {
             pagination={{
               pageSize: 10,
               showTotal: (total) => `Tổng cộng ${total} đề cương`,
-              showSizeChanger: false,
             }}
-            scroll={{x: 1280}}
+            scroll={{x: 1000}}
           />
         )}
       </Card>
@@ -989,7 +863,7 @@ const FacultyApprovals = () => {
           <p style={{color: "#4b5563", fontSize: 13, marginBottom: 8}}>
             Vui lòng nhập lý do hoặc các điểm cần sửa đổi để giảng viên nắm rõ:
           </p>
-          <CleanInput.TextArea
+          <Input.TextArea
             rows={4}
             placeholder="Ví dụ: Cần cập nhật lại chuẩn đầu ra CLO 2.1 và bổ sung giáo trình mới..."
             value={unapproveModal.reason}

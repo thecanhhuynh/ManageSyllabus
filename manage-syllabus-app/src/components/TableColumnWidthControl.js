@@ -222,7 +222,7 @@ const TableColumnWidthControl = ({
             ))}
           </div>
 
-          <div className="flex flex-wrap gap-1.5 pt-0.5">
+          <div className="grid grid-cols-2 gap-1.5 max-h-[160px] overflow-y-auto pr-0.5 pt-0.5">
             {colList.map((colName, idx) => {
               const currentW = weights[idx] || 0;
               const currentPct = validation.percentages[idx] || 0;
@@ -230,28 +230,35 @@ const TableColumnWidthControl = ({
               return (
                 <div
                   key={idx}
-                  className="bg-white px-2 py-1 rounded border border-gray-200 flex items-center gap-1.5 text-xs"
+                  className="bg-white px-2 py-1 rounded border border-gray-200 flex items-center justify-between gap-1 text-[11px] shadow-2xs hover:border-blue-300 transition-colors"
                 >
-                  <span
-                    className="w-2 h-2 rounded-full flex-shrink-0"
-                    style={{ backgroundColor: color }}
-                  />
-                  <span className="max-w-[80px] truncate text-gray-700 font-medium" title={colName}>
-                    {colName}
-                  </span>
-                  <InputNumber
-                    size="small"
-                    min={0.5}
-                    step={0.5}
-                    value={currentW}
-                    disabled={disabled}
-                    onChange={(v) => handleWeightStep(idx, v)}
-                    className="w-14 text-center text-xs"
-                    controls={false}
-                  />
-                  <span className="text-[11px] text-gray-500 font-mono">
-                    {currentPct.toFixed(0)}%
-                  </span>
+                  <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                    <span
+                      className="w-2 h-2 rounded-full flex-shrink-0"
+                      style={{ backgroundColor: color }}
+                    />
+                    <span
+                      className="truncate text-gray-700 font-medium text-[11px]"
+                      title={colName}
+                    >
+                      {colName}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                    <InputNumber
+                      size="small"
+                      min={0.1}
+                      step={0.5}
+                      value={currentW}
+                      disabled={disabled}
+                      onChange={(v) => handleWeightStep(idx, v)}
+                      className="w-12 text-center text-[11px]"
+                      controls={false}
+                    />
+                    <span className="text-[10px] text-gray-400 font-mono w-6 text-right">
+                      {currentPct.toFixed(0)}%
+                    </span>
+                  </div>
                 </div>
               );
             })}

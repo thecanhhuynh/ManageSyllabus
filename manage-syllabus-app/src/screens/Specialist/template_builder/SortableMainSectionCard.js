@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Card, Button, Input, Popconfirm, Tooltip, Space } from "antd";
+import { Card, Button, Input, Popconfirm, Tooltip, Space, Tag } from "antd";
 import {
   DragOutlined,
   DeleteOutlined,
@@ -22,6 +22,7 @@ const toRoman = (num) => {
 const SortableMainSectionCard = ({
   section,
   index,
+  sectionStyle = {},
   blockMap = {},
   onUpdateSectionName,
   onOpenSectionStyleDrawer,
@@ -96,13 +97,27 @@ const SortableMainSectionCard = ({
               onChange={handleChange}
               onBlur={handleBlur}
               onKeyDown={handleKeyDown}
-              className="font-bold text-gray-800 text-base flex-1 max-w-xl bg-white border border-gray-300 hover:border-indigo-400 focus:border-indigo-600 rounded-lg px-3 py-1.5 shadow-2xs transition-all"
+              className="text-base flex-1 max-w-xl bg-white border border-gray-300 hover:border-indigo-400 focus:border-indigo-600 rounded-lg px-3 py-1.5 shadow-2xs transition-all"
+              style={{
+                fontFamily: sectionStyle.font_name || "inherit",
+                fontSize: sectionStyle.font_size_pt ? `${sectionStyle.font_size_pt}pt` : undefined,
+                fontWeight: sectionStyle.bold !== undefined ? (sectionStyle.bold ? "bold" : "normal") : "bold",
+                fontStyle: sectionStyle.italic ? "italic" : "normal",
+                textDecoration: sectionStyle.underline ? "underline" : "none",
+                textAlign: (sectionStyle.alignment || "LEFT").toLowerCase(),
+                color: sectionStyle.color || undefined,
+              }}
               placeholder="Nhập tiêu đề Phần lớn..."
             />
           </div>
         }
         extra={
           <Space>
+            {Object.keys(sectionStyle || {}).length > 0 && (
+              <Tag color="blue" className="text-[10px] m-0">
+                Đã định dạng
+              </Tag>
+            )}
             <Tooltip title="Định dạng tiêu đề Phần lớn (Font, Cỡ chữ, Căn lề, Giãn dòng)">
               <Button
                 size="small"

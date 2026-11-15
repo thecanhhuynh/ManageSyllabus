@@ -318,13 +318,17 @@ class TableManager:
             "col_weight": ["tỷ lệ", "tỉ lệ", "weight", "%"],
         },
         "teaching_schedule": {
-            "col_session": ["buổi", "session"],
+            "col_session": ["buổi", "session", "tuần"],
             "col_content": ["nội dung", "content"],
-            "col_offline": ["offline"],
-            "col_online": ["online"],
-            "col_self": ["tự học", "self"],
-            "col_clo": ["clo"],
-            "col_material": ["học liệu", "material"],
+            "col_clo": ["cđr môn học", "clo"],
+            "col_self_act": ["tự học (hđ)", "tự học"],
+            "col_self_hrs": ["tự học (giờ)"],
+            "col_ftf_act": ["trực tiếp (hđ)", "trực tiếp", "ftf"],
+            "col_ftf_hrs": ["trực tiếp (giờ)"],
+            "col_online_act": ["trực tuyến (hđ)", "trực tuyến", "online"],
+            "col_online_hrs": ["trực tuyến (giờ)"],
+            "col_assessment": ["bài đánh giá", "đánh giá", "student assessment", "assessment"],
+            "col_material": ["tài liệu", "học liệu", "textbook", "material"],
         },
     }
 
@@ -368,12 +372,30 @@ class TableManager:
         "teaching_schedule": {
             "col_session": 0,
             "col_content": 1,
-            "col_offline": 2,
-            "col_online": 3,
-            "col_self": 4,
-            "col_clo": 5,
-            "col_material": 6,
+            "col_clo": 2,
+            "col_self_act": 3,
+            "col_self_hrs": 4,
+            "col_ftf_act": 5,
+            "col_ftf_hrs": 6,
+            "col_online_act": 7,
+            "col_online_hrs": 8,
+            "col_assessment": 9,
+            "col_material": 10,
         },
+    }
+
+    SCHEDULE_HEADER_COORDINATES = {
+        "col_session": (0, 0),
+        "col_content": (0, 1),
+        "col_clo": (0, 2),
+        "col_self_act": (2, 3),
+        "col_self_hrs": (2, 4),
+        "col_ftf_act": (2, 5),
+        "col_ftf_hrs": (2, 6),
+        "col_online_act": (2, 7),
+        "col_online_hrs": (2, 8),
+        "col_assessment": (0, 9),
+        "col_material": (0, 10),
     }
 
     KV_KEY_PATTERNS = {
@@ -401,10 +423,21 @@ class TableManager:
         overrides = (label_overrides or {}).get(table_code, {})
         if not overrides or not table.rows:
             return
-        header_row = table.rows[0]
-        col_patterns = cls.COLUMN_KEY_PATTERNS.get(table_code, {})
+
         key_map = cls.TABLE_COLUMN_KEY_MAP.get(table_code, {})
-        for col_idx, cell in enumerate(header_row.cells):
+        if table_code in {"teaching_schedule", "teaching_sessions"}:
+            for key, (r, c) in cls.SCHEDULE_HEADER_COORDINATES.items():
+                if key in overrides and r < len(table.rows) and c < len(table.columns):
+                    cls._update_cell_text(table.cell(r, c), str(overrides[key]))
+            for key, val in overrides.items():
+                if key.startswith("custom_") and key in key_map:
+                    c_idx = key_map[key]
+                    if c_idx < len(table.columns):
+                        cls._update_cell_text(table.cell(0, c_idx), str(val))
+            return
+
+        col_patterns = cls.COLUMN_KEY_PATTERNS.get(table_code, {})
+        for col_idx, cell in enumerate(table.rows[0].cells):
             key = cls._match_header_key(cell.text, col_patterns) or cls._get_key_by_index(key_map, col_idx)
             if not key or key not in overrides:
                 continue

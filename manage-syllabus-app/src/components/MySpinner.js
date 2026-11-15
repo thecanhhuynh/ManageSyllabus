@@ -4,30 +4,40 @@ import PropTypes from "prop-types";
 
 const {Text} = Typography;
 
-const antIcon = (
-  <LoadingOutlined
-    style={{
-      fontSize: 48,
-      color: "#1890ff",
-    }}
-    spin
-  />
-);
+const MySpinner = ({
+  message = "Đang tải dữ liệu...",
+  fullScreen = true,
+  size = "default",
+}) => {
+  const isSmall = size === "small";
+  const iconSize = isSmall ? 22 : 48;
+  const antIcon = (
+    <LoadingOutlined
+      style={{
+        fontSize: iconSize,
+        color: "#1890ff",
+      }}
+      spin
+    />
+  );
 
-const MySpinner = ({message = "Đang tải dữ liệu...", fullScreen = true}) => {
   return (
     <div
       className="flex flex-col items-center justify-center w-full"
       style={{
         minHeight: fullScreen ? "60vh" : "auto",
-        padding: "24px",
+        padding: isSmall ? "10px" : "24px",
       }}
     >
       <Spin indicator={antIcon} />
       {message && (
         <Text
           type="secondary"
-          style={{marginTop: 16, fontSize: 14, fontWeight: 500}}
+          style={{
+            marginTop: isSmall ? 6 : 16,
+            fontSize: isSmall ? 12 : 14,
+            fontWeight: 500,
+          }}
         >
           {message}
         </Text>
@@ -39,6 +49,7 @@ const MySpinner = ({message = "Đang tải dữ liệu...", fullScreen = true}) 
 MySpinner.propTypes = {
   message: PropTypes.string,
   fullScreen: PropTypes.bool,
+  size: PropTypes.oneOf(["small", "default", "large"]),
 };
 
 export default MySpinner;

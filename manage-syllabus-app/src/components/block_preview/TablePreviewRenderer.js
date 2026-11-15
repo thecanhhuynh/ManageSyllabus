@@ -60,41 +60,49 @@ export const TableRowsRenderer = ({
   columnsMetadata,
   onUpdateColumnLabel,
   onResetColumnLabel,
+  onClosePopover,
 }) => (
   <>
-    {rows.map((row, ri) => (
-      <tr key={ri}>
-        {row.cells.map((cell, ci) => {
-          if (cell.v_merge_continue) return null;
-          const cellKey = `${ri},${ci}`;
-          return (
-            <InteractiveTableCell
-              key={ci}
-              cell={cell}
-              ri={ri}
-              ci={ci}
-              totalRows={rows.length}
-              customPercentages={customPercentages}
-              isKeyValue={isKeyValue}
-              isMatrix={isMatrix}
-              isBorderless={isBorderless}
-              isLegend={isLegend}
-              isSchedule={isSchedule}
-              cellAlignments={cellAlignments}
-              interactiveCellAlign={interactiveCellAlign}
-              isSelected={selectedCells.includes(cellKey)}
-              showSinglePopover={singlePopoverCell === cellKey && selectedCells.length === 1}
-              onCellClick={onCellClick}
-              onSelectAlign={onSelectAlign}
-              onClearAlign={onClearAlign}
-              columnsMetadata={columnsMetadata}
-              onUpdateColumnLabel={onUpdateColumnLabel}
-              onResetColumnLabel={onResetColumnLabel}
-            />
-          );
-        })}
-      </tr>
-    ))}
+    {rows.map((row, ri) => {
+      let runningGridCol = 0;
+      return (
+        <tr key={ri}>
+          {row.cells.map((cell, ci) => {
+            if (cell.v_merge_continue) return null;
+            const computedGridCol = cell.grid_col !== undefined ? cell.grid_col : runningGridCol;
+            runningGridCol += (cell.colspan || 1);
+            const enrichedCell = cell.grid_col !== undefined ? cell : { ...cell, grid_col: computedGridCol };
+            const cellKey = `${ri},${ci}`;
+            return (
+              <InteractiveTableCell
+                key={ci}
+                cell={enrichedCell}
+                ri={ri}
+                ci={ci}
+                totalRows={rows.length}
+                customPercentages={customPercentages}
+                isKeyValue={isKeyValue}
+                isMatrix={isMatrix}
+                isBorderless={isBorderless}
+                isLegend={isLegend}
+                isSchedule={isSchedule}
+                cellAlignments={cellAlignments}
+                interactiveCellAlign={interactiveCellAlign}
+                isSelected={selectedCells.includes(cellKey)}
+                showSinglePopover={singlePopoverCell === cellKey && selectedCells.length === 1}
+                onCellClick={onCellClick}
+                onSelectAlign={onSelectAlign}
+                onClearAlign={onClearAlign}
+                columnsMetadata={columnsMetadata}
+                onUpdateColumnLabel={onUpdateColumnLabel}
+                onResetColumnLabel={onResetColumnLabel}
+                onClosePopover={onClosePopover}
+              />
+            );
+          })}
+        </tr>
+      );
+    })}
   </>
 );
 
@@ -180,6 +188,7 @@ export const TableRenderer = ({
             columnsMetadata={columnsMetadata}
             onUpdateColumnLabel={onUpdateColumnLabel}
             onResetColumnLabel={onResetColumnLabel}
+            onClosePopover={() => setSinglePopoverCell(null)}
           />
         </tbody>
       </table>

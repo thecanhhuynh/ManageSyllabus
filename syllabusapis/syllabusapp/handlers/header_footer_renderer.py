@@ -325,18 +325,15 @@ class HeaderFooterRenderer:
             self._apply_line_style(p, item.get("style"), default_style)
 
     def _render_date_line(self, doc: Document, config: dict, syllabus=None) -> None:
-        date_text = "Thành phố Hồ Chí Minh, ngày ... tháng ... năm 202..."
-        if syllabus and getattr(syllabus, "approved_date", None):
-            d = syllabus.approved_date
-            date_text = f"Thành phố Hồ Chí Minh, ngày {d.day:02d}  tháng  {d.month:02d}   năm {d.year}"
         date_cfg = config.get("date_line") or config.get("date_location")
-        style = {}
+        raw_text, style = "", {}
         if isinstance(date_cfg, dict):
-            date_text = date_cfg.get("text") or date_text
+            raw_text = date_cfg.get("text") or ""
             style = date_cfg.get("style") or {}
-        elif isinstance(date_cfg, str) and date_cfg:
-            date_text = date_cfg
+        elif isinstance(date_cfg, str):
+            raw_text = date_cfg
 
+        date_text = self._format_date_text(raw_text, syllabus)
         p = doc.add_paragraph()
         p.add_run(date_text)
         default_style = {
@@ -348,6 +345,36 @@ class HeaderFooterRenderer:
             "space_after_pt": 6,
         }
         self._apply_line_style(p, style, default_style)
+
+    def _format_date_text(self, raw_text: str, syllabus) -> str:
+        d = getattr(syllabus, "approved_date", None) if syllabus else None
+        if not d and syllabus and getattr(syllabus, "created_date", None):
+            d = syllabus.created_date
+
+        if not d:
+            return raw_text or "Thành phố Hồ Chí Minh, ngày ... tháng ... năm 202..."
+
+        d_str, m_str, y_str = f"{d.day:02d}", f"{d.month:02d}", f"{d.year}"
+        if not raw_text:
+            return f"Thành phố Hồ Chí Minh, ngày {d_str} tháng {m_str} năm {y_str}"
+
+        macro_map = {
+            "{DD}": d_str, "{MM}": m_str, "{YYYY}": y_str,
+            "{day}": d_str, "{month}": m_str, "{year}": y_str,
+        }
+        if any(m in raw_text for m in macro_map):
+            res = raw_text
+            for k, v in macro_map.items():
+                res = res.replace(k, v)
+            return res
+
+        if syllabus and syllabus.is_approved:
+            import re
+            pattern = r"(ngày\s+)\d{1,2}(\s+tháng\s+)\d{1,2}(\s+năm\s+)\d{4}"
+            if re.search(pattern, raw_text):
+                return re.sub(pattern, rf"\g<1>{d_str}\g<2>{m_str}\g<3>{y_str}", raw_text)
+
+        return raw_text
 
     def _render_signature_table(self, doc: Document, config: dict, syllabus=None) -> None:
         sig_cfg = config.get("signature_table", {})
@@ -379,8 +406,15 @@ class HeaderFooterRenderer:
         return full or (getattr(user, "username", "") or "").strip()
 
     def _get_signature_cell_info(self, index: int, col_data: dict, syllabus) -> dict:
-        if index == 0:
+        role_key = (col_data.get("role_key") or "").lower().strip()
+        if role_key == "faculty_dean" or (not role_key and index == 0):
             return self._get_faculty_leader_sig_info(col_data, syllabus)
+        if role_key == "lecturer" or (not role_key and index == 1):
+            return self._get_lecturer_sig_info(col_data, syllabus)
+        if role_key == "head_of_dept":
+            return self._get_head_of_dept_sig_info(col_data, syllabus)
+        if role_key == "custom":
+            return self._get_custom_sig_info(col_data)
         return self._get_lecturer_sig_info(col_data, syllabus)
 
     def _get_faculty_leader_sig_info(self, col_data: dict, syllabus) -> dict:
@@ -400,13 +434,13 @@ class HeaderFooterRenderer:
 
         user = getattr(leader, "user", None) or getattr(syllabus, "approved_by", None)
         user_name = self._get_user_display_name(user)
-        def_name = user_name if user_name else "TS. Trương Hoàng Vinh"
-        sig_img_path = self._get_sig_img_path(leader, check_approved=True, syllabus=syllabus)
+        def_name = user_name if user_name else col_data.get("name") or "TS. Trương Hoàng Vinh"
+        sig_img_path = self._get_sig_img_path(leader, check_approved=True, syllabus=syllabus, role="faculty_dean")
 
         return {
             "def_t1": def_t1,
             "def_t2": def_t2,
-            "def_sub": "(Ký và ghi rõ họ tên-Signed with fullname)",
+            "def_sub": col_data.get("subtitle") or "(Ký và ghi rõ họ tên-Signed with fullname)",
             "def_name": def_name,
             "sig_img_path": sig_img_path,
             "has_syllabus": bool(syllabus),
@@ -416,16 +450,44 @@ class HeaderFooterRenderer:
         lecturer = getattr(syllabus, "lecturer", None) if syllabus else None
         user = getattr(lecturer, "user", None) if lecturer else None
         user_name = self._get_user_display_name(user)
-        def_name = user_name if user_name else "ThS. Dương Hữu Thành"
-        sig_img_path = self._get_sig_img_path(lecturer, check_approved=False, syllabus=syllabus)
+        def_name = user_name if user_name else col_data.get("name") or "ThS. Dương Hữu Thành"
+        sig_img_path = self._get_sig_img_path(lecturer, check_approved=False, syllabus=syllabus, role="lecturer")
 
         return {
             "def_t1": "GIẢNG VIÊN BIÊN SOẠN",
             "def_t2": "ACADEMIC",
-            "def_sub": "(Ký và ghi rõ họ tên-Signed with fullname)",
+            "def_sub": col_data.get("subtitle") or "(Ký và ghi rõ họ tên-Signed with fullname)",
             "def_name": def_name,
             "sig_img_path": sig_img_path,
             "has_syllabus": bool(syllabus),
+        }
+
+    def _get_head_of_dept_sig_info(self, col_data: dict, syllabus) -> dict:
+        leader = self._resolve_head_of_dept(syllabus)
+        user = getattr(leader, "user", None)
+        user_name = self._get_user_display_name(user)
+        def_name = user_name if user_name else col_data.get("name") or "Trưởng Bộ Môn"
+        sig_img_path = self._get_sig_img_path(leader, check_approved=False, syllabus=syllabus, role="head_of_dept")
+        return {
+            "def_t1": "TRƯỞNG BỘ MÔN",
+            "def_t2": "HEAD OF DEPARTMENT",
+            "def_sub": col_data.get("subtitle") or "(Ký và ghi rõ họ tên-Signed with fullname)",
+            "def_name": def_name,
+            "sig_img_path": sig_img_path,
+            "has_syllabus": bool(syllabus),
+        }
+
+    def _get_custom_sig_info(self, col_data: dict) -> dict:
+        t_lines = col_data.get("title_lines") or []
+        t1 = t_lines[0].get("text") if len(t_lines) > 0 else "CHỨC DANH"
+        t2 = t_lines[1].get("text") if len(t_lines) > 1 else ""
+        return {
+            "def_t1": t1,
+            "def_t2": t2,
+            "def_sub": col_data.get("subtitle") or "(Ký và ghi rõ họ tên)",
+            "def_name": col_data.get("name") or "",
+            "sig_img_path": None,
+            "has_syllabus": False,
         }
 
     def _resolve_faculty_leader(self, syllabus):
@@ -441,9 +503,36 @@ class HeaderFooterRenderer:
             faculty_role__in=["dean", "vice_dean"]
         ).first()
 
-    def _get_sig_img_path(self, lecturer, check_approved: bool, syllabus=None) -> str | None:
+    def _resolve_head_of_dept(self, syllabus):
+        if not syllabus or not syllabus.faculty:
+            return None
+        from syllabuses.models import Lecturer
+        return Lecturer.objects.filter(
+            faculty=syllabus.faculty,
+            faculty_role="head_of_dept"
+        ).first()
+
+    def _get_sig_img_path(self, lecturer, check_approved: bool, syllabus=None, role: str = None) -> str | None:
         if check_approved and syllabus and not syllabus.is_approved:
             return None
+
+        # 1. Ưu tiên lấy từ snapshot SyllabusSignature đã ký
+        if syllabus and role:
+            from syllabuses.models import SyllabusSignature
+            sig = SyllabusSignature.objects.filter(
+                syllabus=syllabus,
+                role=role,
+                status=SyllabusSignature.SignatureStatus.SIGNED,
+            ).first()
+            if sig and sig.signature_image:
+                try:
+                    p = sig.signature_image.path
+                    if os.path.exists(p):
+                        return p
+                except Exception:
+                    pass
+
+        # 2. Fallback sang chữ ký trong profile của lecturer
         if not lecturer or not getattr(lecturer, "signature_image", None):
             return None
         try:

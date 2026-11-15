@@ -319,12 +319,30 @@ const TableEditor = ({item, basePath}) => {
     </span>
   ) : null;
 
-  let firstColumnHeader = null;
-  const currentSchemaObj =
-    typeof tableSchema === "string" ? JSON.parse(tableSchema) : tableSchema;
+  const resolvedSchema = useMemo(() => {
+    const schemaObj =
+      typeof tableSchema === "string" ? JSON.parse(tableSchema) : tableSchema;
+    if (schemaObj?.rows && schemaObj.rows.length > 0) {
+      return schemaObj;
+    }
+    const itemSchema =
+      typeof item?.table_schema === "string"
+        ? JSON.parse(item.table_schema)
+        : item?.table_schema;
+    if (itemSchema?.rows && itemSchema.rows.length > 0) {
+      return {
+        ...schemaObj,
+        rows: itemSchema.rows,
+        firstColumnHeader:
+          schemaObj?.firstColumnHeader || itemSchema.firstColumnHeader,
+      };
+    }
+    return schemaObj || {columns: [], rows: []};
+  }, [tableSchema, item?.table_schema]);
 
-  if (currentSchemaObj?.firstColumnHeader) {
-    firstColumnHeader = currentSchemaObj.firstColumnHeader;
+  let firstColumnHeader = null;
+  if (resolvedSchema?.firstColumnHeader) {
+    firstColumnHeader = resolvedSchema.firstColumnHeader;
   } else if (item.table_schema) {
     const parsedData =
       typeof item.table_schema === "string"
@@ -338,7 +356,7 @@ const TableEditor = ({item, basePath}) => {
       <Form.Item name={tablePath} label={CustomLabel} style={{marginBottom: 0}}>
         <AgGridTableInput
           firstColumnHeader={firstColumnHeader}
-          value={tableSchema}
+          value={resolvedSchema}
           onChange={handleTableChange}
           tableName={item.place_holder || item.name}
         />

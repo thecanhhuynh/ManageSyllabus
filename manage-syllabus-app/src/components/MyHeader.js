@@ -136,7 +136,7 @@ const MyHeader = () => {
 
         {user && (
           <div className="hidden md:flex items-center gap-2 ml-8">
-            <Link to="/">
+            <Link to={homeRoute}>
               <Button type="text" style={{fontWeight: 500}}>
                 Trang chủ
               </Button>

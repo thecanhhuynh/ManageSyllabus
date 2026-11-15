@@ -12,7 +12,7 @@ import {
   Button,
   message,
 } from "antd";
-import { EyeOutlined, CheckOutlined } from "@ant-design/icons";
+import { EyeOutlined, CheckOutlined, LineHeightOutlined } from "@ant-design/icons";
 import BlockService from "../services/blockService";
 
 const BulkSpacingModal = ({
@@ -117,7 +117,11 @@ const BulkSpacingModal = ({
 
   return (
     <Modal
-      title="📏 Khoảng cách hàng loạt"
+      title={
+        <span className="flex items-center gap-1.5 text-blue-800">
+          <LineHeightOutlined /> Khoảng cách hàng loạt
+        </span>
+      }
       open={open}
       onCancel={onClose}
       width={720}

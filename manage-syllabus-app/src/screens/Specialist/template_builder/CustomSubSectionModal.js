@@ -4,18 +4,6 @@ import { PlusOutlined } from "@ant-design/icons";
 import { authApis, endpoints } from "../../../config/Apis";
 import TableSchemaBuilder from "../TableSchemaBuilder";
 
-const REFERENCE_OPTIONS = [
-  { value: "lecturer_info", label: "Phụ trách môn học (Giảng viên)" },
-  { value: "credit", label: "Thông tin số tín chỉ" },
-  { value: "requirement_subject", label: "Môn học điều kiện" },
-  { value: "objectives_and_outcomes", label: "Mục tiêu môn học" },
-  { value: "course_learning_outcomes", label: "Chuẩn đầu ra môn học (CLO)" },
-  { value: "clo_plo_matrix", label: "Ma trận CLO - PLO" },
-  { value: "learning_material", label: "Tài liệu học tập" },
-  { value: "assessment_method", label: "Phương pháp đánh giá" },
-  { value: "teaching_schedule", label: "Kế hoạch giảng dạy" },
-];
-
 const DEFAULT_TABLE_SCHEMA = {
   firstColumnHeader: "Tiêu đề hàng",
   columns: [
@@ -82,9 +70,7 @@ const CustomSubSectionModal = ({
     try {
       const values = await form.validateFields();
       const timestamp = Date.now();
-      const code = values.type === "reference" && values.reference_code
-        ? values.reference_code
-        : `CUSTOM_${values.type.toUpperCase()}_${timestamp}`;
+      const code = `CUSTOM_${values.type.toUpperCase()}_${timestamp}`;
 
       const newSubSection = {
         id: `custom_sub_${timestamp}`,
@@ -136,19 +122,8 @@ const CustomSubSectionModal = ({
             <Select.Option value="text">Văn bản (Nhập liệu tự do)</Select.Option>
             <Select.Option value="selection">Lựa chọn (Dropdown danh mục)</Select.Option>
             <Select.Option value="table">Bảng tùy biến (Grid)</Select.Option>
-            <Select.Option value="reference">Bảng tham chiếu hệ thống (Reference)</Select.Option>
           </Select>
         </Form.Item>
-
-        {selectedType === "reference" && (
-          <Form.Item
-            name="reference_code"
-            label="Mẫu bảng chuẩn hệ thống"
-            rules={[{ required: true, message: "Vui lòng chọn mẫu chuẩn!" }]}
-          >
-            <Select placeholder="Chọn mẫu tham chiếu..." options={REFERENCE_OPTIONS} />
-          </Form.Item>
-        )}
 
         {selectedType === "selection" && (
           <Form.Item

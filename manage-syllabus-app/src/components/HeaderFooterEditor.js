@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { Tabs, Button, Space, message, Spin } from "antd";
+import { Button, Space, message, Spin, Tag } from "antd";
 import {
   SaveOutlined,
   ReloadOutlined,
   UndoOutlined,
+  CloseOutlined,
+  BankOutlined,
+  EditOutlined,
 } from "@ant-design/icons";
 import HeaderFooterService from "../services/headerFooterService";
 import HeaderFormTab from "./header_footer/HeaderFormTab";
@@ -15,11 +18,12 @@ import {
   normalizeFooterConfig,
 } from "./header_footer/headerFooterDefaults";
 
-const HeaderFooterEditor = ({ templateId, onUpdated }) => {
+const HeaderFooterEditor = ({ templateId, onUpdated, onClose }) => {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [activeTab, setActiveTab] = useState("header");
+  const [activeColIdx, setActiveColIdx] = useState(0);
   const [header, setHeader] = useState(DEFAULT_CONFIG.header);
   const [footer, setFooter] = useState(DEFAULT_CONFIG.footer);
 
@@ -105,76 +109,113 @@ const HeaderFooterEditor = ({ templateId, onUpdated }) => {
     }
   };
 
-  const tabItems = [
-    {
-      key: "header",
-      label: "🏠 Header & Tiêu đề",
-      children: (
-        <HeaderFormTab
-          header={header}
-          setHeader={setHeader}
-          onUploadLogo={handleUploadLogo}
-          onDeleteLogo={handleDeleteLogo}
-          uploadingLogo={uploadingLogo}
-        />
-      ),
-    },
-    {
-      key: "footer",
-      label: "📄 Footer & Chữ ký",
-      children: <FooterFormTab footer={footer} setFooter={setFooter} />,
-    },
-  ];
-
   return (
-    <div className="bg-white rounded-xl shadow-xs border border-gray-200 p-5 space-y-4">
-      {/* Top action header */}
-      <div className="flex flex-wrap justify-between items-center gap-3 pb-3 border-b border-gray-200">
+    <div className="bg-white flex flex-col h-full overflow-hidden rounded-xl">
+      {/* Top Modal Header */}
+      <div className="flex flex-wrap justify-between items-center gap-3 px-6 py-3.5 border-b border-gray-200 bg-white select-none">
         <div>
-          <h3 className="text-base font-bold text-gray-800 m-0">
-            ⚙️ Cấu hình Header & Footer (Chuẩn Mẫu HCMOU - Mục 8.3)
-          </h3>
+          <div className="flex items-center gap-2">
+            <h3 className="text-base font-bold text-gray-800 m-0">
+              Quản lý Header & Footer Đề cương
+            </h3>
+            <Tag color="blue">Mẫu chuẩn HCMOU</Tag>
+          </div>
           <p className="text-xs text-gray-500 m-0 mt-0.5">
-            Tùy biến logo, tiêu ngữ đơn vị, tiêu đề đề cương và bảng chữ ký kèm Live Preview
+            Tùy biến tiêu đề đơn vị, logo, phụ lục và bảng chữ ký số hóa kèm Live Preview chuẩn trang in A4
           </p>
         </div>
+
         <Space>
-          <Button icon={<ReloadOutlined />} onClick={loadData} loading={loading}>
-            Tải lại
-          </Button>
-          <Button icon={<UndoOutlined />} onClick={handleReset}>
+          <Button icon={<UndoOutlined />} onClick={handleReset} size="small">
             Khôi phục mặc định
+          </Button>
+          <Button icon={<ReloadOutlined />} onClick={loadData} loading={loading} size="small">
+            Tải lại
           </Button>
           <Button
             type="primary"
             icon={<SaveOutlined />}
             onClick={handleSave}
             loading={saving}
+            size="small"
           >
             Lưu cấu hình
           </Button>
+          {onClose && (
+            <Button
+              type="text"
+              icon={<CloseOutlined />}
+              onClick={onClose}
+              size="small"
+              className="text-gray-400 hover:text-gray-600"
+            />
+          )}
         </Space>
       </div>
 
-      <Spin spinning={loading}>
-        {/* Split-view: Left (Form) - Right (Live Preview) */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 min-h-[600px]">
-          {/* Cột trái: Form điều khiển */}
-          <div className="overflow-y-auto pr-1">
-            <Tabs
-              activeKey={activeTab}
-              onChange={setActiveTab}
-              items={tabItems}
-              type="card"
-            />
+      <Spin spinning={loading} wrapperClassName="flex-1 overflow-hidden">
+        {/* Workspace: Left (Controls Pane) - Right (Live Preview A4 Canvas) */}
+        <div className="flex flex-col lg:flex-row h-[78vh] max-h-[820px] overflow-hidden">
+          {/* Left Controls Pane */}
+          <div className="w-full lg:w-[480px] xl:w-[500px] flex-shrink-0 flex flex-col border-b lg:border-b-0 lg:border-r border-gray-200 bg-white">
+            {/* Stable Full-Box Tab Bar matching exact UI specs */}
+            <div className="p-3.5 border-b border-gray-200 bg-white">
+              <div className="grid grid-cols-2 p-1 bg-[#f0f2f5] rounded-lg border border-[#d9d9d9] gap-1">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("header")}
+                  className={`py-2 px-3 text-sm rounded-[6px] transition-all flex items-center justify-center gap-2 w-full cursor-pointer select-none font-medium ${
+                    activeTab === "header"
+                      ? "bg-white text-[#1677ff] border border-[#d9d9d9] shadow-xs"
+                      : "bg-transparent text-[#595959] border border-transparent hover:text-[#1677ff]"
+                  }`}
+                >
+                  <BankOutlined className={activeTab === "header" ? "text-[#1677ff]" : "text-[#595959]"} />
+                  <span>Header & Tiêu đề</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("footer")}
+                  className={`py-2 px-3 text-sm rounded-[6px] transition-all flex items-center justify-center gap-2 w-full cursor-pointer select-none font-medium ${
+                    activeTab === "footer"
+                      ? "bg-white text-[#1677ff] border border-[#d9d9d9] shadow-xs"
+                      : "bg-transparent text-[#595959] border border-transparent hover:text-[#1677ff]"
+                  }`}
+                >
+                  <EditOutlined className={activeTab === "footer" ? "text-[#1677ff]" : "text-[#595959]"} />
+                  <span>Footer & Bảng chữ ký</span>
+                </button>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              {activeTab === "header" ? (
+                <HeaderFormTab
+                  header={header}
+                  setHeader={setHeader}
+                  onUploadLogo={handleUploadLogo}
+                  onDeleteLogo={handleDeleteLogo}
+                  uploadingLogo={uploadingLogo}
+                />
+              ) : (
+                <FooterFormTab
+                  footer={footer}
+                  setFooter={setFooter}
+                  activeColIdx={activeColIdx}
+                  setActiveColIdx={setActiveColIdx}
+                />
+              )}
+            </div>
           </div>
 
-          {/* Cột phải: Live Preview */}
-          <div className="overflow-y-auto border-t lg:border-t-0 lg:border-l border-gray-200 pt-4 lg:pt-0 lg:pl-6 bg-slate-50/50 p-4 rounded-lg">
+          {/* Right Live Preview Canvas */}
+          <div className="flex-1 flex flex-col bg-slate-50/70 p-4 overflow-hidden">
             <HeaderFooterPreview
               header={header}
               footer={footer}
               activeTab={activeTab}
+              activeColIdx={activeColIdx}
+              onSelectColIdx={setActiveColIdx}
             />
           </div>
         </div>

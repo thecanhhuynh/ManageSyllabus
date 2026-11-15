@@ -1,7 +1,7 @@
-import React, {useContext, useEffect, useState} from "react";
+import React, {useContext, useEffect, useState, useRef} from "react";
+import {useNavigate} from "react-router-dom";
 import {
   Table,
-  Card,
   Select,
   Button,
   Tag,
@@ -23,13 +23,16 @@ import {
   CheckCircleOutlined,
   UserOutlined,
   ReloadOutlined,
+  ArrowLeftOutlined,
 } from "@ant-design/icons";
 import {UserService} from "../../services/UserService";
 import {MyUserContext} from "../../config/contexts/MyContext";
 import CleanInput from "../../components/CleanInput";
 import {cleanFormData} from "../../utils/stringUtils";
+import {endpoints} from "../../config/Apis";
+import LazySelect from "../../components/common/LazySelect";
 
-const {Title, Text} = Typography;
+const {Text} = Typography;
 const {Option} = Select;
 
 const getFacultyDisplayName = (lecturer, facultyList = []) => {
@@ -43,6 +46,7 @@ const getFacultyDisplayName = (lecturer, facultyList = []) => {
 };
 
 const UserManagement = () => {
+  const nav = useNavigate();
   const [currentUser] = useContext(MyUserContext);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -98,9 +102,16 @@ const UserManagement = () => {
     }
   };
 
+  const searchTimerRef = useRef(null);
+
   useEffect(() => {
     fetchUsers(1, filters);
     fetchFaculties();
+    return () => {
+      if (searchTimerRef.current) {
+        clearTimeout(searchTimerRef.current);
+      }
+    };
   }, []);
 
   const handleTableChange = (newPagination) => {
@@ -110,6 +121,15 @@ const UserManagement = () => {
   const handleFilterChange = (key, value) => {
     const updatedFilters = {...filters, [key]: value};
     setFilters(updatedFilters);
+    if (key === "q") {
+      if (searchTimerRef.current) {
+        clearTimeout(searchTimerRef.current);
+      }
+      searchTimerRef.current = setTimeout(() => {
+        fetchUsers(1, updatedFilters);
+      }, 400);
+      return;
+    }
     fetchUsers(1, updatedFilters);
   };
 
@@ -431,73 +451,78 @@ const UserManagement = () => {
   ];
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <Title level={3} style={{margin: 0, fontWeight: 700}}>
-            Quản lý Người dùng
-          </Title>
-          <Text type="secondary">
-            Xem danh sách, phân quyền và quản lý trạng thái tài khoản hệ thống
-          </Text>
+    <div className="bg-white p-6 rounded-xl shadow-sm">
+      <div className="flex justify-between items-center mb-6">
+        <div className="flex items-center gap-3">
+          <Button
+            type="text"
+            icon={<ArrowLeftOutlined className="text-lg" />}
+            onClick={() => nav("/admin")}
+            className="text-gray-500 hover:text-blue-600 hover:bg-blue-50"
+          />
+          <div>
+            <h2 className="text-xl font-bold text-gray-700 m-0">Quản lý Người dùng</h2>
+            <Text type="secondary" className="text-xs">
+              Xem danh sách, phân quyền và quản lý trạng thái tài khoản hệ thống
+            </Text>
+          </div>
         </div>
         <Button
           icon={<ReloadOutlined />}
           onClick={() => fetchUsers(pagination.current, filters)}
           loading={loading}
+          className="h-9 px-4 rounded-lg"
         >
           Làm mới
         </Button>
       </div>
 
-      <Card bordered={false} className="shadow-sm rounded-xl">
-        <Row gutter={[16, 16]} className="mb-6">
-          <Col xs={24} sm={10} md={10}>
-            <CleanInput
-              placeholder="Tìm kiếm theo tên, username, email..."
-              prefix={<SearchOutlined className="text-gray-400" />}
-              allowClear
-              value={filters.q}
-              onChange={(e) => handleFilterChange("q", e.target.value)}
-            />
-          </Col>
-          <Col xs={12} sm={7} md={7}>
-            <Select
-              style={{width: "100%"}}
-              placeholder="Lọc theo vai trò"
-              allowClear
-              value={filters.user_role || undefined}
-              onChange={(val) => handleFilterChange("user_role", val || "")}
-            >
-              <Option value="admin">Admin</Option>
-              <Option value="specialist">Specialist</Option>
-              <Option value="user">Giảng viên / User</Option>
-            </Select>
-          </Col>
-          <Col xs={12} sm={7} md={7}>
-            <Select
-              style={{width: "100%"}}
-              placeholder="Lọc theo trạng thái"
-              allowClear
-              value={filters.is_active || undefined}
-              onChange={(val) => handleFilterChange("is_active", val !== undefined ? val : "")}
-            >
-              <Option value="true">Đang hoạt động</Option>
-              <Option value="false">Đã vô hiệu hóa</Option>
-            </Select>
-          </Col>
-        </Row>
+      <Row gutter={[16, 16]} className="mb-4">
+        <Col xs={24} sm={10} md={10}>
+          <CleanInput
+            placeholder="Tìm kiếm theo tên, username, email..."
+            prefix={<SearchOutlined className="text-gray-400" />}
+            allowClear
+            value={filters.q}
+            onChange={(e) => handleFilterChange("q", e.target.value)}
+          />
+        </Col>
+        <Col xs={12} sm={7} md={7}>
+          <Select
+            style={{width: "100%"}}
+            placeholder="Lọc theo vai trò"
+            allowClear
+            value={filters.user_role || undefined}
+            onChange={(val) => handleFilterChange("user_role", val || "")}
+          >
+            <Option value="admin">Admin</Option>
+            <Option value="specialist">Specialist</Option>
+            <Option value="user">Giảng viên / User</Option>
+          </Select>
+        </Col>
+        <Col xs={12} sm={7} md={7}>
+          <Select
+            style={{width: "100%"}}
+            placeholder="Lọc theo trạng thái"
+            allowClear
+            value={filters.is_active || undefined}
+            onChange={(val) => handleFilterChange("is_active", val !== undefined ? val : "")}
+          >
+            <Option value="true">Đang hoạt động</Option>
+            <Option value="false">Đã vô hiệu hóa</Option>
+          </Select>
+        </Col>
+      </Row>
 
-        <Table
-          columns={columns}
-          dataSource={users}
-          rowKey="id"
-          loading={loading}
-          pagination={pagination}
-          onChange={handleTableChange}
-          scroll={{x: 1110}}
-        />
-      </Card>
+      <Table
+        columns={columns}
+        dataSource={users}
+        rowKey="id"
+        loading={loading}
+        pagination={pagination}
+        onChange={handleTableChange}
+        scroll={{x: 1110}}
+      />
 
       <Modal
         title={`Chỉnh sửa thông tin: ${editingUser?.username}`}
@@ -575,13 +600,18 @@ const UserManagement = () => {
               }),
             ]}
           >
-            <Select placeholder="Chọn khoa trực thuộc" allowClear>
-              {faculties.map((f) => (
-                <Option key={f.id} value={f.id}>
-                  {f.name}
-                </Option>
-              ))}
-            </Select>
+            <LazySelect
+              endpoint={endpoints["faculties"]}
+              placeholder="Chọn khoa trực thuộc"
+              initialOption={
+                editingUser?.lecturer?.faculty
+                  ? {
+                      value: editingUser.lecturer.faculty.id,
+                      label: editingUser.lecturer.faculty.name,
+                    }
+                  : null
+              }
+            />
           </Form.Item>
 
           <Form.Item label="Phòng làm việc" name="room">

@@ -1,3 +1,5 @@
+import copy
+
 from django.db import transaction
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
@@ -402,10 +404,36 @@ class ReferenceSubSectionSerializer(BaseSubSectionSerializer):
         return None
 
 class TableSubSectionSerializer(serializers.ModelSerializer):
-    table_schema = serializers.JSONField(source='data')
+    table_schema = serializers.SerializerMethodField()
+
     class Meta(BaseSubSectionSerializer.Meta):
         model = TableSubSection
         fields = BaseSubSectionSerializer.Meta.fields + ['table_schema']
+
+    def get_table_schema(self, obj):
+        data = copy.deepcopy(obj.data) if isinstance(obj.data, dict) else {}
+        if data.get('rows'):
+            return data
+        return self._fallback_template_schema(obj, data)
+
+    def _fallback_template_schema(self, obj, data):
+        template = getattr(getattr(obj.main_section, 'syllabus', None), 'template', None)
+        if not template:
+            return data
+        from syllabuses.models import TemplateTableSubSection
+        tpl_sub = TemplateTableSubSection.objects.filter(
+            main_section__template=template, code=obj.code
+        ).first()
+        if not tpl_sub or not tpl_sub.table_schema:
+            return data
+        tpl_schema = tpl_sub.table_schema
+        if not data.get('columns') and tpl_schema.get('columns'):
+            data['columns'] = tpl_schema['columns']
+        if not data.get('rows') and tpl_schema.get('rows'):
+            data['rows'] = tpl_schema['rows']
+        if 'firstColumnHeader' not in data and 'firstColumnHeader' in tpl_schema:
+            data['firstColumnHeader'] = tpl_schema['firstColumnHeader']
+        return data
 
 class SubSectionSerializer(BaseSubSectionSerializer):
     class Meta:

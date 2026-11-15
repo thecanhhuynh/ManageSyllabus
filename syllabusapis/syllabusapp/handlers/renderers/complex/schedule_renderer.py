@@ -325,7 +325,11 @@ class ScheduleSubRenderer(BaseSubRenderer):
 
     @staticmethod
     def _style_header_cells(table) -> None:
+        w_ns = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
         for r in range(4):
+            trPr = table.rows[r]._tr.get_or_add_trPr()
+            if trPr.find(f"{{{w_ns}}}tblHeader") is None:
+                trPr.append(etree.Element(f"{{{w_ns}}}tblHeader"))
             for cell in table.rows[r].cells:
                 cell.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
                 for p in cell.paragraphs:

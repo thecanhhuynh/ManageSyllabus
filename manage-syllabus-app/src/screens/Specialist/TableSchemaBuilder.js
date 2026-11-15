@@ -9,7 +9,9 @@ import {cleanWhitespace, formatTypingWhitespace} from "../../utils/stringUtils";
 
 const NO_ROWS_TEMPLATE = `
   <div style="padding: 24px 16px 42px 16px; text-align: center; color: #64748b; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; height: 100%;">
-    <div style="font-size: 26px; margin-bottom: 6px; opacity: 0.7;">📋</div>
+    <div style="margin-bottom: 6px; opacity: 0.7; color: #64748b; display: flex; justify-content: center;">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg>
+    </div>
     <div style="font-size: 14px; font-weight: 600; color: #475569; margin-bottom: 4px;">Chưa có hàng nào trong bảng mẫu</div>
     <div style="font-size: 12px; color: #94a3b8; line-height: 1.4;">Nhấn nút "+ Thêm hàng mới" bên dưới để thêm hàng</div>
   </div>

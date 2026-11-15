@@ -1,16 +1,15 @@
-import React, {useState, useEffect, memo} from "react";
-import {Input, Select, Button, Row, Col, Tooltip} from "antd";
+import React, {useState, memo} from "react";
+import {Input, Button, Row, Col, Tooltip} from "antd";
 import {PlusOutlined, DeleteOutlined} from "@ant-design/icons";
-import {AppServices} from "../../services/AppServices";
+import {endpoints} from "../../config/Apis";
 import {useSyllabusStore} from "../../store/useSyllabusStore";
+import LazySelect from "../../components/common/LazySelect";
 
 const {TextArea} = Input;
 
 const ObjectiveOutcomeItem = ({
   itemData,
   index,
-  ploOptions,
-  isFetching,
   labels = {},
   coCustomCols = [],
   customValues = {},
@@ -63,17 +62,23 @@ const ObjectiveOutcomeItem = ({
           <div className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1.5 flex items-center gap-1 h-6">
             <span className="text-gray-400">≈</span> {labels.col_plo || "Chuẩn đầu ra (PLO)"}
           </div>
-          <Select
+          <LazySelect
             mode="multiple"
             allowClear
             placeholder="Chọn PLO..."
-            options={ploOptions}
-            loading={isFetching}
-            optionLabelProp="tagLabel"
-            maxTagCount="responsive"
-            className="w-full rounded-md font-normal text-gray-700"
+            endpoint={endpoints["programme-learning-outcomes"]}
+            labelField="name"
             value={currentPloIds}
             onChange={handlePloChange}
+            maxTagCount="responsive"
+            className="w-full rounded-md font-normal text-gray-700"
+            optionRenderer={(plo) => (
+              <Tooltip title={plo.description} placement="right">
+                <span>
+                  {plo.name} - {plo.description?.substring(0, 30)}...
+                </span>
+              </Tooltip>
+            )}
           />
         </Col>
 
@@ -123,9 +128,6 @@ const ObjectiveOutcomeItem = ({
 };
 
 const ObjectiveOutcomeEditor = ({item, basePath}) => {
-  const [ploOptions, setPloOptions] = useState([]);
-  const [isFetching, setIsFetching] = useState(false);
-
   const referenceData = useSyllabusStore(
     (state) => state.localBlocks[item.code]?.data?.reference_data ?? [],
   );
@@ -145,36 +147,6 @@ const ObjectiveOutcomeEditor = ({item, basePath}) => {
         col.table_code === "objectives_and_outcomes") &&
       col.is_active !== false,
   );
-
-  useEffect(() => {
-    const fetchPLOs = async () => {
-      try {
-        setIsFetching(true);
-        const res = await AppServices.getPLOs();
-        const data = res.data?.results || [];
-
-        setPloOptions(
-          data.map((plo) => ({
-            label: (
-              <Tooltip title={plo.description} placement="right">
-                <span>
-                  {plo.name} - {plo.description?.substring(0, 30)}...
-                </span>
-              </Tooltip>
-            ),
-            value: plo.id,
-            tagLabel: plo.name,
-          })),
-        );
-      } catch (error) {
-        console.error("Lỗi tải PLO:", error);
-      } finally {
-        setIsFetching(false);
-      }
-    };
-
-    fetchPLOs();
-  }, []);
 
   const handleItemChange = (index, updatedItem) => {
     const nextData = [...referenceData];
@@ -205,8 +177,6 @@ const ObjectiveOutcomeEditor = ({item, basePath}) => {
             key={coItem.id ? `co_${coItem.id}` : `co_new_${index}`}
             itemData={coItem}
             index={index}
-            ploOptions={ploOptions}
-            isFetching={isFetching}
             labels={labels}
             coCustomCols={coCustomCols}
             customValues={customValues}

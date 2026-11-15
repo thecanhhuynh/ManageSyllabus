@@ -120,12 +120,17 @@ const TemplateBuilder = () => {
     try {
       setSyncStatus("syncing");
       const meta = customMeta || templateMeta;
-      await authApis().put(`${endpoints["templates"]}${id}/`, {
+      const res = await authApis().put(`${endpoints["templates"]}${id}/`, {
         name: meta.name,
         version: meta.version,
         main_sections: nextSections,
       });
       setSyncStatus("synced");
+
+      if (res?.data?.main_sections && Array.isArray(res.data.main_sections)) {
+        const sorted = [...res.data.main_sections].sort((a, b) => (a.position || 0) - (b.position || 0));
+        setSections(sorted);
+      }
 
       const refreshedBlocks = await BlockService.getBlocks(id);
       if (Array.isArray(refreshedBlocks)) {
@@ -222,17 +227,27 @@ const TemplateBuilder = () => {
   const handleSaveMainSectionStyle = async (styleConfig) => {
     if (!selectedMainSection) return;
     try {
-      await TemplateStyleService.updateMainSectionStyle(id, selectedMainSection.id, styleConfig);
-      setBlockLayout((prev) => ({
-        ...prev,
-        main_sections_style: {
+      const msId = selectedMainSection.id;
+      const res = await TemplateStyleService.updateMainSectionStyle(id, msId, styleConfig);
+      const savedConfig = res?.style_config || styleConfig;
+
+      setBlockLayout((prev) => {
+        const nextMainStyles = {
           ...(prev?.main_sections_style || {}),
-          [String(selectedMainSection.id)]: styleConfig,
-        },
-      }));
+          [String(msId)]: savedConfig,
+        };
+        if (selectedMainSection.code) {
+          nextMainStyles[String(selectedMainSection.code)] = savedConfig;
+        }
+        return {
+          ...prev,
+          main_sections_style: nextMainStyles,
+        };
+      });
       message.success("Đã lưu định dạng Phần lớn.");
       setMainSectionDrawerOpen(false);
-    } catch {
+    } catch (err) {
+      console.error("Save main section style error:", err);
       message.error("Lỗi khi lưu định dạng Phần lớn.");
     }
   };
@@ -290,6 +305,9 @@ const TemplateBuilder = () => {
     try {
       setActionLoading(true);
       await autoSaveSections(sections);
+      if (id && blockLayout) {
+        await TemplateStyleService.saveDraftStyle(id, blockLayout);
+      }
       message.success("Đã lưu các thay đổi đề cương mẫu thành công!");
     } catch {
       message.error("Lỗi khi lưu thay đổi đề cương mẫu.");
@@ -299,9 +317,14 @@ const TemplateBuilder = () => {
   };
 
   const currentMainSectionStyle = useMemo(() => {
-    if (!selectedMainSection?.id) return {};
-    return blockLayout?.main_sections_style?.[String(selectedMainSection.id)] || {};
-  }, [blockLayout?.main_sections_style, selectedMainSection?.id]);
+    if (!selectedMainSection) return {};
+    const styles = blockLayout?.main_sections_style || {};
+    return (
+      styles[String(selectedMainSection.id)] ||
+      styles[String(selectedMainSection.code)] ||
+      {}
+    );
+  }, [blockLayout?.main_sections_style, selectedMainSection]);
 
   if (loading) {
     return (
@@ -346,6 +369,11 @@ const TemplateBuilder = () => {
                   key={section.id}
                   index={index}
                   section={section}
+                  sectionStyle={
+                    blockLayout?.main_sections_style?.[String(section.id)] ||
+                    blockLayout?.main_sections_style?.[String(section.code)] ||
+                    {}
+                  }
                   blockMap={blockMap}
                   onUpdateSectionName={handleUpdateSectionName}
                   onRemoveSection={handleRemoveMainSection}
@@ -392,14 +420,21 @@ const TemplateBuilder = () => {
       />
 
       <Modal
-        title="Quản lý Header & Footer đề cương"
+        title={null}
+        closable={false}
         open={headerFooterModalOpen}
         onCancel={() => setHeaderFooterModalOpen(false)}
         footer={null}
-        width={950}
+        width={1320}
+        style={{ top: 16 }}
+        bodyStyle={{ padding: 0, borderRadius: "12px", overflow: "hidden" }}
         destroyOnClose
       >
-        <HeaderFooterEditor templateId={id} onUpdated={handleHeaderFooterUpdated} />
+        <HeaderFooterEditor
+          templateId={id}
+          onClose={() => setHeaderFooterModalOpen(false)}
+          onUpdated={handleHeaderFooterUpdated}
+        />
       </Modal>
 
       <BulkSpacingModal
