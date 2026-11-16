@@ -1,0 +1,74 @@
+- generic [ref=f2e9]:
+  - banner [ref=f2e10]:
+    - generic [ref=f2e11]:
+      - link "H HCMOU Syllabus System" [ref=f2e12] [cursor=pointer]:
+        - /url: /specialist
+        - generic [ref=f2e13]: H
+        - generic [ref=f2e14]:
+          - strong [ref=f2e16]: HCMOU
+          - generic [ref=f2e17]: Syllabus System
+      - link [ref=f2e19] [cursor=pointer]:
+        - /url: /specialist
+        - button "Trang chủ" [ref=f2e20]
+    - generic [ref=f2e24] [cursor=pointer]:
+      - strong [ref=f2e26]: test
+      - generic [ref=f2e27]: huynhthecanhpvh@gmail.com
+  - generic [ref=f2e33]:
+    - generic [ref=f2e34]:
+      - generic [ref=f2e35]:
+        - heading "Thông tin cá nhân" [level=3] [ref=f2e36]
+        - text: Quản lý hồ sơ và thiết lập tài khoản
+      - generic [ref=f2e37]: Chuyên viên Phòng Đào tạo
+    - generic [ref=f2e41]:
+      - generic [ref=f2e42]:
+        - button "upload Đổi ảnh đại diện" [ref=f2e50] [cursor=pointer]:
+          - img "upload" [ref=f2e52]
+          - generic [ref=f2e55]: Đổi ảnh đại diện
+        - generic [ref=f2e56]:
+          - heading "quan ly template" [level=4] [ref=f2e57]
+          - generic [ref=f2e58]: "@test"
+          - generic [ref=f2e59]: Chuyên viên Phòng Đào tạo
+        - separator [ref=f2e61]
+        - generic [ref=f2e62]:
+          - generic [ref=f2e63]: Chữ ký cá nhân
+          - generic [ref=f2e64]:
+            - generic [ref=f2e65]: Chưa thiết lập chữ ký cá nhân
+            - button "edit Thêm chữ ký" [ref=f2e66] [cursor=pointer]:
+              - img "edit" [ref=f2e68]
+              - generic [ref=f2e71]: Thêm chữ ký
+      - generic [ref=f2e72]:
+        - generic [ref=f2e73]:
+          - generic [ref=f2e74]:
+            - img "user" [ref=f2e75]
+            - heading "Thông tin tài khoản" [level=4] [ref=f2e78]
+          - generic [ref=f2e184]:
+            - button "key Đổi mật khẩu" [ref=f2e186] [cursor=pointer]:
+              - img "key" [ref=f2e188]
+              - generic [ref=f2e191]: Đổi mật khẩu
+            - button "edit Chỉnh sửa" [ref=f2e193] [cursor=pointer]:
+              - img "edit" [ref=f2e195]
+              - generic [ref=f2e198]: Chỉnh sửa
+        - separator [ref=f2e94]
+        - generic [ref=f2e199]:
+          - generic [ref=f2e200]:
+            - generic [ref=f2e201]:
+              - generic [ref=f2e202]: Địa chỉ Email
+              - generic [ref=f2e203]: huynhthecanhpvh@gmail.com
+            - generic [ref=f2e204]:
+              - generic [ref=f2e205]: Khoa / Đơn vị
+              - generic [ref=f2e206]: Phòng Đào tạo
+            - generic [ref=f2e207]:
+              - generic [ref=f2e208]: Phòng làm việc
+              - generic [ref=f2e209]: Chưa cập nhật
+            - generic [ref=f2e210]:
+              - generic [ref=f2e211]: Quyền hạn đề cương
+              - generic [ref=f2e212]: Quản lý mẫu đề cương & cấu trúc
+          - generic [ref=f2e214]:
+            - generic [ref=f2e215]: "Ngày tham gia: —"
+            - generic [ref=f2e216]: •
+            - generic [ref=f2e217]: "Đăng nhập lần cuối: —"
+  - contentinfo [ref=f2e114]:
+    - strong [ref=f2e116]: Hệ thống quản lý đề cương môn học
+    - generic [ref=f2e118]:
+      - generic [ref=f2e119]: Trường Đại học Mở Thành phố Hồ Chí Minh
+      - generic [ref=f2e120]: © 2026 - Bản quyền thuộc về Tôi Syllabus

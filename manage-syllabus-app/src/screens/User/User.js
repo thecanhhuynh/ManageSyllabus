@@ -14,6 +14,7 @@ import {
   Modal,
   Upload,
   Space,
+  Popconfirm,
 } from "antd";
 import {
   EditOutlined,
@@ -44,20 +45,64 @@ const FACULTY_ROLE_MAP = {
   lecturer: {label: "Giảng viên", color: "blue"},
 };
 
-const SYSTEM_ROLE_MAP = {
-  admin: {label: "Quản trị viên", color: "error"},
-  specialist: {label: "Chuyên viên", color: "purple"},
-  user: {label: "Giảng viên / User", color: "blue"},
+const getPrimaryRole = (user) => {
+  if (user?.is_superuser || user?.user_role === "admin") {
+    return {label: "Quản trị viên", color: "error"};
+  }
+  if (user?.user_role === "specialist") {
+    return {label: "Chuyên viên Phòng Đào tạo", color: "purple"};
+  }
+  const facultyRole = user?.lecturer?.faculty_role;
+  if (facultyRole && FACULTY_ROLE_MAP[facultyRole]) {
+    return FACULTY_ROLE_MAP[facultyRole];
+  }
+  return {label: "Giảng viên", color: "blue"};
+};
+
+const getDepartmentLabel = (user) => {
+  if (user?.lecturer?.faculty?.name) {
+    return user.lecturer.faculty.name;
+  }
+  if (user?.user_role === "specialist") {
+    return "Phòng Đào tạo";
+  }
+  if (user?.is_superuser || user?.user_role === "admin") {
+    return "Ban Quản trị hệ thống";
+  }
+  return "Chưa cập nhật";
+};
+
+const getSyllabusPermissionBadge = (user, canApprove) => {
+  if (user?.user_role === "specialist") {
+    return (
+      <Tag color="purple" style={{margin: 0, fontWeight: 500}}>
+        Quản lý mẫu đề cương & cấu trúc
+      </Tag>
+    );
+  }
+  if (canApprove) {
+    return (
+      <Tag
+        color="success"
+        icon={<SafetyCertificateOutlined />}
+        style={{margin: 0, fontWeight: 500}}
+      >
+        Phê duyệt đề cương
+      </Tag>
+    );
+  }
+  return (
+    <Tag color="default" style={{margin: 0, fontWeight: 500}}>
+      Biên soạn & gửi duyệt
+    </Tag>
+  );
 };
 
 const User = () => {
   const [user, dispatch] = useContext(MyUserContext);
   const [editing, setEditing] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [page, setPage] = useState(1);
   const [submitLoading, setSubmitLoading] = useState(false);
   const [form] = Form.useForm();
-  const [faculties, setFaculties] = useState([]);
   const [signatureUrl, setSignatureUrl] = useState(null);
   const [signatureModalOpen, setSignatureModalOpen] = useState(false);
   const [signatureLoading, setSignatureLoading] = useState(false);
@@ -72,10 +117,8 @@ const User = () => {
     user?.is_superuser ||
     user?.user_role === "admin",
   );
-  const facultyRoleInfo =
-    FACULTY_ROLE_MAP[user?.lecturer?.faculty_role] || FACULTY_ROLE_MAP.lecturer;
-  const systemRoleInfo =
-    SYSTEM_ROLE_MAP[user?.user_role] || SYSTEM_ROLE_MAP.user;
+  const primaryRole = getPrimaryRole(user);
+  const departmentLabel = getDepartmentLabel(user);
 
   useEffect(() => {
     setSignatureImgError(false);
@@ -138,29 +181,7 @@ const User = () => {
     }
   }, [user, form, editing]);
 
-  const loadFaculties = async () => {
-    try {
-      setLoading(true);
-      const res = await authApis().get(
-        `${endpoints["faculties"]}?page=${page}`,
-      );
-      if (res.status === 200) {
-        if (page === 1) setFaculties(res.data.results);
-        else setFaculties([...faculties, ...res.data.results]);
-      }
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    loadFaculties();
-  }, [page]);
-
-  useEffect(() => {
-    setPage(1);
     if (user) {
       loadUserSignature();
     }
@@ -269,27 +290,20 @@ const User = () => {
               Thông tin cá nhân
             </Title>
             <Text style={{color: "#6b7280", fontSize: 14}}>
-              Quản lý thông tin cá nhân và tài khoản
+              Quản lý hồ sơ và thiết lập tài khoản
             </Text>
           </div>
           <div className="flex gap-2 items-center flex-wrap">
             <Tag
+              color={primaryRole.color}
               style={{
                 borderRadius: 16,
                 padding: "4px 12px",
-                border: "1px solid #e5e7eb",
-                background: "#ffffff",
-                color: "#374151",
-                fontWeight: 500,
+                fontWeight: 600,
+                fontSize: 13,
               }}
             >
-              ID: {user.username || "N/A"}
-            </Tag>
-            <Tag
-              color={systemRoleInfo.color}
-              style={{borderRadius: 16, padding: "4px 12px", fontWeight: 500}}
-            >
-              {systemRoleInfo.label}
+              {primaryRole.label}
             </Tag>
           </div>
         </div>
@@ -305,12 +319,12 @@ const User = () => {
         >
           <div className="flex flex-col md:flex-row">
             <div
-              className="w-full md:w-1/3 p-8 flex flex-col items-center"
+              className="w-full md:w-1/3 p-6 flex flex-col items-center"
               style={{borderRight: "1px solid #f3f4f6", background: "#ffffff"}}
             >
-              <div className="relative mb-4">
+              <div className="relative mb-3">
                 <Avatar
-                  size={140}
+                  size={120}
                   src={resolveMediaUrl(user.avatar)}
                   style={{border: "2px solid #f3f4f6"}}
                 >
@@ -320,13 +334,13 @@ const User = () => {
                 <div
                   style={{
                     position: "absolute",
-                    bottom: 8,
-                    right: 8,
-                    width: 24,
-                    height: 24,
+                    bottom: 6,
+                    right: 6,
+                    width: 20,
+                    height: 20,
                     backgroundColor: "#10b981",
                     borderRadius: "50%",
-                    border: "4px solid #ffffff",
+                    border: "3px solid #ffffff",
                   }}
                 />
               </div>
@@ -340,7 +354,7 @@ const User = () => {
                   size="small"
                   icon={<UploadOutlined />}
                   loading={avatarUploading}
-                  style={{marginBottom: 16}}
+                  style={{marginBottom: 16, borderRadius: 6}}
                 >
                   Đổi ảnh đại diện
                 </Button>
@@ -349,48 +363,26 @@ const User = () => {
               <div className="text-center w-full">
                 <Title
                   level={4}
-                  style={{margin: 0, fontWeight: 600, color: "#1f2937"}}
+                  style={{margin: 0, fontWeight: 700, color: "#111827"}}
                 >
                   {user.last_name} {user.first_name}
                 </Title>
+                <div className="text-xs text-gray-500 mt-0.5">
+                  @{user.username}
+                </div>
                 <div className="flex flex-wrap justify-center gap-1.5 mt-2">
-                  <Tag color={facultyRoleInfo.color} style={{fontWeight: 600}}>
-                    {facultyRoleInfo.label}
+                  <Tag color={primaryRole.color} style={{fontWeight: 600}}>
+                    {primaryRole.label}
                   </Tag>
-                  {user.lecturer?.faculty?.name && (
-                    <Tag color="default">{user.lecturer.faculty.name}</Tag>
-                  )}
                 </div>
-                <div className="mt-2">
-                  {canApprove ? (
-                    <Tag
-                      color="success"
-                      icon={<SafetyCertificateOutlined />}
-                      style={{
-                        padding: "3px 10px",
-                        borderRadius: 12,
-                        fontSize: 12,
-                        fontWeight: 500,
-                      }}
-                    >
-                      Có thẩm quyền phê duyệt
-                    </Tag>
-                  ) : (
-                    <Tag
-                      color="default"
-                      style={{
-                        padding: "3px 10px",
-                        borderRadius: 12,
-                        fontSize: 12,
-                      }}
-                    >
-                      Giảng viên biên soạn
-                    </Tag>
-                  )}
-                </div>
+                {user.lecturer?.faculty?.name && (
+                  <div className="text-xs text-gray-500 mt-1">
+                    {user.lecturer.faculty.name}
+                  </div>
+                )}
               </div>
 
-              <Divider style={{margin: "24px 0 16px 0"}} />
+              <Divider style={{margin: "20px 0 16px 0"}} />
 
               <div className="w-full text-center">
                 <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
@@ -400,7 +392,7 @@ const User = () => {
                   <div className="flex flex-col items-center">
                     <div
                       className="p-2 border border-dashed border-gray-300 rounded bg-gray-50 mb-3 flex items-center justify-center overflow-hidden"
-                      style={{width: "100%", maxWidth: 200, height: 90}}
+                      style={{width: "100%", maxWidth: 200, height: 84}}
                     >
                       {signatureImgError ? (
                         <Text
@@ -428,18 +420,28 @@ const User = () => {
                         icon={<EditOutlined />}
                         loading={signatureLoading}
                         onClick={() => setSignatureModalOpen(true)}
+                        style={{borderRadius: 6}}
                       >
                         Đổi chữ ký
                       </Button>
-                      <Button
-                        size="small"
-                        danger
-                        icon={<DeleteOutlined />}
-                        loading={signatureLoading}
-                        onClick={handleDeleteSignature}
+                      <Popconfirm
+                        title="Xóa chữ ký cá nhân"
+                        description="Bạn có chắc chắn muốn xóa chữ ký cá nhân này không?"
+                        okText="Xóa"
+                        cancelText="Hủy"
+                        okButtonProps={{danger: true}}
+                        onConfirm={handleDeleteSignature}
                       >
-                        Xóa
-                      </Button>
+                        <Button
+                          size="small"
+                          danger
+                          icon={<DeleteOutlined />}
+                          loading={signatureLoading}
+                          style={{borderRadius: 6}}
+                        >
+                          Xóa
+                        </Button>
+                      </Popconfirm>
                     </div>
                   </div>
                 ) : (
@@ -453,6 +455,7 @@ const User = () => {
                       icon={<EditOutlined />}
                       loading={signatureLoading}
                       onClick={() => setSignatureModalOpen(true)}
+                      style={{borderRadius: 6}}
                     >
                       Thêm chữ ký
                     </Button>
@@ -461,10 +464,10 @@ const User = () => {
               </div>
             </div>
 
-            <div className="w-full md:w-2/3 p-8 bg-white">
+            <div className="w-full md:w-2/3 p-6 sm:p-8 bg-white">
               <div className="flex justify-between items-center mb-6">
-                <div className="flex items-center gap-3">
-                  <UserOutlined style={{fontSize: 20, color: "#1f2937"}} />
+                <div className="flex items-center gap-2">
+                  <UserOutlined style={{fontSize: 18, color: "#1f2937"}} />
                   <Title
                     level={4}
                     style={{margin: 0, fontWeight: 600, color: "#1f2937"}}
@@ -518,95 +521,62 @@ const User = () => {
                 )}
               </div>
 
-              <Divider style={{margin: "0 0 32px 0", borderColor: "#f3f4f6"}} />
+              <Divider style={{margin: "0 0 24px 0", borderColor: "#f3f4f6"}} />
 
               {!editing ? (
-                <div className="flex flex-col gap-8">
-                  <Row gutter={[32, 24]}>
-                    <Col span={12}>
-                      <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
-                        Họ và Tên
+                <div className="flex flex-col gap-6">
+                  <Row gutter={[24, 20]}>
+                    <Col xs={24} sm={12}>
+                      <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">
+                        Địa chỉ Email
                       </div>
-                      <div className="text-sm font-medium text-gray-800">
-                        {user.last_name} {user.first_name}
-                      </div>
-                    </Col>
-                    <Col span={12}>
-                      <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
-                        Email
-                      </div>
-                      <div className="text-sm font-medium text-gray-800">
-                        {user.email || "N/A"}
+                      <div className="text-sm font-medium text-gray-800 break-words">
+                        {user.email || "Chưa cập nhật"}
                       </div>
                     </Col>
-                  </Row>
-
-                  <div>
-                    <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
-                      Khoa
-                    </div>
-                    <div className="text-sm font-medium text-gray-800">
-                      {user.lecturer?.faculty?.name || "N/A"}
-                    </div>
-                  </div>
-
-                  <div>
-                    <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
-                      Phòng liên hệ
-                    </div>
-                    <div className="text-sm font-medium text-gray-800">
-                      {user.lecturer?.room || "N/A"}
-                    </div>
-                  </div>
-
-                  <Row gutter={[32, 24]}>
-                    <Col span={12}>
-                      <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
-                        Chức vụ trong Khoa
+                    <Col xs={24} sm={12}>
+                      <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">
+                        Khoa / Đơn vị
                       </div>
                       <div className="text-sm font-medium text-gray-800">
-                        <Tag
-                          color={facultyRoleInfo.color}
-                          style={{fontWeight: 600}}
-                        >
-                          {facultyRoleInfo.label}
-                        </Tag>
+                        {departmentLabel}
                       </div>
                     </Col>
-                    <Col span={12}>
-                      <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
-                        Thẩm quyền phê duyệt
+                    <Col xs={24} sm={12}>
+                      <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">
+                        Phòng làm việc
                       </div>
                       <div className="text-sm font-medium text-gray-800">
-                        {canApprove ? (
-                          <span style={{color: "#16a34a", fontWeight: 600}}>
-                            ✓ Được phép phê duyệt đề cương
-                          </span>
-                        ) : (
-                          <span style={{color: "#6b7280"}}>
-                            Biên soạn (Cần Lãnh đạo Khoa duyệt)
-                          </span>
-                        )}
+                        {user.lecturer?.room || user.room || "Chưa cập nhật"}
+                      </div>
+                    </Col>
+                    <Col xs={24} sm={12}>
+                      <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">
+                        Quyền hạn đề cương
+                      </div>
+                      <div className="text-sm font-medium text-gray-800">
+                        {getSyllabusPermissionBadge(user, canApprove)}
                       </div>
                     </Col>
                   </Row>
 
-                  <div className="mt-6 p-4 rounded-lg border border-gray-200 flex flex-wrap gap-8 bg-gray-50/50">
+                  <div className="pt-4 border-t border-gray-100 flex flex-wrap items-center gap-x-6 gap-y-2 text-xs text-gray-500">
                     <div>
-                      <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">
-                        Tài khoản tạo
-                      </div>
-                      <div className="text-xs font-medium text-gray-800">
-                        {dayjs(user.date_joined).format("MMMM D, YYYY")}
-                      </div>
+                      <span className="text-gray-400">Ngày tham gia: </span>
+                      <span className="font-medium text-gray-700">
+                        {user.date_joined
+                          ? dayjs(user.date_joined).format("DD/MM/YYYY")
+                          : "—"}
+                      </span>
                     </div>
+                    <span className="text-gray-300">•</span>
                     <div>
-                      <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">
-                        Lần cuối đăng nhập
-                      </div>
-                      <div className="text-xs font-medium text-gray-800">
-                        {dayjs(user.last_login).format("DD/MM/YYYY HH:mm")}
-                      </div>
+                      <span className="text-gray-400">Đăng nhập lần cuối: </span>
+                      <span className="font-medium text-gray-700">
+                        {user.last_login
+                          ? dayjs(user.last_login).format("DD/MM/YYYY HH:mm")
+                          : "—"}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -614,37 +584,48 @@ const User = () => {
                 <Form
                   form={form}
                   layout="vertical"
-                  size="large"
+                  size="middle"
                   onFinish={onFinish}
                   requiredMark={false}
                 >
-                  <Row gutter={24}>
+                  <Row gutter={16}>
                     <Col span={12}>
                       <Form.Item
                         name="last_name"
                         label={
-                          <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">
-                            Last Name
+                          <span className="text-xs font-semibold text-gray-600">
+                            Họ và tên đệm
                           </span>
                         }
-                        rules={[{required: true, message: "Vui lòng nhập họ!"}]}
+                        rules={[
+                          {
+                            required: true,
+                            message: "Vui lòng nhập họ và tên đệm!",
+                          },
+                        ]}
                       >
-                        <CleanInput style={{borderRadius: 6}} />
+                        <CleanInput
+                          style={{borderRadius: 6}}
+                          placeholder="Nhập họ và tên đệm"
+                        />
                       </Form.Item>
                     </Col>
                     <Col span={12}>
                       <Form.Item
                         name="first_name"
                         label={
-                          <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">
-                            First Name
+                          <span className="text-xs font-semibold text-gray-600">
+                            Tên
                           </span>
                         }
                         rules={[
                           {required: true, message: "Vui lòng nhập tên!"},
                         ]}
                       >
-                        <CleanInput style={{borderRadius: 6}} />
+                        <CleanInput
+                          style={{borderRadius: 6}}
+                          placeholder="Nhập tên"
+                        />
                       </Form.Item>
                     </Col>
                   </Row>
@@ -652,8 +633,8 @@ const User = () => {
                   <Form.Item
                     name="email"
                     label={
-                      <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">
-                        Email Address
+                      <span className="text-xs font-semibold text-gray-600">
+                        Địa chỉ Email
                       </span>
                     }
                     rules={[
@@ -664,16 +645,19 @@ const User = () => {
                       },
                     ]}
                   >
-                    <CleanInput style={{borderRadius: 6}} />
+                    <CleanInput
+                      style={{borderRadius: 6}}
+                      placeholder="example@ou.edu.vn"
+                    />
                   </Form.Item>
 
-                  <Row gutter={24}>
+                  <Row gutter={16}>
                     <Col span={12}>
                       <Form.Item
                         name="faculty"
                         label={
-                          <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">
-                            Faculty Department
+                          <span className="text-xs font-semibold text-gray-600">
+                            Khoa / Đơn vị
                           </span>
                         }
                       >
@@ -696,12 +680,15 @@ const User = () => {
                       <Form.Item
                         name="room"
                         label={
-                          <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">
-                            Office Location / Room
+                          <span className="text-xs font-semibold text-gray-600">
+                            Phòng làm việc
                           </span>
                         }
                       >
-                        <CleanInput style={{borderRadius: 6}} />
+                        <CleanInput
+                          style={{borderRadius: 6}}
+                          placeholder="Ví dụ: P.601, Cơ sở 1"
+                        />
                       </Form.Item>
                     </Col>
                   </Row>

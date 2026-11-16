@@ -1,0 +1,620 @@
+- generic [ref=f4e1]:
+  - generic [ref=f4e9]:
+    - banner [ref=f4e10]:
+      - generic [ref=f4e11]:
+        - link "H HCMOU Syllabus System" [ref=f4e12] [cursor=pointer]:
+          - /url: /
+          - generic [ref=f4e13]: H
+          - generic [ref=f4e14]:
+            - strong [ref=f4e16]: HCMOU
+            - generic [ref=f4e17]: Syllabus System
+        - link [ref=f4e19] [cursor=pointer]:
+          - /url: /
+          - button "Trang chủ" [ref=f4e20]
+      - generic [ref=f4e23] [cursor=pointer]:
+        - generic [ref=f4e24]:
+          - strong [ref=f4e26]: lecturer_201
+          - generic [ref=f4e27]: lecturer_201@ou.edu.vn
+        - img "user" [ref=f4e29]
+    - generic [ref=f4e35]:
+      - generic [ref=f4e37]:
+        - generic [ref=f4e38]:
+          - generic [ref=f4e39]:
+            - heading "Đề cương chi tiết học phần CTDL & GT (Mẫu Template 2027)" [level=4] [ref=f4e40]
+            - generic [ref=f4e41]:
+              - img "clock-circle" [ref=f4e42]
+              - text: Bản nháp
+          - generic [ref=f4e46]: "Khoa: Công nghệ thông tin | Giảng viên: Thị Trần"
+        - generic [ref=f4e47]:
+          - button "safety-certificate Ký & Nộp duyệt" [ref=f4e48] [cursor=pointer]:
+            - img "safety-certificate" [ref=f4e50]
+            - generic [ref=f4e53]: Ký & Nộp duyệt
+          - button "file-word Xuất file Word" [ref=f4e54] [cursor=pointer]:
+            - img "file-word" [ref=f4e56]
+            - generic [ref=f4e59]: Xuất file Word
+      - generic [ref=f4e62]:
+        - tablist [ref=f4e63]:
+          - generic [ref=f4e65]:
+            - tab "1. Thông tin tổng quát - General Information" [ref=f4e67] [cursor=pointer]
+            - tab "2. Mô tả môn học" [selected] [ref=f4e69] [cursor=pointer]
+        - generic [ref=f4e71]:
+          - text:     
+          - tabpanel "2. Mô tả môn học" [ref=f4e72]:
+            - generic [ref=f4e76]:
+              - button "save Lưu thay đổi" [ref=f4e78] [cursor=pointer]:
+                - img "save" [ref=f4e80]
+                - generic [ref=f4e83]: Lưu thay đổi
+              - generic [ref=f4e84]:
+                - generic [ref=f4e86]:
+                  - generic [ref=f4e87]: 1. Mô tả chi tiết
+                  - generic [ref=f4e92]:
+                    - generic [ref=f4e93]: textarea
+                    - textbox [ref=f4e99]: Môn học cung cấp kiến thức nền tảng về tổ chức dữ liệu...
+                - generic [ref=f4e101]:
+                  - generic [ref=f4e102]: 2. Môn học điều kiện
+                  - generic [ref=f4e106]:
+                    - generic [ref=f4e107]:
+                      - generic [ref=f4e108]: Tiên quyết (Prerequisite)
+                      - generic [ref=f4e109]:
+                        - generic [ref=f4e110]:
+                          - img "book" [ref=f4e111]
+                          - generic "PRG101 - Nhập môn Lập trình" [ref=f4e114]
+                          - img "close" [ref=f4e116] [cursor=pointer]
+                        - generic [ref=f4e119] [cursor=pointer]:
+                          - img "plus" [ref=f4e120]
+                          - generic [ref=f4e124]: Thêm môn
+                    - generic [ref=f4e125]:
+                      - generic [ref=f4e126]: Học trước (Pre-course)
+                      - generic [ref=f4e127]:
+                        - generic [ref=f4e128]:
+                          - img "book" [ref=f4e129]
+                          - generic "DBM201 - Cơ sở dữ liệu" [ref=f4e132]
+                          - img "close" [ref=f4e134] [cursor=pointer]
+                        - generic [ref=f4e137] [cursor=pointer]:
+                          - img "plus" [ref=f4e138]
+                          - generic [ref=f4e142]: Thêm môn
+                    - generic [ref=f4e143]:
+                      - generic [ref=f4e144]: Song hành (Corequisite)
+                      - generic [ref=f4e146] [cursor=pointer]:
+                        - img "plus" [ref=f4e147]
+                        - generic [ref=f4e151]: Thêm môn
+                - generic [ref=f4e153]:
+                  - generic [ref=f4e154]: 3. Mục tiêu môn học, Chuẩn đầu ra và PLOs
+                  - generic [ref=f4e158]:
+                    - generic [ref=f4e159]:
+                      - generic [ref=f4e161]:
+                        - generic [ref=f4e162]:
+                          - generic [ref=f4e163]:
+                            - generic [ref=f4e164]: CO-1
+                            - text: Nội dung mục tiêu
+                          - 'textbox "VD: Phân tích và đánh giá độ phức tạp..." [ref=f4e165]': Hiểu và trình bày được nguyên lý hoạt động của các cấu trúc dữ liệu cơ bản.
+                        - generic [ref=f4e166]:
+                          - generic [ref=f4e167]:
+                            - generic [ref=f4e168]: ≈
+                            - text: Chuẩn đầu ra (PLO)
+                          - generic [ref=f4e169]:
+                            - generic [ref=f4e170]:
+                              - generic [ref=f4e173]:
+                                - text: PLO2
+                                - img "Close" [ref=f4e174] [cursor=pointer]
+                              - generic [ref=f4e179]:
+                                - text: PLO3
+                                - img "Close" [ref=f4e180] [cursor=pointer]
+                              - generic: + 0 ...
+                              - combobox [expanded] [active] [ref=f4e184]:
+                                - listbox:
+                                  - option "1"
+                                  - option "2" [selected]
+                            - img "search" [ref=f4e1007]
+                            - img "close-circle" [ref=f4e190] [cursor=pointer]
+                        - button [ref=f4e194] [cursor=pointer]:
+                          - img "delete" [ref=f4e196]
+                      - generic [ref=f4e200]:
+                        - generic [ref=f4e201]:
+                          - generic [ref=f4e202]:
+                            - generic [ref=f4e203]: CO-2
+                            - text: Nội dung mục tiêu
+                          - 'textbox "VD: Phân tích và đánh giá độ phức tạp..." [ref=f4e204]': Hiểu và áp dụng các nguyên lý thiết kế cơ sở dữ liệu.
+                        - generic [ref=f4e205]:
+                          - generic [ref=f4e206]:
+                            - generic [ref=f4e207]: ≈
+                            - text: Chuẩn đầu ra (PLO)
+                          - generic [ref=f4e208]:
+                            - generic [ref=f4e209]:
+                              - generic [ref=f4e212]:
+                                - text: PLO2
+                                - img "Close" [ref=f4e213] [cursor=pointer]
+                              - generic [ref=f4e218]:
+                                - text: PLO3
+                                - img "Close" [ref=f4e219] [cursor=pointer]
+                              - generic: PLO4
+                              - generic [ref=f4e222]: + 1 ...
+                              - combobox [ref=f4e226]
+                            - img "down" [ref=f4e228]
+                            - img "close-circle" [ref=f4e232] [cursor=pointer]
+                        - button [ref=f4e236] [cursor=pointer]:
+                          - img "delete" [ref=f4e238]
+                      - generic [ref=f4e242]:
+                        - generic [ref=f4e243]:
+                          - generic [ref=f4e244]:
+                            - generic [ref=f4e245]: CO-3
+                            - text: Nội dung mục tiêu
+                          - 'textbox "VD: Phân tích và đánh giá độ phức tạp..." [ref=f4e246]': Hiểu các khái niệm cơ bản về lập trình cấu trúc.
+                        - generic [ref=f4e247]:
+                          - generic [ref=f4e248]:
+                            - generic [ref=f4e249]: ≈
+                            - text: Chuẩn đầu ra (PLO)
+                          - generic [ref=f4e250]:
+                            - generic [ref=f4e251]:
+                              - generic [ref=f4e254]:
+                                - text: PLO2
+                                - img "Close" [ref=f4e255] [cursor=pointer]
+                              - generic [ref=f4e260]:
+                                - text: PLO3
+                                - img "Close" [ref=f4e261] [cursor=pointer]
+                              - generic: PLO4
+                              - generic [ref=f4e264]: + 1 ...
+                              - combobox [ref=f4e268]
+                            - img "down" [ref=f4e270]
+                            - img "close-circle" [ref=f4e274] [cursor=pointer]
+                        - button [ref=f4e278] [cursor=pointer]:
+                          - img "delete" [ref=f4e280]
+                    - button "plus Thêm Mục tiêu môn học (CO)" [ref=f4e283] [cursor=pointer]:
+                      - img "plus" [ref=f4e285]
+                      - generic [ref=f4e289]: Thêm Mục tiêu môn học (CO)
+                - generic [ref=f4e291]:
+                  - generic [ref=f4e292]: 4. Chuẩn đầu ra môn học
+                  - generic [ref=f4e296]:
+                    - generic [ref=f4e297]:
+                      - tablist [ref=f4e298]:
+                        - generic [ref=f4e300]:
+                          - tab [selected] [ref=f4e302] [cursor=pointer]:
+                            - generic [ref=f4e303]: CO-1Nội dung
+                          - tab [ref=f4e305] [cursor=pointer]:
+                            - generic [ref=f4e306]: CO-2Nội dung
+                          - tab [ref=f4e308] [cursor=pointer]:
+                            - generic [ref=f4e309]: CO-3Nội dung
+                      - tabpanel "CO-1 Nội dung" [ref=f4e312]:
+                        - generic [ref=f4e313]:
+                          - generic [ref=f4e314]:
+                            - heading "Chuẩn đầu ra 1" [level=4] [ref=f4e315]
+                            - button "plus Thêm CLO" [ref=f4e316] [cursor=pointer]:
+                              - img "plus" [ref=f4e318]
+                              - generic [ref=f4e322]: Thêm CLO
+                          - generic [ref=f4e323]:
+                            - generic [ref=f4e325]:
+                              - generic [ref=f4e326]: CLO1.1
+                              - textbox "Thêm nội dung chuẩn đầu ra..." [ref=f4e327]: Giải thích được lưu đồ thuật toán (Flowchart).
+                              - generic [ref=f4e328]:
+                                - button [ref=f4e329] [cursor=pointer]:
+                                  - img "delete" [ref=f4e331]
+                                - img "info-circle" [ref=f4e334]
+                            - generic [ref=f4e339]:
+                              - generic [ref=f4e340]: CLO1.2
+                              - textbox "Thêm nội dung chuẩn đầu ra..." [ref=f4e341]: Viết chương trình nhập xuất dữ liệu và tính toán cơ bản.
+                              - generic [ref=f4e342]:
+                                - button [ref=f4e343] [cursor=pointer]:
+                                  - img "delete" [ref=f4e345]
+                                - img "info-circle" [ref=f4e348]
+                            - generic [ref=f4e353]:
+                              - generic [ref=f4e354]: CLO1.3
+                              - textbox "Thêm nội dung chuẩn đầu ra..." [ref=f4e355]: Phát hiện và sửa lỗi cú pháp trong code.
+                              - generic [ref=f4e356]:
+                                - button [ref=f4e357] [cursor=pointer]:
+                                  - img "delete" [ref=f4e359]
+                                - img "info-circle" [ref=f4e362]
+                            - generic [ref=f4e367]:
+                              - generic [ref=f4e368]: CLO1.4
+                              - textbox "Thêm nội dung chuẩn đầu ra..." [ref=f4e369]: Cài đặt thành công thuật toán
+                              - generic [ref=f4e370]:
+                                - button [ref=f4e371] [cursor=pointer]:
+                                  - img "delete" [ref=f4e373]
+                                - img "info-circle" [ref=f4e376]
+                    - generic [ref=f4e380]:
+                      - generic [ref=f4e381]: Ma trận chuẩn đầu ra
+                      - generic [ref=f4e382]:
+                        - img "info-circle" [ref=f4e383]
+                        - text: "Trọng số: 1 (Tác động ít) đến 5 (Tác động nhiều). Ô chưa đánh giá trị \"-\"."
+                      - table [ref=f4e393]:
+                        - rowgroup [ref=f4e400]:
+                          - row [ref=f4e401]:
+                            - columnheader "CĐR học phần (CLO)" [ref=f4e402]
+                            - columnheader "Mô tả CĐR" [ref=f4e403]
+                            - columnheader "PLO2" [ref=f4e404]
+                            - columnheader "PLO3" [ref=f4e406]
+                            - columnheader "PLO4" [ref=f4e408]
+                        - rowgroup [ref=f4e410]:
+                          - generic [ref=f4e411]: PLO2
+                          - generic [ref=f4e412]: PLO3
+                          - generic [ref=f4e413]: PLO4
+                          - row [ref=f4e414]:
+                            - cell "CLO1.1" [ref=f4e415]
+                            - cell "Giải thích được lưu đồ thuật toán (Flowchart)." [ref=f4e416]
+                            - cell [ref=f4e418]:
+                              - generic [ref=f4e419]:
+                                - spinbutton [ref=f4e420]: "5"
+                                - generic:
+                                  - button "Increase Value" [disabled] [ref=f4e421]:
+                                    - img "up" [ref=f4e422]
+                                  - button "Decrease Value" [ref=f4e425] [cursor=pointer]:
+                                    - img "down" [ref=f4e426]
+                            - cell [ref=f4e429]:
+                              - generic [ref=f4e430]:
+                                - spinbutton [ref=f4e431]: "5"
+                                - generic:
+                                  - button "Increase Value" [disabled] [ref=f4e432]:
+                                    - img "up" [ref=f4e433]
+                                  - button "Decrease Value" [ref=f4e436] [cursor=pointer]:
+                                    - img "down" [ref=f4e437]
+                            - cell "-" [ref=f4e440]
+                          - row [ref=f4e442]:
+                            - cell "CLO1.2" [ref=f4e443]
+                            - cell "Viết chương trình nhập xuất dữ liệu và tính toán cơ bản." [ref=f4e444]
+                            - cell [ref=f4e446]:
+                              - generic [ref=f4e447]:
+                                - spinbutton [ref=f4e448]: "2"
+                                - generic:
+                                  - button "Increase Value" [ref=f4e449] [cursor=pointer]:
+                                    - img "up" [ref=f4e450]
+                                  - button "Decrease Value" [ref=f4e453] [cursor=pointer]:
+                                    - img "down" [ref=f4e454]
+                            - cell [ref=f4e457]:
+                              - generic [ref=f4e458]:
+                                - spinbutton [ref=f4e459]: "1"
+                                - generic:
+                                  - button "Increase Value" [ref=f4e460] [cursor=pointer]:
+                                    - img "up" [ref=f4e461]
+                                  - button "Decrease Value" [disabled] [ref=f4e464]:
+                                    - img "down" [ref=f4e465]
+                            - cell "-" [ref=f4e468]
+                          - row [ref=f4e470]:
+                            - cell "CLO1.3" [ref=f4e471]
+                            - cell "Phát hiện và sửa lỗi cú pháp trong code." [ref=f4e472]
+                            - cell [ref=f4e474]:
+                              - generic [ref=f4e475]:
+                                - spinbutton [ref=f4e476]: "5"
+                                - generic:
+                                  - button "Increase Value" [disabled] [ref=f4e477]:
+                                    - img "up" [ref=f4e478]
+                                  - button "Decrease Value" [ref=f4e481] [cursor=pointer]:
+                                    - img "down" [ref=f4e482]
+                            - cell [ref=f4e485]:
+                              - generic [ref=f4e486]:
+                                - spinbutton [ref=f4e487]: "3"
+                                - generic:
+                                  - button "Increase Value" [ref=f4e488] [cursor=pointer]:
+                                    - img "up" [ref=f4e489]
+                                  - button "Decrease Value" [ref=f4e492] [cursor=pointer]:
+                                    - img "down" [ref=f4e493]
+                            - cell [ref=f4e496]:
+                              - generic [ref=f4e497]:
+                                - spinbutton [ref=f4e498]: "3"
+                                - generic:
+                                  - button "Increase Value" [ref=f4e499] [cursor=pointer]:
+                                    - img "up" [ref=f4e500]
+                                  - button "Decrease Value" [ref=f4e503] [cursor=pointer]:
+                                    - img "down" [ref=f4e504]
+                          - row [ref=f4e507]:
+                            - cell "CLO1.4" [ref=f4e508]
+                            - cell "Cài đặt thành công thuật toán" [ref=f4e509]
+                            - cell [ref=f4e511]:
+                              - generic [ref=f4e512]:
+                                - spinbutton [ref=f4e513]: "5"
+                                - generic:
+                                  - button "Increase Value" [disabled] [ref=f4e514]:
+                                    - img "up" [ref=f4e515]
+                                  - button "Decrease Value" [ref=f4e518] [cursor=pointer]:
+                                    - img "down" [ref=f4e519]
+                            - cell [ref=f4e522]:
+                              - generic [ref=f4e523]:
+                                - spinbutton [ref=f4e524]: "2"
+                                - generic:
+                                  - button "Increase Value" [ref=f4e525] [cursor=pointer]:
+                                    - img "up" [ref=f4e526]
+                                  - button "Decrease Value" [ref=f4e529] [cursor=pointer]:
+                                    - img "down" [ref=f4e530]
+                            - cell "-" [ref=f4e533]
+                          - row [ref=f4e535]:
+                            - cell "CLO2.1" [ref=f4e536]
+                            - cell "test" [ref=f4e537]
+                            - cell [ref=f4e539]:
+                              - generic [ref=f4e540]:
+                                - spinbutton [ref=f4e541]: "2"
+                                - generic:
+                                  - button "Increase Value" [ref=f4e542] [cursor=pointer]:
+                                    - img "up" [ref=f4e543]
+                                  - button "Decrease Value" [ref=f4e546] [cursor=pointer]:
+                                    - img "down" [ref=f4e547]
+                            - cell [ref=f4e550]:
+                              - generic [ref=f4e551]:
+                                - spinbutton [ref=f4e552]: "2"
+                                - generic:
+                                  - button "Increase Value" [ref=f4e553] [cursor=pointer]:
+                                    - img "up" [ref=f4e554]
+                                  - button "Decrease Value" [ref=f4e557] [cursor=pointer]:
+                                    - img "down" [ref=f4e558]
+                            - cell [ref=f4e561]:
+                              - generic [ref=f4e562]:
+                                - spinbutton [ref=f4e563]: "2"
+                                - generic:
+                                  - button "Increase Value" [ref=f4e564] [cursor=pointer]:
+                                    - img "up" [ref=f4e565]
+                                  - button "Decrease Value" [ref=f4e568] [cursor=pointer]:
+                                    - img "down" [ref=f4e569]
+                          - row [ref=f4e572]:
+                            - cell "CLO2.2" [ref=f4e573]
+                            - cell "test" [ref=f4e574]
+                            - cell [ref=f4e576]:
+                              - generic [ref=f4e577]:
+                                - spinbutton [ref=f4e578]: "2"
+                                - generic:
+                                  - button "Increase Value" [ref=f4e579] [cursor=pointer]:
+                                    - img "up" [ref=f4e580]
+                                  - button "Decrease Value" [ref=f4e583] [cursor=pointer]:
+                                    - img "down" [ref=f4e584]
+                            - cell [ref=f4e587]:
+                              - generic [ref=f4e588]:
+                                - spinbutton [ref=f4e589]: "5"
+                                - generic:
+                                  - button "Increase Value" [disabled] [ref=f4e590]:
+                                    - img "up" [ref=f4e591]
+                                  - button "Decrease Value" [ref=f4e594] [cursor=pointer]:
+                                    - img "down" [ref=f4e595]
+                            - cell [ref=f4e598]:
+                              - generic [ref=f4e599]:
+                                - spinbutton [ref=f4e600]: "2"
+                                - generic:
+                                  - button "Increase Value" [ref=f4e601] [cursor=pointer]:
+                                    - img "up" [ref=f4e602]
+                                  - button "Decrease Value" [ref=f4e605] [cursor=pointer]:
+                                    - img "down" [ref=f4e606]
+                - generic [ref=f4e610]:
+                  - generic [ref=f4e611]: 5. Học liệu
+                  - generic [ref=f4e615]:
+                    - generic [ref=f4e616]:
+                      - generic [ref=f4e617]: Sách giáo trình
+                      - generic [ref=f4e618]:
+                        - generic [ref=f4e619]:
+                          - img "book" [ref=f4e620]
+                          - generic "Data Structures and Algorithms in Java - Robert Lafore" [ref=f4e623] [cursor=pointer]
+                          - img "close" [ref=f4e624] [cursor=pointer]
+                        - generic [ref=f4e627] [cursor=pointer]:
+                          - img "plus" [ref=f4e628]
+                          - generic [ref=f4e632]: Thêm Tài liệu
+                    - generic [ref=f4e633]:
+                      - generic [ref=f4e634]: Sách tham khảo
+                      - generic [ref=f4e635]:
+                        - generic [ref=f4e636]:
+                          - img "book" [ref=f4e637]
+                          - generic "Introduction to Algorithms - CLRS" [ref=f4e640] [cursor=pointer]
+                          - img "close" [ref=f4e641] [cursor=pointer]
+                        - generic [ref=f4e644]:
+                          - img "book" [ref=f4e645]
+                          - generic "Algorithms (4th Edition) - Robert Sedgewick" [ref=f4e648] [cursor=pointer]
+                          - img "close" [ref=f4e649] [cursor=pointer]
+                        - generic [ref=f4e652] [cursor=pointer]:
+                          - img "plus" [ref=f4e653]
+                          - generic [ref=f4e657]: Thêm Tài liệu
+                - generic [ref=f4e659]:
+                  - generic [ref=f4e660]: 6. Đánh giá môn học
+                  - generic [ref=f4e664]:
+                    - generic [ref=f4e665]:
+                      - generic [ref=f4e666]:
+                        - generic [ref=f4e667]: Tổng trọng số đánh giá học phần
+                        - generic [ref=f4e668]: 100% / 100%
+                      - progressbar [ref=f4e669]
+                    - generic [ref=f4e673]:
+                      - generic [ref=f4e674]:
+                        - generic [ref=f4e675]:
+                          - generic [ref=f4e676]: Đánh giá quá trình (Formative)
+                          - generic [ref=f4e677]: "Tổng: 20%"
+                        - generic [ref=f4e679]:
+                          - generic [ref=f4e681]:
+                            - generic [ref=f4e682]:
+                              - generic [ref=f4e683]: Phương pháp
+                              - 'textbox "VD: Thi tự luận" [ref=f4e684]': Chuyên cần & Bài tập trên lớp
+                            - generic [ref=f4e685]:
+                              - generic [ref=f4e686]: Thời gian
+                              - generic [ref=f4e687]:
+                                - img "clock-circle" [ref=f4e689]
+                                - 'textbox "VD: 60 phút" [ref=f4e693]': Suốt học phần
+                            - generic [ref=f4e694]:
+                              - generic [ref=f4e695]: Trọng số
+                              - generic [ref=f4e696]:
+                                - generic [ref=f4e697]:
+                                  - spinbutton "0" [ref=f4e698]: "15"
+                                  - generic:
+                                    - button "Increase Value" [ref=f4e699] [cursor=pointer]:
+                                      - img "up" [ref=f4e700]
+                                    - button "Decrease Value" [ref=f4e703] [cursor=pointer]:
+                                      - img "down" [ref=f4e704]
+                                - img "percentage" [ref=f4e708]
+                            - generic [ref=f4e711]:
+                              - generic [ref=f4e712]: Đánh giá CLO
+                              - generic [ref=f4e713]:
+                                - generic [ref=f4e714]:
+                                  - generic: Chọn CLOs...
+                                  - combobox [ref=f4e716]
+                                - img "down" [ref=f4e718]
+                            - button [ref=f4e722] [cursor=pointer]:
+                              - img "delete" [ref=f4e724]
+                          - generic [ref=f4e728]:
+                            - generic [ref=f4e729]:
+                              - generic [ref=f4e730]: Phương pháp
+                              - 'textbox "VD: Thi tự luận" [ref=f4e731]': Thi tự luận
+                            - generic [ref=f4e732]:
+                              - generic [ref=f4e733]: Thời gian
+                              - generic [ref=f4e734]:
+                                - img "clock-circle" [ref=f4e736]
+                                - 'textbox "VD: 60 phút" [ref=f4e740]': 60 phút
+                            - generic [ref=f4e741]:
+                              - generic [ref=f4e742]: Trọng số
+                              - generic [ref=f4e743]:
+                                - generic [ref=f4e744]:
+                                  - spinbutton "0" [ref=f4e745]: "5"
+                                  - generic:
+                                    - button "Increase Value" [ref=f4e746] [cursor=pointer]:
+                                      - img "up" [ref=f4e747]
+                                    - button "Decrease Value" [ref=f4e750] [cursor=pointer]:
+                                      - img "down" [ref=f4e751]
+                                - img "percentage" [ref=f4e755]
+                            - generic [ref=f4e758]:
+                              - generic [ref=f4e759]: Đánh giá CLO
+                              - generic [ref=f4e760]:
+                                - generic [ref=f4e761]:
+                                  - generic "CLO1.4" [ref=f4e763]:
+                                    - generic [aria-hidden] [ref=f4e765] [cursor=pointer]
+                                  - generic: + 0 ...
+                                  - combobox [ref=f4e770]
+                                - img "down" [ref=f4e772]
+                                - img "close-circle" [ref=f4e776] [cursor=pointer]
+                            - button [ref=f4e780] [cursor=pointer]:
+                              - img "delete" [ref=f4e782]
+                          - button "plus Thêm phương pháp Đánh giá quá trình (Formative)" [ref=f4e785] [cursor=pointer]:
+                            - img "plus" [ref=f4e787]
+                            - generic [ref=f4e791]: Thêm phương pháp Đánh giá quá trình (Formative)
+                      - generic [ref=f4e792]:
+                        - generic [ref=f4e793]:
+                          - generic [ref=f4e794]: Đánh giá giữa kỳ (Midterm)
+                          - generic [ref=f4e795]: "Tổng: 30%"
+                        - generic [ref=f4e797]:
+                          - generic [ref=f4e799]:
+                            - generic [ref=f4e800]:
+                              - generic [ref=f4e801]: Phương pháp
+                              - 'textbox "VD: Thi tự luận" [ref=f4e802]': Kiểm tra thực hành giữa kỳ
+                            - generic [ref=f4e803]:
+                              - generic [ref=f4e804]: Thời gian
+                              - generic [ref=f4e805]:
+                                - img "clock-circle" [ref=f4e807]
+                                - 'textbox "VD: 60 phút" [ref=f4e811]': Tuần 8
+                            - generic [ref=f4e812]:
+                              - generic [ref=f4e813]: Trọng số
+                              - generic [ref=f4e814]:
+                                - generic [ref=f4e815]:
+                                  - spinbutton "0" [ref=f4e816]: "30"
+                                  - generic:
+                                    - button "Increase Value" [ref=f4e817] [cursor=pointer]:
+                                      - img "up" [ref=f4e818]
+                                    - button "Decrease Value" [ref=f4e821] [cursor=pointer]:
+                                      - img "down" [ref=f4e822]
+                                - img "percentage" [ref=f4e826]
+                            - generic [ref=f4e829]:
+                              - generic [ref=f4e830]: Đánh giá CLO
+                              - generic [ref=f4e831]:
+                                - generic [ref=f4e832]:
+                                  - generic: CLO1.1
+                                  - generic: CLO1.2
+                                  - generic: CLO1.3
+                                  - generic "+ 3 ..." [ref=f4e834]
+                                  - combobox [ref=f4e837]
+                                - img "down" [ref=f4e839]
+                                - img "close-circle" [ref=f4e843] [cursor=pointer]
+                            - button [ref=f4e847] [cursor=pointer]:
+                              - img "delete" [ref=f4e849]
+                          - button "plus Thêm phương pháp Đánh giá giữa kỳ (Midterm)" [ref=f4e852] [cursor=pointer]:
+                            - img "plus" [ref=f4e854]
+                            - generic [ref=f4e858]: Thêm phương pháp Đánh giá giữa kỳ (Midterm)
+                      - generic [ref=f4e859]:
+                        - generic [ref=f4e860]:
+                          - generic [ref=f4e861]: Đánh giá cuối kỳ (Summative)
+                          - generic [ref=f4e862]: "Tổng: 50%"
+                        - generic [ref=f4e864]:
+                          - generic [ref=f4e866]:
+                            - generic [ref=f4e867]:
+                              - generic [ref=f4e868]: Phương pháp
+                              - 'textbox "VD: Thi tự luận" [ref=f4e869]': Thi cuối kỳ (Tự luận)
+                            - generic [ref=f4e870]:
+                              - generic [ref=f4e871]: Thời gian
+                              - generic [ref=f4e872]:
+                                - img "clock-circle" [ref=f4e874]
+                                - 'textbox "VD: 60 phút" [ref=f4e878]': Theo lịch nhà trường
+                            - generic [ref=f4e879]:
+                              - generic [ref=f4e880]: Trọng số
+                              - generic [ref=f4e881]:
+                                - generic [ref=f4e882]:
+                                  - spinbutton "0" [ref=f4e883]: "50"
+                                  - generic:
+                                    - button "Increase Value" [ref=f4e884] [cursor=pointer]:
+                                      - img "up" [ref=f4e885]
+                                    - button "Decrease Value" [ref=f4e888] [cursor=pointer]:
+                                      - img "down" [ref=f4e889]
+                                - img "percentage" [ref=f4e893]
+                            - generic [ref=f4e896]:
+                              - generic [ref=f4e897]: Đánh giá CLO
+                              - generic [ref=f4e898]:
+                                - generic [ref=f4e899]:
+                                  - generic "CLO1.4" [ref=f4e901]:
+                                    - generic [aria-hidden] [ref=f4e903] [cursor=pointer]
+                                  - generic: + 0 ...
+                                  - combobox [ref=f4e908]
+                                - img "down" [ref=f4e910]
+                                - img "close-circle" [ref=f4e914] [cursor=pointer]
+                            - button [ref=f4e918] [cursor=pointer]:
+                              - img "delete" [ref=f4e920]
+                          - button "plus Thêm phương pháp Đánh giá cuối kỳ (Summative)" [ref=f4e923] [cursor=pointer]:
+                            - img "plus" [ref=f4e925]
+                            - generic [ref=f4e929]: Thêm phương pháp Đánh giá cuối kỳ (Summative)
+                - generic [ref=f4e931]:
+                  - generic [ref=f4e932]: 7. Kế hoạch giảng dạy
+                  - generic [ref=f4e936]:
+                    - generic [ref=f4e937]:
+                      - generic [ref=f4e938]:
+                        - generic [ref=f4e939]:
+                          - generic [ref=f4e940]:
+                            - generic [ref=f4e941]: Định mức giờ giảng dạy (Quy định BR-05)
+                            - generic [ref=f4e942]: Lệch 61% (>20%)
+                          - generic [ref=f4e943]:
+                            - text: "Số tín chỉ: 4 LT + 2 TH | Định mức quy định:"
+                            - strong [ref=f4e944]: 120 giờ
+                        - generic [ref=f4e945]:
+                          - generic [ref=f4e946]: "Offline: 23h"
+                          - generic [ref=f4e947]: "Online: 24h"
+                          - generic [ref=f4e948]: "Tổng: 47h / 120h"
+                      - generic [ref=f4e949]: "* Cảnh báo BR-05: Tổng số giờ giảng dạy (47h) đang lệch quá 20% so với định mức tín chỉ (120h). Vui lòng điều chỉnh số giờ của các buổi học cho phù hợp."
+                    - generic [ref=f4e950]:
+                      - generic [ref=f4e951]: Lớp buổi sáng
+                      - generic [ref=f4e953]:
+                        - button "collapsed Buổi học 1 delete" [ref=f4e956] [cursor=pointer]:
+                          - img "collapsed" [ref=f4e958]
+                          - generic [ref=f4e961]: Buổi học 1
+                          - img "delete" [ref=f4e965]
+                        - button "plus Thêm buổi học (Lớp buổi sáng)" [ref=f4e968] [cursor=pointer]:
+                          - img "plus" [ref=f4e970]
+                          - generic [ref=f4e974]: Thêm buổi học (Lớp buổi sáng)
+                    - generic [ref=f4e975]:
+                      - generic [ref=f4e976]: Lớp buổi chiều
+                      - generic [ref=f4e978]:
+                        - button "collapsed Buổi học 1 delete" [ref=f4e981] [cursor=pointer]:
+                          - img "collapsed" [ref=f4e983]
+                          - generic [ref=f4e986]: Buổi học 1
+                          - img "delete" [ref=f4e990]
+                        - button "plus Thêm buổi học (Lớp buổi chiều)" [ref=f4e993] [cursor=pointer]:
+                          - img "plus" [ref=f4e995]
+                          - generic [ref=f4e999]: Thêm buổi học (Lớp buổi chiều)
+    - contentinfo [ref=f4e1000]:
+      - strong [ref=f4e1002]: Hệ thống quản lý đề cương môn học
+      - generic [ref=f4e1004]:
+        - generic [ref=f4e1005]: Trường Đại học Mở Thành phố Hồ Chí Minh
+        - generic [ref=f4e1006]: © 2026 - Bản quyền thuộc về Tôi Syllabus
+  - generic [ref=f4e1015]:
+    - generic [ref=f4e1018] [cursor=pointer]:
+      - text: PLO1
+      - generic [ref=f4e1019]: "- Kiến thức cơ bản về toán học và khoa học tự nhiên."
+    - generic [ref=f4e1022] [cursor=pointer]:
+      - text: PLO2
+      - generic [ref=f4e1023]: "- Kiến thức nền tảng về CNTT và lập trình."
+    - generic [ref=f4e1030] [cursor=pointer]:
+      - text: PLO3
+      - generic [ref=f4e1031]: "- Khả năng phân tích hệ thống và thiết kế giải thuật."
+    - generic [ref=f4e1038] [cursor=pointer]:
+      - text: PLO4
+      - generic [ref=f4e1039]: "- Kỹ năng giải quyết vấn đề và tư duy logic."
+    - generic [ref=f4e1042] [cursor=pointer]:
+      - text: PLO5
+      - generic [ref=f4e1043]: "- test"
+    - generic [ref=f4e1046] [cursor=pointer]:
+      - text: PLO9
+      - generic [ref=f4e1047]: "- Khả năng sử dụng các công cụ hiện đại và ngôn ngữ lập trình."
+    - generic [ref=f4e1050] [cursor=pointer]:
+      - text: PLO10
+      - generic [ref=f4e1051]: "- Khả năng làm việc nhóm và đạo đức nghề nghiệp."

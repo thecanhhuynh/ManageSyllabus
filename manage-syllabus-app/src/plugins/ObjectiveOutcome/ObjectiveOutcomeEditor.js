@@ -1,7 +1,8 @@
-import React, {useState, memo} from "react";
-import {Input, Button, Row, Col, Tooltip} from "antd";
+import React, {useState, useEffect, useMemo, memo} from "react";
+import {Input, Button, Row, Col, Tooltip, Tag} from "antd";
 import {PlusOutlined, DeleteOutlined} from "@ant-design/icons";
 import {endpoints} from "../../config/Apis";
+import {AppServices} from "../../services/AppServices";
 import {useSyllabusStore} from "../../store/useSyllabusStore";
 import LazySelect from "../../components/common/LazySelect";
 
@@ -14,6 +15,7 @@ const ObjectiveOutcomeItem = ({
   coCustomCols = [],
   customValues = {},
   updateCustomValue,
+  allPlosMap = {},
   onChange,
   onRemove,
 }) => {
@@ -30,12 +32,86 @@ const ObjectiveOutcomeItem = ({
     });
   };
 
-  const handlePloChange = (selectedIds) => {
+  const handlePloChange = (selectedIds, selectedOptions) => {
+    const updatedPlos = selectedIds.map((id) => {
+      const foundInSelected = Array.isArray(selectedOptions)
+        ? selectedOptions.find((o) => String(o.value) === String(id))
+        : null;
+      if (foundInSelected?.raw) {
+        return foundInSelected.raw;
+      }
+      if (allPlosMap[id]) {
+        return allPlosMap[id];
+      }
+      const existing = Array.isArray(itemData.programme_learning_outcomes)
+        ? itemData.programme_learning_outcomes.find(
+            (p) => String(typeof p === "object" ? p.id : p) === String(id),
+          )
+        : null;
+      if (existing && typeof existing === "object") {
+        return existing;
+      }
+      return {id};
+    });
+
     onChange({
       ...itemData,
-      programme_learning_outcomes: selectedIds.map((id) => ({id})),
+      programme_learning_outcomes: updatedPlos,
     });
   };
+
+  const renderPloTag = (props) => {
+    const {label, value, closable, onClose, isMaxTag} = props;
+    if (isMaxTag || value === undefined) {
+      return (
+        <Tag
+          closable={false}
+          className="inline-flex items-center text-xs font-medium px-1.5 py-0.5 mr-1 bg-gray-100 text-gray-600 border-gray-300"
+          style={{borderRadius: 4}}
+        >
+          {label}
+        </Tag>
+      );
+    }
+
+    const plo =
+      allPlosMap[value] ||
+      (itemData.programme_learning_outcomes || []).find(
+        (p) => (typeof p === "object" ? p.id : p) === value,
+      );
+    const shortTitle =
+      plo?.name || (String(value).startsWith("PLO") ? value : `PLO${value}`);
+    const description =
+      plo?.description || (typeof label === "string" ? label : "");
+
+    const onPreventMouseDown = (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+    };
+
+    return (
+      <Tooltip title={description} placement="top">
+        <Tag
+          closable={closable}
+          onClose={onClose}
+          onMouseDown={onPreventMouseDown}
+          className="inline-flex items-center text-xs font-semibold px-2 py-0.5 mr-1 bg-blue-50 text-blue-700 border-blue-200"
+          style={{borderRadius: 4}}
+        >
+          {shortTitle}
+        </Tag>
+      </Tooltip>
+    );
+  };
+
+  const renderPloOption = (plo) => (
+    <Tooltip title={plo.description} placement="right">
+      <div className="py-0.5">
+        <span className="font-bold text-blue-600 mr-1.5">{plo.name}</span>
+        <span className="text-gray-600 text-xs">- {plo.description}</span>
+      </div>
+    </Tooltip>
+  );
 
   const rowId = itemData.id || `co_${index}`;
 
@@ -69,16 +145,12 @@ const ObjectiveOutcomeItem = ({
             endpoint={endpoints["programme-learning-outcomes"]}
             labelField="name"
             value={currentPloIds}
+            initialOptions={itemData.programme_learning_outcomes || []}
             onChange={handlePloChange}
+            tagRenderer={renderPloTag}
+            optionRenderer={renderPloOption}
             maxTagCount="responsive"
             className="w-full rounded-md font-normal text-gray-700"
-            optionRenderer={(plo) => (
-              <Tooltip title={plo.description} placement="right">
-                <span>
-                  {plo.name} - {plo.description?.substring(0, 30)}...
-                </span>
-              </Tooltip>
-            )}
           />
         </Col>
 
@@ -141,6 +213,35 @@ const ObjectiveOutcomeEditor = ({item, basePath}) => {
   const customValues = useSyllabusStore((state) => state.customValues) || {};
   const updateCustomValue = useSyllabusStore((state) => state.updateCustomValue);
 
+  const [allPlos, setAllPlos] = useState([]);
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchPLOs = async () => {
+      try {
+        const res = await AppServices.getPLOs({page_size: 100});
+        const dataArray = res.data?.results || res.data || [];
+        if (isMounted) {
+          setAllPlos(dataArray);
+        }
+      } catch (error) {
+        console.error("Lỗi tải danh sách PLO:", error);
+      }
+    };
+    fetchPLOs();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const allPlosMap = useMemo(() => {
+    const map = {};
+    allPlos.forEach((plo) => {
+      map[plo.id] = plo;
+    });
+    return map;
+  }, [allPlos]);
+
   const coCustomCols = customColumns.filter(
     (col) =>
       (col.table_code === "objective_outcomes" ||
@@ -181,6 +282,7 @@ const ObjectiveOutcomeEditor = ({item, basePath}) => {
             coCustomCols={coCustomCols}
             customValues={customValues}
             updateCustomValue={updateCustomValue}
+            allPlosMap={allPlosMap}
             onChange={(updated) => handleItemChange(index, updated)}
             onRemove={() => handleRemoveItem(index)}
           />

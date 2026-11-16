@@ -35,6 +35,8 @@ const LazySelect = ({
   valueField = "id",
   initialLabel = "",
   initialOption = null,
+  initialOptions = [],
+  tagRenderer = null,
   debounceMs = DEFAULT_DEBOUNCE_MS,
   placeholder = "Vui lòng chọn...",
   allowClear = true,
@@ -171,6 +173,16 @@ const LazySelect = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [extraParams]);
 
+  useEffect(() => {
+    if (hasLoadedOnce) return;
+    const hasValue = Array.isArray(value)
+      ? value.length > 0
+      : value !== undefined && value !== null && value !== "";
+    if (hasValue) {
+      loadData(1, "", true);
+    }
+  }, [value, hasLoadedOnce, loadData]);
+
   const selectOptions = useMemo(() => {
     const list = items
       .map((item) =>
@@ -188,11 +200,31 @@ const LazySelect = ({
       );
       if (missingValues.length === 0) return list;
 
-      const fallbackOptions = missingValues.map((val) => ({
-        value: val,
-        label: `Mục #${val}`,
-        raw: null,
-      }));
+      const fallbackOptions = missingValues.map((val) => {
+        const foundInitial = Array.isArray(initialOptions)
+          ? initialOptions.find((opt) => {
+              const optVal =
+                opt[valueField] ?? opt.id ?? opt.value ?? opt.code;
+              return String(optVal) === String(val);
+            })
+          : null;
+
+        if (foundInitial) {
+          const formatted = formatOptionItem(
+            foundInitial,
+            labelField,
+            valueField,
+            optionRenderer,
+          );
+          if (formatted) return formatted;
+        }
+
+        return {
+          value: val,
+          label: String(val).startsWith("PLO") ? String(val) : `Mục #${val}`,
+          raw: null,
+        };
+      });
       return [...fallbackOptions, ...list];
     }
 
@@ -214,6 +246,7 @@ const LazySelect = ({
     value,
     initialLabel,
     initialOption,
+    initialOptions,
     labelField,
     valueField,
     optionRenderer,
@@ -255,6 +288,7 @@ const LazySelect = ({
       mode={mode}
       value={value}
       onChange={onChange}
+      tagRender={tagRenderer || undefined}
       onDropdownVisibleChange={handleDropdownVisibleChange}
       onPopupScroll={handlePopupScroll}
       onSearch={handleSearch}
@@ -276,6 +310,8 @@ LazySelect.propTypes = {
   valueField: PropTypes.string,
   initialLabel: PropTypes.string,
   initialOption: PropTypes.object,
+  initialOptions: PropTypes.array,
+  tagRenderer: PropTypes.func,
   debounceMs: PropTypes.number,
   placeholder: PropTypes.string,
   allowClear: PropTypes.bool,
