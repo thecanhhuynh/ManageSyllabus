@@ -13,6 +13,7 @@ import {
 import {
   TABLE_DEFAULT_COLUMNS,
   DEFAULT_COLUMN_LABELS,
+  DEFAULT_COLUMN_WIDTH_FORMULAS,
   ADMINISTRATIVE_COLORS,
   NESTED_TABLE_LEVELS,
   UNSUPPORTED_CUSTOM_COLUMN,
@@ -75,7 +76,7 @@ const BlockFormatDrawer = ({
       (block.config || {}).code ||
       block.code?.toLowerCase();
     const filtered = (customColumns || []).filter(
-      (c) => !c.table_code || c.table_code === resolvedCode,
+      (c) => Boolean(c.table_code && c.table_code === resolvedCode),
     );
     setDraftCustomColumns(filtered);
   }, [block, customColumns]);
@@ -93,9 +94,11 @@ const BlockFormatDrawer = ({
     setDisplayType((block.config || {}).display_type || "TABLE");
     setTextFormat((block.config || {}).text_format || "INLINE");
     setColumnOverrides((block.config || {}).column_overrides || {});
-    setColumnWidthFormula((block.config || {}).column_widths_formula || "");
-    setCellAlignments((block.config || {}).cell_alignments || {});
     const resolvedCode = (block.config || {}).table_code || (block.config || {}).code || block.code?.toLowerCase();
+    const savedFormula = (block.config || {}).column_widths_formula;
+    const defaultFormula = DEFAULT_COLUMN_WIDTH_FORMULAS[resolvedCode] || "";
+    setColumnWidthFormula(savedFormula || defaultFormula);
+    setCellAlignments((block.config || {}).cell_alignments || {});
     const existingLabels = blockLayout?.label_overrides?.[resolvedCode] || {};
     setTableLabelOverrides({ ...existingLabels });
   }, [block, blockLayout]);
@@ -177,7 +180,7 @@ const BlockFormatDrawer = ({
   })();
 
   const tableCustomCols = (draftCustomColumns || []).filter(
-    (col) => !col.table_code || col.table_code === tableCode
+    (col) => Boolean(col.table_code && col.table_code === tableCode)
   );
 
   const columnsMetadata = [
@@ -203,11 +206,12 @@ const BlockFormatDrawer = ({
 
   const handleUpdateColumnLabel = (colMeta, newLabel) => {
     if (!colMeta.isCustom) {
+      const colKey = colMeta.key || `col_${colMeta.ci}`;
       const next = { ...tableLabelOverrides };
       if (!newLabel || !newLabel.trim()) {
-        delete next[colMeta.key];
+        delete next[colKey];
       } else {
-        next[colMeta.key] = newLabel;
+        next[colKey] = newLabel;
       }
       setTableLabelOverrides(next);
       return;
@@ -217,8 +221,9 @@ const BlockFormatDrawer = ({
 
   const handleResetColumnLabel = (colMeta) => {
     if (colMeta.isCustom) return;
+    const colKey = colMeta.key || `col_${colMeta.ci}`;
     const next = { ...tableLabelOverrides };
-    delete next[colMeta.key];
+    delete next[colKey];
     setTableLabelOverrides(next);
     message.info(`Đã khôi phục tiêu đề cột "${colMeta.defaultLabel}" về mặc định.`);
   };
@@ -296,17 +301,20 @@ const BlockFormatDrawer = ({
     const cfg = block.config || {};
     if (isDisplayTypeSupported && (cfg.display_type || "TABLE") !== displayType) return true;
     if (isDisplayTypeSupported && tableCode === "credit" && (cfg.text_format || "INLINE") !== textFormat) return true;
-    if ((cfg.column_widths_formula || "") !== columnWidthFormula) return true;
+    const resolvedCode = cfg.table_code || cfg.code || block.code?.toLowerCase();
+    const savedFormula = (cfg.column_widths_formula || "").trim();
+    const defaultFormula = (DEFAULT_COLUMN_WIDTH_FORMULAS[resolvedCode] || "").trim();
+    const effectiveInitialFormula = savedFormula || defaultFormula;
+    if ((columnWidthFormula || "").trim() !== effectiveInitialFormula) return true;
     if (!areObjectsEqual(cellAlignments, cfg.cell_alignments || {})) return true;
     if (!areObjectsEqual(columnOverrides, cfg.column_overrides || {})) return true;
 
-    const resolvedCode = cfg.table_code || cfg.code || block.code?.toLowerCase();
     const initLabels = blockLayout?.label_overrides?.[resolvedCode] || {};
     if (!areObjectsEqual(tableLabelOverrides, initLabels)) return true;
 
     if (draftCustomColumns.some((c) => c.is_draft || c.is_dirty)) return true;
     const initialCustomCount = (customColumns || []).filter(
-      (c) => !c.table_code || c.table_code === resolvedCode
+      (c) => Boolean(c.table_code && c.table_code === resolvedCode)
     ).length;
     if (draftCustomColumns.length !== initialCustomCount) return true;
 
@@ -464,8 +472,7 @@ const BlockFormatDrawer = ({
         </div>
       }
       placement="right"
-      width="min(90vw, 1200px)"
-      style={{ maxWidth: 1200 }}
+      width="100%"
       styles={{ body: { padding: 16 } }}
       open={open !== undefined ? open : visible}
       destroyOnClose
@@ -552,6 +559,8 @@ const BlockFormatDrawer = ({
               <Divider className="my-3" />
               <TableColumnWidthControl
                 columns={effectiveTableCols}
+                tableCode={tableCode}
+                defaultFormula={DEFAULT_COLUMN_WIDTH_FORMULAS[tableCode] || ""}
                 value={columnWidthFormula}
                 onChange={setColumnWidthFormula}
               />

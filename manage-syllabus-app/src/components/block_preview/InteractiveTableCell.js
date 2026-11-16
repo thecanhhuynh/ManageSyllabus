@@ -119,7 +119,9 @@ const HeaderCellWrapper = ({
     }}
     getPopupContainer={(trigger) =>
       trigger.closest(".preview-container") ||
+      trigger.closest(".ant-drawer-content-wrapper") ||
       trigger.closest(".ant-drawer-body") ||
+      trigger.parentElement ||
       document.body
     }
     content={
@@ -175,7 +177,9 @@ const StandardCellWrapper = ({
       }}
       getPopupContainer={(trigger) =>
         trigger.closest(".preview-container") ||
+        trigger.closest(".ant-drawer-content-wrapper") ||
         trigger.closest(".ant-drawer-body") ||
+        trigger.parentElement ||
         document.body
       }
       title={popoverTitle}
@@ -253,6 +257,48 @@ export const CellInnerWrapper = ({
   );
 };
 
+export const resolveHeaderColumnMeta = ({
+  isHeaderRow,
+  isSpanningHeader,
+  isBadgeCell,
+  columnsMetadata,
+  effectiveCi,
+  cellText,
+}) => {
+  if (!isHeaderRow || isSpanningHeader || isBadgeCell) return null;
+
+  const normalizedText = (cellText || "").trim();
+  const matched = columnsMetadata
+    ? (columnsMetadata.find((c) => c.ci === effectiveCi) ||
+       columnsMetadata.find(
+         (c) =>
+           c.defaultLabel &&
+           normalizedText &&
+           (normalizedText.toLowerCase().includes(c.defaultLabel.toLowerCase()) ||
+            c.defaultLabel.toLowerCase().includes(normalizedText.toLowerCase()))
+       ) ||
+       columnsMetadata[effectiveCi])
+    : null;
+
+  if (matched) {
+    const rawDefault = matched.isCustom ? matched.defaultLabel : (normalizedText || matched.defaultLabel);
+    return {
+      ...matched,
+      defaultLabel: rawDefault,
+      currentLabel: matched.isModified ? matched.currentLabel : rawDefault,
+    };
+  }
+
+  return {
+    ci: effectiveCi,
+    key: `col_${effectiveCi}`,
+    defaultLabel: normalizedText || `Cột ${effectiveCi + 1}`,
+    currentLabel: normalizedText || `Cột ${effectiveCi + 1}`,
+    isModified: false,
+    isCustom: false,
+  };
+};
+
 export const resolveCellAlign = (
   cellAlignments,
   ri,
@@ -320,17 +366,14 @@ export const InteractiveTableCell = ({
   const isBadgeCell = /^\s*\(\d+\)\s*$/.test(cell.text || "");
   const isHeaderRow = ri === 0 || cell.is_header;
 
-  const colMeta =
-    isHeaderRow && !isSpanningHeader && !isBadgeCell && columnsMetadata
-      ? (columnsMetadata.find((c) => c.ci === effectiveCi) ||
-         columnsMetadata.find(
-           (c) =>
-             c.defaultLabel &&
-             cell.text &&
-             cell.text.toLowerCase().includes(c.defaultLabel.toLowerCase())
-         ) ||
-         columnsMetadata[effectiveCi])
-      : null;
+  const colMeta = resolveHeaderColumnMeta({
+    isHeaderRow,
+    isSpanningHeader,
+    isBadgeCell,
+    columnsMetadata,
+    effectiveCi,
+    cellText: cell.text,
+  });
 
   const overrideText =
     colMeta && (colMeta.isCustom || colMeta.isModified)

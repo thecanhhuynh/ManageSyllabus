@@ -234,32 +234,39 @@ class TableManager:
         if not getattr(table, "columns", None) or len(table.columns) == 0:
             return
         col_count = len(table.columns)
-        weights = None
-        if formula and isinstance(formula, str):
-            tokens = re.findall(r"\d+(?:\.\d+)?", formula)
-            parsed = [float(t) for t in tokens if float(t) > 0]
-            if len(parsed) == col_count and sum(parsed) > 0:
-                weights = parsed
-
         is_schedule = table_code in APPEND_ALL_TABLES or col_count >= 11
         printable_width = cls.PRINTABLE_LANDSCAPE_TABLE_WIDTH if is_schedule else cls.PRINTABLE_TABLE_WIDTH
+        weights = cls._resolve_weights(formula, col_count, is_schedule)
 
         if not weights:
-            if is_schedule:
-                base = list(cls.SCHEDULE_BASE_WEIGHTS)
-                if col_count > len(base):
-                    base.extend([1200] * (col_count - len(base)))
-                weights = base[:col_count]
-            else:
-                col_width = int(printable_width / col_count)
-                col_widths = [col_width] * col_count
-
-        if weights:
+            col_width = int(printable_width / col_count)
+            col_widths = [col_width] * col_count
+        else:
             total_w = sum(weights)
             col_widths = [int(printable_width * (w / total_w)) for w in weights]
 
         table.autofit = False
         cls._apply_widths_to_cells(table, col_widths)
+
+    @classmethod
+    def _resolve_weights(cls, formula: str | None, col_count: int, is_schedule: bool) -> list[float] | None:
+        if formula and isinstance(formula, str):
+            tokens = re.findall(r"\d+(?:\.\d+)?", formula)
+            parsed = [float(t) for t in tokens if float(t) > 0]
+            if len(parsed) == col_count and sum(parsed) > 0:
+                return parsed
+            if 0 < len(parsed) < col_count:
+                extra = 1.2 if is_schedule else (sum(parsed) / len(parsed))
+                parsed.extend([extra] * (col_count - len(parsed)))
+                return parsed
+            if len(parsed) > col_count > 0:
+                return parsed[:col_count]
+        if is_schedule:
+            base = list(cls.SCHEDULE_BASE_WEIGHTS)
+            if col_count > len(base):
+                base.extend([1200] * (col_count - len(base)))
+            return base[:col_count]
+        return None
 
     @staticmethod
     def _apply_widths_to_cells(table, col_widths: list) -> None:
@@ -290,18 +297,21 @@ class TableManager:
             "col_index": ["stt", "no."],
             "col_name": ["môn học điều kiện", "requirements"],
             "col_code": ["mã môn", "code"],
-            "col_type": ["loại", "type"],
+        },
+        "objective_outcomes": {
+            "col_objective": ["mục tiêu", "objective"],
+            "col_content": ["mô tả", "content", "nội dung"],
+            "col_plo": ["plo", "cđr ctđt"],
         },
         "objectives_and_outcomes": {
-            "col_index": ["stt", "no."],
-            "col_content": ["mục tiêu", "objective"],
-            "col_plo": ["plo"],
+            "col_objective": ["mục tiêu", "objective"],
+            "col_content": ["mô tả", "content", "nội dung"],
+            "col_plo": ["plo", "cđr ctđt"],
         },
         "course_learning_outcomes": {
             "col_co": ["co", "mục tiêu"],
             "col_clo": ["clo", "cđr môn học"],
             "col_content": ["nội dung", "content"],
-            "col_plo": ["plo"],
         },
         "learning_material": {
             "col_index": ["stt", "no."],
@@ -310,18 +320,37 @@ class TableManager:
             "col_type": ["loại", "type"],
         },
         "assessment_method": {
-            "col_index": ["stt", "no."],
             "col_type": ["thành phần đánh giá", "loại đánh giá", "type"],
-            "col_method": ["bài đánh giá", "hình thức", "method"],
+            "col_method": ["bài đánh giá", "hình thức", "method", "assessment methods"],
+            "col_time": ["thời điểm", "time"],
+            "col_clo": ["cđr môn học", "clo"],
+            "col_weight": ["tỷ lệ", "tỉ lệ", "weight", "%"],
+        },
+        "assessment_methods": {
+            "col_type": ["thành phần đánh giá", "loại đánh giá", "type"],
+            "col_method": ["bài đánh giá", "hình thức", "method", "assessment methods"],
             "col_time": ["thời điểm", "time"],
             "col_clo": ["cđr môn học", "clo"],
             "col_weight": ["tỷ lệ", "tỉ lệ", "weight", "%"],
         },
         "teaching_schedule": {
-            "col_session": ["buổi", "session", "tuần"],
+            "col_session": ["buổi", "session", "tuần", "week"],
             "col_content": ["nội dung", "content"],
             "col_clo": ["cđr môn học", "clo"],
-            "col_self_act": ["tự học (hđ)", "tự học"],
+            "col_self_act": ["tự học (hđ)", "tự học", "self-study"],
+            "col_self_hrs": ["tự học (giờ)"],
+            "col_ftf_act": ["trực tiếp (hđ)", "trực tiếp", "ftf"],
+            "col_ftf_hrs": ["trực tiếp (giờ)"],
+            "col_online_act": ["trực tuyến (hđ)", "trực tuyến", "online"],
+            "col_online_hrs": ["trực tuyến (giờ)"],
+            "col_assessment": ["bài đánh giá", "đánh giá", "student assessment", "assessment"],
+            "col_material": ["tài liệu", "học liệu", "textbook", "material"],
+        },
+        "teaching_sessions": {
+            "col_session": ["buổi", "session", "tuần", "week"],
+            "col_content": ["nội dung", "content"],
+            "col_clo": ["cđr môn học", "clo"],
+            "col_self_act": ["tự học (hđ)", "tự học", "self-study"],
             "col_self_hrs": ["tự học (giờ)"],
             "col_ftf_act": ["trực tiếp (hđ)", "trực tiếp", "ftf"],
             "col_ftf_hrs": ["trực tiếp (giờ)"],
@@ -343,10 +372,14 @@ class TableManager:
             "col_index": 0,
             "col_name": 1,
             "col_code": 2,
-            "col_type": 3,
+        },
+        "objective_outcomes": {
+            "col_objective": 0,
+            "col_content": 1,
+            "col_plo": 2,
         },
         "objectives_and_outcomes": {
-            "col_index": 0,
+            "col_objective": 0,
             "col_content": 1,
             "col_plo": 2,
         },
@@ -354,7 +387,6 @@ class TableManager:
             "col_co": 0,
             "col_clo": 1,
             "col_content": 2,
-            "col_plo": 3,
         },
         "learning_material": {
             "col_index": 0,
@@ -369,7 +401,27 @@ class TableManager:
             "col_clo": 3,
             "col_weight": 4,
         },
+        "assessment_methods": {
+            "col_type": 0,
+            "col_method": 1,
+            "col_time": 2,
+            "col_clo": 3,
+            "col_weight": 4,
+        },
         "teaching_schedule": {
+            "col_session": 0,
+            "col_content": 1,
+            "col_clo": 2,
+            "col_self_act": 3,
+            "col_self_hrs": 4,
+            "col_ftf_act": 5,
+            "col_ftf_hrs": 6,
+            "col_online_act": 7,
+            "col_online_hrs": 8,
+            "col_assessment": 9,
+            "col_material": 10,
+        },
+        "teaching_sessions": {
             "col_session": 0,
             "col_content": 1,
             "col_clo": 2,
@@ -438,7 +490,11 @@ class TableManager:
 
         col_patterns = cls.COLUMN_KEY_PATTERNS.get(table_code, {})
         for col_idx, cell in enumerate(table.rows[0].cells):
-            key = cls._match_header_key(cell.text, col_patterns) or cls._get_key_by_index(key_map, col_idx)
+            key = (
+                cls._match_header_key(cell.text, col_patterns)
+                or cls._get_key_by_index(key_map, col_idx)
+                or f"col_{col_idx}"
+            )
             if not key or key not in overrides:
                 continue
             cls._update_cell_text(cell, str(overrides[key]))

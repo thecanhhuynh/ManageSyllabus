@@ -1,4 +1,5 @@
 """XML helper functions cho DOCX rendering."""
+import copy
 import re
 from lxml import etree
 
@@ -162,12 +163,41 @@ def _prepend_position_to_xml(xml_string: str, position: int | None) -> str:
         return xml_string
 
 
+def _split_placeholder_run(p: etree._Element, run: etree._Element, text: str) -> etree._Element | None:
+    idx = text.find("{{")
+    if idx <= 0:
+        return None
+    title_text = text[:idx]
+    content_text = text[idx:]
+
+    t_els = run.findall(f"{{{W_NS}}}t")
+    if not t_els:
+        return None
+    t_els[0].text = title_text
+    for extra_t in t_els[1:]:
+        run.remove(extra_t)
+
+    new_run = copy.deepcopy(run)
+    new_t = new_run.find(f"{{{W_NS}}}t")
+    if new_t is not None:
+        new_t.text = content_text
+
+    run_idx = list(p).index(run)
+    p.insert(run_idx + 1, new_run)
+    return new_run
+
+
 def _split_runs_by_role(p: etree._Element) -> tuple[list, list]:
     title_runs = []
     content_runs = []
-    for run in p.findall(f"{{{W_NS}}}r"):
+    for run in list(p.findall(f"{{{W_NS}}}r")):
         text = "".join(t.text or "" for t in run.findall(f"{{{W_NS}}}t"))
         if "{{" in text and "}}" in text:
+            new_run = _split_placeholder_run(p, run, text)
+            if new_run is not None:
+                title_runs.append(run)
+                content_runs.append(new_run)
+                continue
             content_runs.append(run)
             continue
         title_runs.append(run)
