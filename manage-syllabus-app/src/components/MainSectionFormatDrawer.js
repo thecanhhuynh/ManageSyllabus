@@ -48,6 +48,12 @@ const toRoman = (num) => {
   return res;
 };
 
+const MOBILE_VIEW_TABS = [
+  { label: "Chỉnh sửa", value: "editor", icon: <FormatPainterOutlined /> },
+  { label: "Xem trước", value: "preview", icon: <EyeOutlined /> },
+  { label: "Cả hai", value: "both" },
+];
+
 const MainSectionFormatDrawer = ({
   open,
   mainSection,
@@ -62,6 +68,7 @@ const MainSectionFormatDrawer = ({
   const [style, setStyle] = useState({});
   const [saving, setSaving] = useState(false);
   const [previewLoading, setPreviewLoading] = useState(false);
+  const [mobileViewTab, setMobileViewTab] = useState("editor");
 
   useEffect(() => {
     if (open && mainSection?.id) {
@@ -137,16 +144,28 @@ const MainSectionFormatDrawer = ({
       open={open}
       onClose={onClose}
       extra={
-        onPreview ? (
+        <div className="flex items-center gap-2">
+          {onPreview && (
+            <Button
+              icon={<EyeOutlined />}
+              loading={previewLoading}
+              onClick={handlePreview}
+              size="small"
+            >
+              Xem trước
+            </Button>
+          )}
           <Button
-            icon={<EyeOutlined />}
-            loading={previewLoading}
-            onClick={handlePreview}
+            type="primary"
             size="small"
+            loading={saving}
+            disabled={!isDirty}
+            onClick={handleSave}
+            className="lg:hidden"
           >
-            Xem trước
+            Lưu
           </Button>
-        ) : null
+        </div>
       }
       footer={
         <div className="flex items-center justify-between">
@@ -172,8 +191,35 @@ const MainSectionFormatDrawer = ({
         </div>
       }
     >
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-full">
-        <div className="space-y-4 overflow-y-auto pr-1">
+      <div className="lg:hidden mb-3">
+        <div className="grid grid-cols-3 p-1 bg-[#f0f2f5] rounded-lg border border-[#d9d9d9] gap-1 w-full">
+          {MOBILE_VIEW_TABS.map((tab) => {
+            const isSelected = mobileViewTab === tab.value;
+            return (
+              <button
+                key={tab.value}
+                type="button"
+                onClick={() => setMobileViewTab(tab.value)}
+                className={`py-1 text-xs rounded-[6px] transition-all text-center cursor-pointer select-none flex items-center justify-center gap-1.5 ${
+                  isSelected
+                    ? "bg-white text-[#1677ff] border border-[#d9d9d9] shadow-xs font-semibold"
+                    : "bg-transparent text-[#595959] border border-transparent hover:text-[#1677ff] font-medium"
+                }`}
+              >
+                {tab.icon && <span className="text-[11px]">{tab.icon}</span>}
+                <span>{tab.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="flex flex-col lg:grid lg:grid-cols-2 gap-6 lg:h-full min-h-0">
+        <div
+          className={`space-y-4 overflow-y-auto pr-1 ${
+            mobileViewTab === "preview" ? "hidden lg:block" : "block"
+          }`}
+        >
           <div className="text-xs font-bold uppercase text-gray-500 mb-2">
             Định dạng tiêu đề mục (Heading)
           </div>
@@ -187,7 +233,11 @@ const MainSectionFormatDrawer = ({
           </div>
         </div>
 
-        <div className="border-t lg:border-t-0 lg:border-l border-gray-200 pt-4 lg:pt-0 lg:pl-6 flex flex-col min-w-0">
+        <div
+          className={`border-t lg:border-t-0 lg:border-l border-gray-200 pt-4 lg:pt-0 lg:pl-6 flex flex-col min-w-0 ${
+            mobileViewTab === "editor" ? "hidden lg:flex" : "flex"
+          }`}
+        >
           <div className="text-xs font-bold uppercase text-gray-500 mb-3 flex items-center justify-between">
             <span className="flex items-center gap-1.5 text-blue-900 font-semibold">
               <EyeOutlined /> Bản xem trước (Live Preview)

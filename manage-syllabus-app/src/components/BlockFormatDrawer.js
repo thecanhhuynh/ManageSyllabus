@@ -41,6 +41,12 @@ const areObjectsEqual = (a, b) => {
 
 export { StyleControls, DEFAULT_COLUMN_LABELS, ADMINISTRATIVE_COLORS };
 
+const MOBILE_VIEW_TABS = [
+  { label: "Chỉnh sửa", value: "editor", icon: <FormatPainterOutlined /> },
+  { label: "Xem trước", value: "preview", icon: <EyeOutlined /> },
+  { label: "Cả hai", value: "both" },
+];
+
 const BlockFormatDrawer = ({
   open,
   visible,
@@ -66,6 +72,7 @@ const BlockFormatDrawer = ({
   const [editingColumn, setEditingColumn] = useState(null);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [draftCustomColumns, setDraftCustomColumns] = useState([]);
+  const [mobileViewTab, setMobileViewTab] = useState("editor");
 
   const resolvedTemplateId = templateId || block?.template || block?.template_id;
 
@@ -478,11 +485,22 @@ const BlockFormatDrawer = ({
       destroyOnClose
       onClose={onClose}
       extra={
-        onPreview && block ? (
-          <Button icon={<EyeOutlined />} loading={previewLoading} onClick={handlePreview} size="small">
-            Xem trước
+        <div className="flex items-center gap-2">
+          {onPreview && block && (
+            <Button icon={<EyeOutlined />} loading={previewLoading} onClick={handlePreview} size="small">
+              Xem trước
+            </Button>
+          )}
+          <Button
+            type="primary"
+            size="small"
+            onClick={handleSave}
+            disabled={!isDirty}
+            className="lg:hidden"
+          >
+            Lưu
           </Button>
-        ) : null
+        </div>
       }
       footer={
         <DrawerFooterActions
@@ -500,8 +518,35 @@ const BlockFormatDrawer = ({
         />
       }
     >
-      <div className="grid grid-cols-1 lg:grid-cols-10 gap-6 h-full">
-        <div className="lg:col-span-3 space-y-4 overflow-y-auto pr-1">
+      <div className="lg:hidden mb-3">
+        <div className="grid grid-cols-3 p-1 bg-[#f0f2f5] rounded-lg border border-[#d9d9d9] gap-1 w-full">
+          {MOBILE_VIEW_TABS.map((tab) => {
+            const isSelected = mobileViewTab === tab.value;
+            return (
+              <button
+                key={tab.value}
+                type="button"
+                onClick={() => setMobileViewTab(tab.value)}
+                className={`py-1 text-xs rounded-[6px] transition-all text-center cursor-pointer select-none flex items-center justify-center gap-1.5 ${
+                  isSelected
+                    ? "bg-white text-[#1677ff] border border-[#d9d9d9] shadow-xs font-semibold"
+                    : "bg-transparent text-[#595959] border border-transparent hover:text-[#1677ff] font-medium"
+                }`}
+              >
+                {tab.icon && <span className="text-[11px]">{tab.icon}</span>}
+                <span>{tab.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="flex flex-col lg:grid lg:grid-cols-10 gap-6 lg:h-full min-h-0">
+        <div
+          className={`lg:col-span-3 space-y-4 overflow-y-auto pr-1 ${
+            mobileViewTab === "preview" ? "hidden lg:block" : "block"
+          }`}
+        >
           <Collapse defaultActiveKey={["title", "content"]} items={collapseItems} />
 
           {isTableBlock && supportsCustomColumn && (
@@ -568,7 +613,11 @@ const BlockFormatDrawer = ({
           )}
         </div>
 
-        <div className="lg:col-span-7 border-t lg:border-t-0 lg:border-l border-gray-200 pt-4 lg:pt-0 lg:pl-6 flex flex-col min-w-0">
+        <div
+          className={`lg:col-span-7 border-t lg:border-t-0 lg:border-l border-gray-200 pt-4 lg:pt-0 lg:pl-6 flex flex-col min-w-0 ${
+            mobileViewTab === "editor" ? "hidden lg:flex" : "flex"
+          }`}
+        >
           <div className="text-xs font-bold uppercase text-gray-500 mb-3 flex items-center justify-between">
             <span className="flex items-center gap-1.5 text-blue-900 font-semibold">
               <EyeOutlined /> Bản xem trước (Live Preview)

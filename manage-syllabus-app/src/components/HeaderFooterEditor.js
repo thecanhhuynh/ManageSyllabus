@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Button, Space, message, Spin, Tag } from "antd";
+import { isEqual } from "lodash";
 import {
   SaveOutlined,
   ReloadOutlined,
@@ -26,6 +27,7 @@ const HeaderFooterEditor = ({ templateId, onUpdated, onClose }) => {
   const [activeColIdx, setActiveColIdx] = useState(0);
   const [header, setHeader] = useState(DEFAULT_CONFIG.header);
   const [footer, setFooter] = useState(DEFAULT_CONFIG.footer);
+  const [initialConfig, setInitialConfig] = useState(null);
 
   const loadData = async () => {
     if (!templateId) return;
@@ -33,8 +35,11 @@ const HeaderFooterEditor = ({ templateId, onUpdated, onClose }) => {
       setLoading(true);
       const res = await HeaderFooterService.getHeaderFooter(templateId);
       if (res) {
-        setHeader(normalizeHeaderConfig(res));
-        setFooter(normalizeFooterConfig(res));
+        const normHeader = normalizeHeaderConfig(res);
+        const normFooter = normalizeFooterConfig(res);
+        setHeader(normHeader);
+        setFooter(normFooter);
+        setInitialConfig({ header: normHeader, footer: normFooter });
       }
     } catch {
       message.error("Không thể tải cấu hình Header/Footer");
@@ -48,13 +53,19 @@ const HeaderFooterEditor = ({ templateId, onUpdated, onClose }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [templateId]);
 
+  const isDirty = useMemo(() => {
+    if (!initialConfig) return false;
+    return !isEqual(header, initialConfig.header) || !isEqual(footer, initialConfig.footer);
+  }, [header, footer, initialConfig]);
+
   const handleSave = async () => {
-    if (!templateId) return;
+    if (!templateId || !isDirty) return;
     try {
       setSaving(true);
       const payload = { header, footer };
       await HeaderFooterService.updateHeaderFooter(templateId, payload);
       message.success("Lưu cấu hình Header/Footer thành công!");
+      setInitialConfig({ header, footer });
       if (onUpdated) onUpdated(payload);
     } catch {
       message.error("Lưu cấu hình Header/Footer thất bại");
@@ -137,6 +148,7 @@ const HeaderFooterEditor = ({ templateId, onUpdated, onClose }) => {
             icon={<SaveOutlined />}
             onClick={handleSave}
             loading={saving}
+            disabled={!isDirty}
             size="small"
           >
             Lưu cấu hình

@@ -1,0 +1,519 @@
+- generic [ref=f1e1]:
+  - generic [ref=f1e3]:
+    - banner [ref=f1e4]:
+      - generic [ref=f1e5]:
+        - link "H HCMOU Syllabus System" [ref=f1e6] [cursor=pointer]:
+          - /url: /specialist
+          - generic [ref=f1e7]: H
+          - generic [ref=f1e8]:
+            - strong [ref=f1e10]: HCMOU
+            - generic [ref=f1e11]: Syllabus System
+        - link [ref=f1e13] [cursor=pointer]:
+          - /url: /specialist
+          - button "Trang chủ" [ref=f1e14]
+      - generic [ref=f1e18] [cursor=pointer]:
+        - strong [ref=f1e20]: test
+        - generic [ref=f1e21]: huynhthecanhpvh@gmail.com
+    - generic [ref=f1e26]:
+      - generic [ref=f1e27]:
+        - generic [ref=f1e28]:
+          - generic [ref=f1e29]:
+            - button [ref=f1e30] [cursor=pointer]:
+              - img "arrow-left" [ref=f1e32]
+            - generic [ref=f1e35]:
+              - generic [ref=f1e36]: "Studio Template:"
+              - textbox "Tên đề cương mẫu..." [ref=f1e37]: Template 2025
+              - generic [ref=f1e38]: v1.0
+              - generic [ref=f1e39]: Đã ban hành
+              - generic [ref=f1e41]: Active
+              - generic [ref=f1e42]:
+                - img "check-circle" [ref=f1e43]
+                - text: Đã tự động lưu
+          - generic [ref=f1e47]:
+            - button "eye Xem trước DOCX" [ref=f1e48] [cursor=pointer]:
+              - img "eye" [ref=f1e50]
+              - generic [ref=f1e53]: Xem trước DOCX
+            - button "save Lưu thay đổi" [ref=f1e54] [cursor=pointer]:
+              - img "save" [ref=f1e56]
+              - generic [ref=f1e59]: Lưu thay đổi
+            - button "send Ban hành" [ref=f1e60] [cursor=pointer]:
+              - img "send" [ref=f1e62]
+              - generic [ref=f1e65]: Ban hành
+        - generic [ref=f1e66]:
+          - paragraph [ref=f1e67]: Hệ thống Block-based Template Studio chuẩn NĐ 30/2020 & Mẫu HCMOU
+          - generic [ref=f1e68]:
+            - button [ref=f1e69] [cursor=pointer]:
+              - img "reload" [ref=f1e71]
+            - button "plus Thêm Phần lớn" [ref=f1e74] [cursor=pointer]:
+              - img "plus" [ref=f1e76]
+              - generic [ref=f1e80]: Thêm Phần lớn
+            - button "file-word Header & Footer" [ref=f1e81] [cursor=pointer]:
+              - img "file-word" [ref=f1e83]
+              - generic [ref=f1e86]: Header & Footer
+            - button "column-height Khoảng cách hàng loạt" [ref=f1e87] [cursor=pointer]:
+              - img "column-height" [ref=f1e89]
+              - generic [ref=f1e92]: Khoảng cách hàng loạt
+            - button "undo Hoàn tác spacing" [ref=f1e93] [cursor=pointer]:
+              - img "undo" [ref=f1e95]
+              - generic [ref=f1e98]: Hoàn tác spacing
+      - generic [ref=f1e99]:
+        - generic [ref=f1e101]:
+          - generic [ref=f1e103]:
+            - generic [ref=f1e105]:
+              - button [ref=f1e106] [cursor=pointer]:
+                - img "drag" [ref=f1e107]
+              - generic [ref=f1e110]: I.
+              - textbox "Nhập tiêu đề Phần lớn..." [ref=f1e111]: Thông tin tổng quát - General Information
+            - generic [ref=f1e113]:
+              - button "format-painter Định dạng Section" [ref=f1e115] [cursor=pointer]:
+                - img "format-painter" [ref=f1e117]
+                - generic [ref=f1e120]: Định dạng Section
+              - button [ref=f1e122] [cursor=pointer]:
+                - img "delete" [ref=f1e124]
+          - generic [ref=f1e127]:
+            - generic [ref=f1e128]:
+              - generic [ref=f1e129]:
+                - generic [ref=f1e130]:
+                  - button [ref=f1e131] [cursor=pointer]:
+                    - img "drag" [ref=f1e132]
+                  - generic [ref=f1e135]: Mục 1.
+                  - textbox "Nhập tên tiêu đề hiển thị..." [ref=f1e136]: Tên môn học tiếng Anh
+                  - generic [ref=f1e137]: text
+                - generic [ref=f1e138]:
+                  - button "format-painter Định dạng" [ref=f1e139] [cursor=pointer]:
+                    - img "format-painter" [ref=f1e141]
+                    - generic [ref=f1e144]: Định dạng
+                  - button [ref=f1e145] [cursor=pointer]:
+                    - img "delete" [ref=f1e147]
+              - generic [ref=f1e150]:
+                - generic [ref=f1e151]:
+                  - button [ref=f1e152] [cursor=pointer]:
+                    - img "drag" [ref=f1e153]
+                  - generic [ref=f1e156]: Mục 2.
+                  - textbox "Nhập tên tiêu đề hiển thị..." [ref=f1e157]: Tên môn học tiếng Việt
+                  - generic [ref=f1e158]: text
+                - generic [ref=f1e159]:
+                  - button "format-painter Định dạng" [ref=f1e160] [cursor=pointer]:
+                    - img "format-painter" [ref=f1e162]
+                    - generic [ref=f1e165]: Định dạng
+                  - button [ref=f1e166] [cursor=pointer]:
+                    - img "delete" [ref=f1e168]
+              - generic [ref=f1e171]:
+                - generic [ref=f1e172]:
+                  - button [ref=f1e173] [cursor=pointer]:
+                    - img "drag" [ref=f1e174]
+                  - generic [ref=f1e177]: Mục 3.
+                  - textbox "Nhập tên tiêu đề hiển thị..." [ref=f1e178]: Mã môn học
+                  - generic [ref=f1e179]: text
+                - generic [ref=f1e180]:
+                  - button "format-painter Định dạng" [ref=f1e181] [cursor=pointer]:
+                    - img "format-painter" [ref=f1e183]
+                    - generic [ref=f1e186]: Định dạng
+                  - button [ref=f1e187] [cursor=pointer]:
+                    - img "delete" [ref=f1e189]
+              - generic [ref=f1e192]:
+                - generic [ref=f1e193]:
+                  - button [ref=f1e194] [cursor=pointer]:
+                    - img "drag" [ref=f1e195]
+                  - generic [ref=f1e198]: Mục 4.
+                  - textbox "Nhập tên tiêu đề hiển thị..." [ref=f1e199]: Phương thức giảng dạy
+                  - generic [ref=f1e200]: selection
+                - generic [ref=f1e201]:
+                  - button "format-painter Định dạng" [ref=f1e202] [cursor=pointer]:
+                    - img "format-painter" [ref=f1e204]
+                    - generic [ref=f1e207]: Định dạng
+                  - button [ref=f1e208] [cursor=pointer]:
+                    - img "delete" [ref=f1e210]
+              - generic [ref=f1e213]:
+                - generic [ref=f1e214]:
+                  - button [ref=f1e215] [cursor=pointer]:
+                    - img "drag" [ref=f1e216]
+                  - generic [ref=f1e219]: Mục 5.
+                  - textbox "Nhập tên tiêu đề hiển thị..." [ref=f1e220]: Ngôn ngữ giảng dạy
+                  - generic [ref=f1e221]: selection
+                - generic [ref=f1e222]:
+                  - button "format-painter Định dạng" [ref=f1e223] [cursor=pointer]:
+                    - img "format-painter" [ref=f1e225]
+                    - generic [ref=f1e228]: Định dạng
+                  - button [ref=f1e229] [cursor=pointer]:
+                    - img "delete" [ref=f1e231]
+              - generic [ref=f1e234]:
+                - generic [ref=f1e235]:
+                  - button [ref=f1e236] [cursor=pointer]:
+                    - img "drag" [ref=f1e237]
+                  - generic [ref=f1e240]: Mục 6.
+                  - textbox "Nhập tên tiêu đề hiển thị..." [ref=f1e241]: Thành phần kiến thức
+                  - generic [ref=f1e242]: selection
+                - generic [ref=f1e243]:
+                  - button "format-painter Định dạng" [ref=f1e244] [cursor=pointer]:
+                    - img "format-painter" [ref=f1e246]
+                    - generic [ref=f1e249]: Định dạng
+                  - button [ref=f1e250] [cursor=pointer]:
+                    - img "delete" [ref=f1e252]
+              - generic [ref=f1e255]:
+                - generic [ref=f1e256]:
+                  - button [ref=f1e257] [cursor=pointer]:
+                    - img "drag" [ref=f1e258]
+                  - generic [ref=f1e261]: Mục 7.
+                  - textbox "Nhập tên tiêu đề hiển thị..." [ref=f1e262]: bảng đồng bộ
+                  - generic [ref=f1e263]: table
+                - generic [ref=f1e264]:
+                  - button "format-painter Định dạng" [ref=f1e265] [cursor=pointer]:
+                    - img "format-painter" [ref=f1e267]
+                    - generic [ref=f1e270]: Định dạng
+                  - button [ref=f1e271] [cursor=pointer]:
+                    - img "delete" [ref=f1e273]
+              - generic [ref=f1e276]:
+                - generic [ref=f1e277]:
+                  - button [ref=f1e278] [cursor=pointer]:
+                    - img "drag" [ref=f1e279]
+                  - generic [ref=f1e282]: Mục 8.
+                  - textbox "Nhập tên tiêu đề hiển thị..." [ref=f1e283]: Phụ trách môn học
+                  - generic [ref=f1e284]: reference
+                - generic [ref=f1e285]:
+                  - button "format-painter Định dạng" [ref=f1e286] [cursor=pointer]:
+                    - img "format-painter" [ref=f1e288]
+                    - generic [ref=f1e291]: Định dạng
+                  - button [ref=f1e292] [cursor=pointer]:
+                    - img "delete" [ref=f1e294]
+              - generic [ref=f1e297]:
+                - generic [ref=f1e298]:
+                  - button [ref=f1e299] [cursor=pointer]:
+                    - img "drag" [ref=f1e300]
+                  - generic [ref=f1e303]: Mục 9.
+                  - textbox "Nhập tên tiêu đề hiển thị..." [ref=f1e304]: Số tín chỉ / Credits
+                  - generic [ref=f1e305]: reference
+                - generic [ref=f1e306]:
+                  - button "format-painter Định dạng" [ref=f1e307] [cursor=pointer]:
+                    - img "format-painter" [ref=f1e309]
+                    - generic [ref=f1e312]: Định dạng
+                  - button [ref=f1e313] [cursor=pointer]:
+                    - img "delete" [ref=f1e315]
+              - generic [ref=f1e318]:
+                - generic [ref=f1e319]:
+                  - button [ref=f1e320] [cursor=pointer]:
+                    - img "drag" [ref=f1e321]
+                  - generic [ref=f1e324]: Mục 10.
+                  - textbox "Nhập tên tiêu đề hiển thị..." [ref=f1e325]: test
+                  - generic [ref=f1e326]: text
+                - generic [ref=f1e327]:
+                  - button "format-painter Định dạng" [ref=f1e328] [cursor=pointer]:
+                    - img "format-painter" [ref=f1e330]
+                    - generic [ref=f1e333]: Định dạng
+                  - button [ref=f1e334] [cursor=pointer]:
+                    - img "delete" [ref=f1e336]
+              - generic [ref=f1e339]:
+                - generic [ref=f1e340]:
+                  - button [ref=f1e341] [cursor=pointer]:
+                    - img "drag" [ref=f1e342]
+                  - generic [ref=f1e345]: Mục 11.
+                  - textbox "Nhập tên tiêu đề hiển thị..." [ref=f1e346]: lựa chọn
+                  - generic [ref=f1e347]: selection
+                - generic [ref=f1e348]:
+                  - button "format-painter Định dạng" [ref=f1e349] [cursor=pointer]:
+                    - img "format-painter" [ref=f1e351]
+                    - generic [ref=f1e354]: Định dạng
+                  - button [ref=f1e355] [cursor=pointer]:
+                    - img "delete" [ref=f1e357]
+              - generic [ref=f1e360]:
+                - generic [ref=f1e361]:
+                  - button [ref=f1e362] [cursor=pointer]:
+                    - img "drag" [ref=f1e363]
+                  - generic [ref=f1e366]: Mục 12.
+                  - textbox "Nhập tên tiêu đề hiển thị..." [ref=f1e367]: test
+                  - generic [ref=f1e368]: text
+                - generic [ref=f1e369]:
+                  - button "format-painter Định dạng" [ref=f1e370] [cursor=pointer]:
+                    - img "format-painter" [ref=f1e372]
+                    - generic [ref=f1e375]: Định dạng
+                  - button [ref=f1e376] [cursor=pointer]:
+                    - img "delete" [ref=f1e378]
+            - button "plus Thêm mục con vào phần I" [ref=f1e381] [cursor=pointer]:
+              - img "plus" [ref=f1e383]
+              - generic [ref=f1e387]: Thêm mục con vào phần I
+        - generic [ref=f1e389]:
+          - generic [ref=f1e391]:
+            - generic [ref=f1e393]:
+              - button [ref=f1e394] [cursor=pointer]:
+                - img "drag" [ref=f1e395]
+              - generic [ref=f1e398]: II.
+              - textbox "Nhập tiêu đề Phần lớn..." [ref=f1e399]: Mô tả môn học - Course Objective
+            - generic [ref=f1e401]:
+              - button "format-painter Định dạng Section" [ref=f1e403] [cursor=pointer]:
+                - img "format-painter" [ref=f1e405]
+                - generic [ref=f1e408]: Định dạng Section
+              - button [ref=f1e410] [cursor=pointer]:
+                - img "delete" [ref=f1e412]
+          - generic [ref=f1e415]:
+            - generic [ref=f1e416]:
+              - generic [ref=f1e417]:
+                - generic [ref=f1e418]:
+                  - button [ref=f1e419] [cursor=pointer]:
+                    - img "drag" [ref=f1e420]
+                  - generic [ref=f1e423]: Mục 1.
+                  - textbox "Nhập tên tiêu đề hiển thị..." [ref=f1e424]: Mô tả chi tiết
+                  - generic [ref=f1e425]: text
+                - generic [ref=f1e426]:
+                  - button "format-painter Định dạng" [ref=f1e427] [cursor=pointer]:
+                    - img "format-painter" [ref=f1e429]
+                    - generic [ref=f1e432]: Định dạng
+                  - button [ref=f1e433] [cursor=pointer]:
+                    - img "delete" [ref=f1e435]
+              - generic [ref=f1e438]:
+                - generic [ref=f1e439]:
+                  - button [ref=f1e440] [cursor=pointer]:
+                    - img "drag" [ref=f1e441]
+                  - generic [ref=f1e444]: Mục 2.
+                  - textbox "Nhập tên tiêu đề hiển thị..." [ref=f1e445]: Môn học điều kiện
+                  - generic [ref=f1e446]: reference
+                - generic [ref=f1e447]:
+                  - button "format-painter Định dạng" [ref=f1e448] [cursor=pointer]:
+                    - img "format-painter" [ref=f1e450]
+                    - generic [ref=f1e453]: Định dạng
+                  - button [ref=f1e454] [cursor=pointer]:
+                    - img "delete" [ref=f1e456]
+              - generic [ref=f1e459]:
+                - generic [ref=f1e460]:
+                  - button [ref=f1e461] [cursor=pointer]:
+                    - img "drag" [ref=f1e462]
+                  - generic [ref=f1e465]: Mục 3.
+                  - textbox "Nhập tên tiêu đề hiển thị..." [ref=f1e466]: Mục tiêu môn học, Chuẩn đầu ra và PLOs
+                  - generic [ref=f1e467]: reference
+                - generic [ref=f1e468]:
+                  - button "format-painter Định dạng" [ref=f1e469] [cursor=pointer]:
+                    - img "format-painter" [ref=f1e471]
+                    - generic [ref=f1e474]: Định dạng
+                  - button [ref=f1e475] [cursor=pointer]:
+                    - img "delete" [ref=f1e477]
+              - generic [ref=f1e480]:
+                - generic [ref=f1e481]:
+                  - button [ref=f1e482] [cursor=pointer]:
+                    - img "drag" [ref=f1e483]
+                  - generic [ref=f1e486]: Mục 4.
+                  - textbox "Nhập tên tiêu đề hiển thị..." [ref=f1e487]: Chuẩn đầu ra môn học
+                  - generic [ref=f1e488]: reference
+                - generic [ref=f1e489]:
+                  - button "format-painter Định dạng" [ref=f1e490] [cursor=pointer]:
+                    - img "format-painter" [ref=f1e492]
+                    - generic [ref=f1e495]: Định dạng
+                  - button [ref=f1e496] [cursor=pointer]:
+                    - img "delete" [ref=f1e498]
+              - generic [ref=f1e501]:
+                - generic [ref=f1e502]:
+                  - button [ref=f1e503] [cursor=pointer]:
+                    - img "drag" [ref=f1e504]
+                  - generic [ref=f1e507]: Mục 5.
+                  - textbox "Nhập tên tiêu đề hiển thị..." [ref=f1e508]: Học liệu
+                  - generic [ref=f1e509]: reference
+                - generic [ref=f1e510]:
+                  - button "format-painter Định dạng" [ref=f1e511] [cursor=pointer]:
+                    - img "format-painter" [ref=f1e513]
+                    - generic [ref=f1e516]: Định dạng
+                  - button [ref=f1e517] [cursor=pointer]:
+                    - img "delete" [ref=f1e519]
+              - generic [ref=f1e522]:
+                - generic [ref=f1e523]:
+                  - button [ref=f1e524] [cursor=pointer]:
+                    - img "drag" [ref=f1e525]
+                  - generic [ref=f1e528]: Mục 6.
+                  - textbox "Nhập tên tiêu đề hiển thị..." [ref=f1e529]: Đánh giá môn học
+                  - generic [ref=f1e530]: reference
+                - generic [ref=f1e531]:
+                  - button "format-painter Định dạng" [ref=f1e532] [cursor=pointer]:
+                    - img "format-painter" [ref=f1e534]
+                    - generic [ref=f1e537]: Định dạng
+                  - button [ref=f1e538] [cursor=pointer]:
+                    - img "delete" [ref=f1e540]
+              - generic [ref=f1e543]:
+                - generic [ref=f1e544]:
+                  - button [ref=f1e545] [cursor=pointer]:
+                    - img "drag" [ref=f1e546]
+                  - generic [ref=f1e549]: Mục 7.
+                  - textbox "Nhập tên tiêu đề hiển thị..." [ref=f1e550]: Kế hoạch giảng dạy
+                  - generic [ref=f1e551]: reference
+                - generic [ref=f1e552]:
+                  - button "format-painter Định dạng" [ref=f1e553] [cursor=pointer]:
+                    - img "format-painter" [ref=f1e555]
+                    - generic [ref=f1e558]: Định dạng
+                  - button [ref=f1e559] [cursor=pointer]:
+                    - img "delete" [ref=f1e561]
+            - button "plus Thêm mục con vào phần II" [ref=f1e564] [cursor=pointer]:
+              - img "plus" [ref=f1e566]
+              - generic [ref=f1e570]: Thêm mục con vào phần II
+        - status [ref=f1e571]
+    - contentinfo [ref=f1e572]:
+      - strong [ref=f1e574]: Hệ thống quản lý đề cương môn học
+      - generic [ref=f1e576]:
+        - generic [ref=f1e577]: Trường Đại học Mở Thành phố Hồ Chí Minh
+        - generic [ref=f1e578]: © 2026 - Bản quyền thuộc về Tôi Syllabus
+  - 'dialog "format-painter Format: Tên môn học tiếng Anh text" [ref=f1e580]':
+    - generic [ref=f1e581]:
+      - generic [ref=f1e582]:
+        - button "Close" [ref=f1e583] [cursor=pointer]:
+          - img "close" [ref=f1e584]
+        - generic [ref=f1e588]:
+          - generic [ref=f1e589]:
+            - img "format-painter" [ref=f1e590]
+            - text: "Format:"
+          - generic [ref=f1e593]: Tên môn học tiếng Anh
+          - generic [ref=f1e594]: text
+      - button "eye Xem trước" [ref=f1e596] [cursor=pointer]:
+        - img "eye" [ref=f1e598]
+        - generic [ref=f1e601]: Xem trước
+    - generic [ref=f1e603]:
+      - generic [ref=f1e605]:
+        - generic [ref=f1e606]:
+          - button [expanded] [ref=f1e607] [cursor=pointer]:
+            - img "expanded" [ref=f1e609]
+            - generic [ref=f1e613]:
+              - img "pushpin" [ref=f1e614]
+              - text: TIÊU ĐỀ (Title)
+          - generic [ref=f1e619]:
+            - generic [ref=f1e620]: Áp dụng cho phần label trước placeholder
+            - generic [ref=f1e621]:
+              - generic [ref=f1e622]:
+                - generic [ref=f1e623]:
+                  - generic [ref=f1e624]: "Phông chữ:"
+                  - generic [ref=f1e625]: (Mặc định)
+                - generic [ref=f1e626] [cursor=pointer]:
+                  - generic "Times New Roman (Chuẩn)" [ref=f1e627]:
+                    - text: Times New Roman (Chuẩn)
+                    - combobox [ref=f1e628]
+                  - img "down" [ref=f1e630]
+              - generic [ref=f1e633]:
+                - generic [ref=f1e634]:
+                  - generic [ref=f1e635]:
+                    - generic [ref=f1e636]: "Cỡ chữ (pt):"
+                    - generic [ref=f1e637]: (Mặc định)
+                  - generic [ref=f1e638]:
+                    - spinbutton [ref=f1e639]: "13"
+                    - generic:
+                      - button "Increase Value" [ref=f1e640] [cursor=pointer]:
+                        - img "up" [ref=f1e641]
+                      - button "Decrease Value" [ref=f1e644] [cursor=pointer]:
+                        - img "down" [ref=f1e645]
+                - generic [ref=f1e648]:
+                  - generic [ref=f1e649]:
+                    - generic [ref=f1e650]: "Căn lề:"
+                    - generic [ref=f1e651]: (Mặc định)
+                  - generic [ref=f1e652] [cursor=pointer]:
+                    - generic "LEFT (Trái)" [ref=f1e653]:
+                      - text: LEFT (Trái)
+                      - combobox [ref=f1e654]
+                    - img "down" [ref=f1e656]
+              - generic [ref=f1e659]:
+                - button "bold Đậm" [ref=f1e660] [cursor=pointer]:
+                  - img "bold" [ref=f1e662]
+                  - generic [ref=f1e665]: Đậm
+                - button "italic Nghiêng" [ref=f1e666] [cursor=pointer]:
+                  - img "italic" [ref=f1e668]
+                  - generic [ref=f1e671]: Nghiêng
+                - button "underline Gạch chân" [ref=f1e672] [cursor=pointer]:
+                  - img "underline" [ref=f1e674]
+                  - generic [ref=f1e677]: Gạch chân
+                - generic [ref=f1e678]:
+                  - generic [ref=f1e679]: "Màu chữ:"
+                  - generic [ref=f1e680] [cursor=pointer]
+        - generic [ref=f1e683]:
+          - button [expanded] [ref=f1e684] [cursor=pointer]:
+            - img "expanded" [ref=f1e686]
+            - generic [ref=f1e690]:
+              - img "file-text" [ref=f1e691]
+              - text: NỘI DUNG (Content)
+          - generic [ref=f1e696]:
+            - generic [ref=f1e697]: "Áp dụng cho phần giá trị động {{...}}"
+            - generic [ref=f1e698]:
+              - generic [ref=f1e699]:
+                - generic [ref=f1e700]:
+                  - generic [ref=f1e701]: "Phông chữ:"
+                  - generic [ref=f1e702]: (Mặc định)
+                - generic [ref=f1e703] [cursor=pointer]:
+                  - generic "Times New Roman (Chuẩn)" [ref=f1e704]:
+                    - text: Times New Roman (Chuẩn)
+                    - combobox [ref=f1e705]
+                  - img "down" [ref=f1e707]
+              - generic [ref=f1e710]:
+                - generic [ref=f1e711]:
+                  - generic [ref=f1e712]:
+                    - generic [ref=f1e713]: "Cỡ chữ (pt):"
+                    - generic [ref=f1e714]: (Mặc định)
+                  - generic [ref=f1e715]:
+                    - spinbutton [ref=f1e716]: "13"
+                    - generic:
+                      - button "Increase Value" [ref=f1e717] [cursor=pointer]:
+                        - img "up" [ref=f1e718]
+                      - button "Decrease Value" [ref=f1e721] [cursor=pointer]:
+                        - img "down" [ref=f1e722]
+                - generic [ref=f1e725]:
+                  - generic [ref=f1e726]:
+                    - generic [ref=f1e727]: "Căn lề:"
+                    - generic [ref=f1e728]: (Mặc định)
+                  - generic [ref=f1e729] [cursor=pointer]:
+                    - generic "JUSTIFY (Đều)" [ref=f1e730]:
+                      - text: JUSTIFY (Đều)
+                      - combobox [ref=f1e731]
+                    - img "down" [ref=f1e733]
+              - generic [ref=f1e736]:
+                - button "bold Đậm" [ref=f1e737] [cursor=pointer]:
+                  - img "bold" [ref=f1e739]
+                  - generic [ref=f1e742]: Đậm
+                - button "italic Nghiêng" [ref=f1e743] [cursor=pointer]:
+                  - img "italic" [ref=f1e745]
+                  - generic [ref=f1e748]: Nghiêng
+                - button "underline Gạch chân" [ref=f1e749] [cursor=pointer]:
+                  - img "underline" [ref=f1e751]
+                  - generic [ref=f1e754]: Gạch chân
+                - generic [ref=f1e755]:
+                  - generic [ref=f1e756]: "Màu chữ:"
+                  - generic [ref=f1e757] [cursor=pointer]
+              - generic [ref=f1e760]:
+                - generic [ref=f1e761]: "Khoảng cách:"
+                - generic [ref=f1e762]:
+                  - generic [ref=f1e763]:
+                    - generic [ref=f1e764]: "Giãn dòng:"
+                    - generic [ref=f1e766] [cursor=pointer]:
+                      - generic "2.0" [ref=f1e767]:
+                        - text: "2.0"
+                        - combobox [ref=f1e768]
+                      - img "down" [ref=f1e770]
+                  - generic [ref=f1e773]:
+                    - generic [ref=f1e774]: "Trước (pt):"
+                    - generic [ref=f1e776]:
+                      - spinbutton [ref=f1e777]: "4"
+                      - generic:
+                        - button "Increase Value" [ref=f1e778] [cursor=pointer]:
+                          - img "up" [ref=f1e779]
+                        - button "Decrease Value" [ref=f1e782] [cursor=pointer]:
+                          - img "down" [ref=f1e783]
+                  - generic [ref=f1e786]:
+                    - generic [ref=f1e787]: "Sau (pt):"
+                    - generic [ref=f1e789]:
+                      - spinbutton [ref=f1e790]: "4"
+                      - generic:
+                        - button "Increase Value" [ref=f1e791] [cursor=pointer]:
+                          - img "up" [ref=f1e792]
+                        - button "Decrease Value" [ref=f1e795] [cursor=pointer]:
+                          - img "down" [ref=f1e796]
+      - generic [ref=f1e799]:
+        - generic [ref=f1e800]:
+          - generic [ref=f1e801]:
+            - img "eye" [ref=f1e802]
+            - text: Bản xem trước (Live Preview)
+          - generic [ref=f1e805]: Realtime 300ms
+        - generic [ref=f1e809]:
+          - paragraph [ref=f1e811]: "1. Tên môn học tiếng Anh: Data Structures and Algorithms"
+          - generic [ref=f1e812]: 2. Tên môn học tiếng Việt
+    - generic [ref=f1e814]:
+      - generic [ref=f1e815]:
+        - button "undo Khôi phục Title" [ref=f1e816] [cursor=pointer]:
+          - img "undo" [ref=f1e818]
+          - generic [ref=f1e821]: Khôi phục Title
+        - button "undo Khôi phục Content" [ref=f1e822] [cursor=pointer]:
+          - img "undo" [ref=f1e824]
+          - generic [ref=f1e827]: Khôi phục Content
+      - generic [ref=f1e828]:
+        - button "Hủy" [ref=f1e829] [cursor=pointer]
+        - button "Lưu" [disabled] [ref=f1e831]
+  - generic:
+    - generic:
+      - tooltip "Định dạng Block & Bảng (Font, Size, Cột, Căn lề, Display Type)"
