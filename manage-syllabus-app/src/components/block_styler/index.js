@@ -1,5 +1,12 @@
 export * from "./constants";
-export {default as StyleControls, SpacingControls} from "./StyleControls";
-export {default as CustomColumnSection} from "./CustomColumnSection";
-export {default as CustomColumnModal} from "./CustomColumnModal";
-export {default as DrawerFooterActions} from "./DrawerFooterActions";
+export { default as StyleControls, SpacingControls } from "./StyleControls";
+export { default as CustomColumnSection } from "./CustomColumnSection";
+export { default as CustomColumnModal } from "./CustomColumnModal";
+export { default as DrawerFooterActions } from "./DrawerFooterActions";
+export { BlockDrawerTitle, BlockDrawerHeaderActions } from "./BlockDrawerHeader";
+export { default as DisplayTypeSection } from "./DisplayTypeSection";
+export { default as BlockLivePreviewPane } from "./BlockLivePreviewPane";
+export { default as useBlockDrawerHistory } from "./useBlockDrawerHistory";
+export { default as BlockFormatDrawer } from "./BlockFormatDrawer";
+export { default as MainSectionFormatDrawer } from "./MainSectionFormatDrawer";
+export { default as BulkSpacingModal } from "./BulkSpacingModal";

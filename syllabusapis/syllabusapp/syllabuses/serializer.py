@@ -9,7 +9,7 @@ from syllabuses.models import User, Lecturer, Faculty, Syllabus, Subject, SubSec
     ProgrammeLearningOutcome, CourseObjective, CourseLearningOutcome, LearningMaterial, TypeRequirement, \
     TypeLearningMaterial, SyllabusLearningMaterial, CloPloAssociation, TypeAssessment, Assessment, Method, \
     ScheduleGroup, TeachingSession, Major, TrainingProgram, TemplateSubSection, TemplateSyllabus, TemplateMainSection, \
-    TableSubSection, TemplateSelectionSubSection, TemplateTableSubSection, TemplateTextSubSection, \
+    TableSubSection, TemplateTableSubSection, \
     TrainingProgramSyllabus, TemplateBlock, CustomColumn, CustomColumnValue, SyllabusSignature
 from syllabuses.strategies import SUB_SECTION_STRATEGIES, DefaultStrategy
 

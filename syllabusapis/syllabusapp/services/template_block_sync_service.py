@@ -7,7 +7,6 @@ Tuân thủ Clean Code: SRP, Guard Clauses, hàm <= 30 dòng, Soft Delete.
 
 from xml.sax.saxutils import escape
 from django.db import transaction
-from django.db.models import Q
 from syllabuses.models import TemplateBlock, TemplateSubSection, TemplateSyllabus
 
 REFERENCE_CLASS_MAP = {

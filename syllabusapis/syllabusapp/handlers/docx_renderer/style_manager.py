@@ -49,10 +49,14 @@ class StyleManager:
                 _apply_paragraph_style(p._p, p_style)
                 
             is_bullet_heading = p.text.strip().startswith("•")
-            for r in p.runs:
+            explicit_bold = (content_style or {}).get("bold")
+            for idx, r in enumerate(p.runs):
                 run_style = dict(effective)
-                if is_bullet_heading or (r.bold and (content_style or {}).get("bold") is None):
-                    run_style["bold"] = True
+                if explicit_bold is None:
+                    if (is_bullet_heading and idx == 0) or r.bold:
+                        run_style["bold"] = True
+                elif explicit_bold is False:
+                    run_style["bold"] = False
                 _apply_run_style(r._r, run_style)
 
     @staticmethod

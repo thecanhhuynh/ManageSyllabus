@@ -128,8 +128,6 @@ const RequirementSubjectEditor = ({item, basePath}) => {
       state.localBlocks[item.code]?.data?.reference_data || EMPTY_ARRAY,
   );
   const updateLocalBlock = useSyllabusStore((state) => state.updateLocalBlock);
-  const labelOverrides = useSyllabusStore((state) => state.labelOverrides) || {};
-  const labels = labelOverrides.requirement_subject || {};
   const customColumns = useSyllabusStore((state) => state.customColumns) || [];
   const customValues = useSyllabusStore((state) => state.customValues) || {};
   const updateCustomValue = useSyllabusStore((state) => state.updateCustomValue);

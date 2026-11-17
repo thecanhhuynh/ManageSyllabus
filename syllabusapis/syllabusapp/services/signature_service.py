@@ -1,5 +1,4 @@
 import base64
-import os
 import time
 from django.core.files.base import ContentFile
 from django.utils import timezone
@@ -116,7 +115,6 @@ class SignatureService:
     @classmethod
     def _validate_reference_sections(cls, syllabus: Syllabus) -> list[str]:
         from syllabuses.models import (
-            Assessment,
             CourseLearningOutcome,
             CourseObjective,
             Credit,

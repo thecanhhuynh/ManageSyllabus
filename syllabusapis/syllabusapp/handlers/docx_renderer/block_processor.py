@@ -4,7 +4,7 @@ import re
 from xml.sax.saxutils import escape
 from docx import Document
 from docx.enum.section import WD_SECTION, WD_ORIENT
-from docx.shared import Inches, Mm
+from docx.shared import Mm
 from handlers.renderers.renderer_factory import SubRendererFactory
 from syllabuses.models import Syllabus, TemplateBlock, CustomColumn
 

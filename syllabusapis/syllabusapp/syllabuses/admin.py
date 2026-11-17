@@ -1,5 +1,4 @@
 from django.contrib import admin
-from django.urls import path
 
 from syllabuses.models import User, TypeAssessment, ScheduleGroup, TrainingProgram, TemplateBlock, CustomColumn, CustomColumnValue
 

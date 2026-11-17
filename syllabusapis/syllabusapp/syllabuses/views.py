@@ -9,7 +9,6 @@ from django.views.decorators.csrf import csrf_exempt
 from oauth2_provider.views import TokenView
 
 logger = logging.getLogger(__name__)
-import urllib
 from datetime import datetime
 import io
 
@@ -25,12 +24,9 @@ from django.utils import timezone
 
 from django.db.models import Q
 from django.db.models.functions import Length
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-from docx import Document
-from docxcompose.composer import Composer
-from docxtpl import DocxTemplate
-from rest_framework import viewsets, status, generics, parsers, permissions, mixins, filters
+from rest_framework import viewsets, status, generics, parsers, permissions, mixins
 from rest_framework.decorators import action, permission_classes
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
@@ -57,16 +53,15 @@ from syllabuses.filters import (
     UserFilter,
 )
 from syllabuses.models import User, Syllabus, Faculty, Subject, AttributeGroup, AttributeValue, TypeRequirement, \
-    ProgrammeLearningOutcome, LearningMaterial, TypeLearningMaterial, TypeAssessment, CourseLearningOutcome, Assessment, \
-    ScheduleGroup, Major, TrainingProgram, Lecturer, TemplateSyllabus, TemplateSubSection, TemplateMainSection, \
-    TemplateTableSubSection, TemplateSelectionSubSection, TemplateTextSubSection, \
+    ProgrammeLearningOutcome, LearningMaterial, TypeLearningMaterial, CourseLearningOutcome, Assessment, \
+    ScheduleGroup, Major, TrainingProgram, Lecturer, TemplateSyllabus, TemplateMainSection, \
     TemplateBlock, CustomColumn, CustomColumnValue, generate_custom_column_key
 from syllabuses.paginators import UserPaginator, SyllabusPagination, FacultyPagination, SubjectsPagination, \
     LearningMaterialsPagination, MajorPagination, TrainingPagination, ProgrammeLearningOutcomePagination, \
     LecturerPagination, TemplatePagination
 from syllabuses.serializer import UserSerializer, UserDetailSerializer, SyllabusSerializer, FacultySerializer, \
     SubjectSerializer, SyllabusDetailSerializer, AttributeGroupListSerializer, TypeRequirementSerializer, \
-    ProgrammeLearningOutcomeSerializer, LearningMaterialSerializer, TypeAssessmentSerializer, ScheduleGroupSerializer, \
+    ProgrammeLearningOutcomeSerializer, LearningMaterialSerializer, ScheduleGroupSerializer, \
     MajorSerializer, TrainingProgramSerializer, SyllabusSimpleSerializer, LecturerBasicSerializer, \
     TemplateSyllabusSerializer, TemplateSyllabusBasicSerializer, \
     TemplateBlockSerializer, CustomColumnSerializer, CustomColumnValueSerializer
@@ -1688,10 +1683,6 @@ class LearningMaterialsView(viewsets.ViewSet, generics.ListAPIView):
 class TypeLearningMaterialsView(viewsets.ViewSet, generics.ListAPIView):
     queryset = TypeLearningMaterial.objects.all()
     serializer_class = TypeRequirementSerializer
-
-class TypeAssessmentView(viewsets.ViewSet, generics.ListAPIView):
-    queryset = TypeAssessment.objects.all()
-    serializer_class = TypeAssessmentSerializer
 
 class ScheduleView(viewsets.ViewSet, generics.ListAPIView):
     queryset = ScheduleGroup.objects.all()

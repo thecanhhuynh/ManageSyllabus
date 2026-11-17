@@ -1,4 +1,3 @@
-import math
 from rest_framework.utils import json
 
 from docx.enum.section import WD_ORIENT, WD_SECTION

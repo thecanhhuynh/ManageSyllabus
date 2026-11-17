@@ -27,7 +27,6 @@ import CleanInput from "../../components/CleanInput";
 
 const Home = () => {
   const [user] = useContext(MyUserContext);
-  const [loading, setLoading] = useState(false);
   const [exportingId, setExportingId] = useState(null);
   const [statusFilter, setStatusFilter] = useState("all");
   const [quickApproveModal, setQuickApproveModal] = useState({
@@ -54,7 +53,6 @@ const Home = () => {
     }));
 
     try {
-      setLoading(true);
       let url = `${endpoints["syllabuses-programs"](tabId)}?page=${pageToLoad}`;
 
       if (q && q.trim()) {
@@ -96,8 +94,6 @@ const Home = () => {
           loading: false,
         },
       }));
-    } finally {
-      setLoading(false);
     }
   };
 
