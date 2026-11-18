@@ -289,7 +289,7 @@ const CourseLearningOutcomeEditor = ({item, basePath}) => {
     if (isChanged) {
       updateLocalBlock(item.code, {reference_data: syncedCloData});
     }
-  }, [coIdsKey]);
+  }, [coIdsKey, coReferenceData, item.code, updateLocalBlock]);
 
   const handleAddClo = (coIdx) => {
     const nextData = [...cloReferenceData];

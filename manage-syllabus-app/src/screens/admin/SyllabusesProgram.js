@@ -1,4 +1,4 @@
-import React, {useEffect, useRef, useState} from "react";
+import React, {useCallback, useEffect, useRef, useState} from "react";
 import {useNavigate, useParams} from "react-router-dom";
 import {authApis, endpoints} from "../../config/Apis";
 import {
@@ -57,7 +57,7 @@ const SyllabusesProgram = () => {
   const [creating, setCreating] = useState(false);
   const [form] = Form.useForm();
 
-  const loadLecturers = async () => {
+  const loadLecturers = useCallback(async () => {
     try {
       setLoading(true);
       let url = `${endpoints["lecturers"]}?page=${lecturerPage}`;
@@ -65,7 +65,7 @@ const SyllabusesProgram = () => {
       const res = await authApis().get(url);
       if (res.status === 200) {
         if (lecturerPage === 1) setLecturers(res.data.results);
-        else setLecturers([...lecturers, ...res.data.results]);
+        else setLecturers((prev) => [...prev, ...res.data.results]);
         setHasNextLecturer(res.data.next !== null);
       }
     } catch (error) {
@@ -74,9 +74,9 @@ const SyllabusesProgram = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [lecturerPage, lecturerQ]);
 
-  const loadSyllabuses = async (targetPage = page, query = q) => {
+  const loadSyllabuses = useCallback(async (targetPage = page, query = q) => {
     try {
       setLoading(true);
       let url = `${endpoints["syllabuses-programs"](programId)}?page=${targetPage}`;
@@ -92,21 +92,21 @@ const SyllabusesProgram = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [programId, page, q]);
 
   useEffect(() => {
     let timer = setTimeout(() => {
       loadLecturers();
     }, 500);
     return () => clearTimeout(timer);
-  }, [lecturerPage, lecturerQ]);
+  }, [loadLecturers]);
 
   useEffect(() => {
     let timer = setTimeout(() => {
       loadSyllabuses();
     }, 500);
     return () => clearTimeout(timer);
-  }, [page, q]);
+  }, [loadSyllabuses]);
 
   useEffect(() => {
     setPage(1);

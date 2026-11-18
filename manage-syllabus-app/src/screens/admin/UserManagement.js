@@ -112,6 +112,7 @@ const UserManagement = () => {
         clearTimeout(searchTimerRef.current);
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleTableChange = (newPagination) => {

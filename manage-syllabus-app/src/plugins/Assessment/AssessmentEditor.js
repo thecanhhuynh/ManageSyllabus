@@ -164,7 +164,8 @@ const AssessmentGroupCard = ({group, groupIdx, cloOptions, onUpdateGroup}) => {
   const typeName =
     group?.type_assessment?.name || `Loại đánh giá ${groupIdx + 1}`;
 
-  const methods = group?.assessment_methods || [];
+  const rawMethods = group?.assessment_methods;
+  const methods = useMemo(() => rawMethods || [], [rawMethods]);
   const totalWeight = useMemo(() => {
     return methods.reduce(
       (sum, method) => sum + (Number(method?.weight) || 0),

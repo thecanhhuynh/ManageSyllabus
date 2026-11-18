@@ -326,12 +326,14 @@ const SyllabusEdit = () => {
     return () => {
       eventSource.close();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [syllabusId]);
 
   useEffect(() => {
     if (syllabusId) {
       loadSyllabusDetail(syllabusId);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [syllabusId]);
 
   if (loading && !syllabusData.id) {

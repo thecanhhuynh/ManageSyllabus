@@ -123,6 +123,7 @@ const Home = () => {
 
   useEffect(() => {
     loadPrograms(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleTabChange = (key) => {
@@ -236,7 +237,7 @@ const Home = () => {
     if (!user) {
       nav("/login");
     }
-  }, [user]);
+  }, [user, nav]);
 
   useEffect(() => {
     let timer = setTimeout(() => {
@@ -247,6 +248,7 @@ const Home = () => {
     }, 500);
 
     return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [q, facultyId, subjectId]);
 
   const canApproveItem = (item) => {
