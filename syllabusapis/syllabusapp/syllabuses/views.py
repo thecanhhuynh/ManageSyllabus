@@ -972,6 +972,14 @@ class TemplateSyllabusView(viewsets.ModelViewSet):
             return Response(block_layout.get('header_footer', {}))
 
         hf_data = request.data.get('header_footer', request.data)
+        date_line_cfg = (hf_data.get('footer') or {}).get('date_line') or {}
+        date_text = date_line_cfg.get('text') if isinstance(date_line_cfg, dict) else date_line_cfg
+
+        from handlers.header_footer_validator import validate_date_line
+        is_valid, err_msg = validate_date_line(date_text)
+        if not is_valid:
+            return Response({'error': err_msg}, status=status.HTTP_400_BAD_REQUEST)
+
         block_layout['header_footer'] = hf_data
         template.block_layout = block_layout
         template.save(update_fields=['block_layout'])

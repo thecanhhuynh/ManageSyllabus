@@ -1,6 +1,7 @@
 import React from "react";
 import {Form, InputNumber, Row, Col, Input, Tag} from "antd";
 import {useSyllabusStore} from "../../store/useSyllabusStore";
+import {WarningAlert} from "../../components/common";
 
 const STANDARD_FIELDS = [
   {
@@ -183,9 +184,11 @@ const CreditEditor = ({item}) => {
       )}
 
       {totalCredits <= 0 && (
-        <div className="text-[11px] text-amber-600 mt-2 text-center italic font-medium">
-          * Lưu ý: Tổng số tín chỉ học phần cần lớn hơn 0 theo quy định đào tạo.
-        </div>
+        <WarningAlert
+          compact
+          message="Lưu ý: Tổng số tín chỉ học phần cần lớn hơn 0 theo quy định đào tạo."
+          className="mt-2"
+        />
       )}
     </div>
   );

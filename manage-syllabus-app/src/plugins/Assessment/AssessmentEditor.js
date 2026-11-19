@@ -6,6 +6,7 @@ import {
   PercentageOutlined,
   ClockCircleOutlined,
 } from "@ant-design/icons";
+import { WarningAlert } from "../../components/common";
 import {useSyllabusStore} from "../../store/useSyllabusStore";
 
 const EMPTY_ARRAY = [];
@@ -348,10 +349,11 @@ const AssessmentEditor = ({item, basePath}) => {
           size="small"
         />
         {grandTotalWeight !== 100 && grandTotalWeight > 0 && (
-          <div className="text-[11px] text-red-500 mt-2 italic font-medium">
-            * Cảnh báo: Tổng trọng số phải bằng chính xác 100% để có thể lưu dữ
-            liệu.
-          </div>
+          <WarningAlert
+            compact
+            message="Tổng trọng số phải bằng chính xác 100% để có thể lưu dữ liệu."
+            className="mt-2"
+          />
         )}
       </div>
 

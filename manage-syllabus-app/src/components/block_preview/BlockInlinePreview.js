@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { Spin, Alert } from "antd";
+import { Spin } from "antd";
+import { DangerAlert, WarningAlert } from "../common";
 import { previewInlineBlock } from "../../services/blockService";
 import ParagraphRenderer from "./ParagraphRenderer";
 import TableRenderer from "./TablePreviewRenderer";
@@ -123,7 +124,7 @@ const BlockInlinePreview = ({
           <Spin tip="Đang tải bản xem trước..." />
         </div>
       )}
-      {error && <Alert type="error" message={error} className="mb-2" showIcon />}
+      {error && <DangerAlert message={error} className="mb-2" />}
       {previewData && (
         <div className="bg-white border border-gray-200 rounded shadow-sm overflow-x-auto">
           {previewData.context?.prev && (
@@ -134,10 +135,8 @@ const BlockInlinePreview = ({
 
           <div className="p-4">
             {isScheduleBlock && interactiveCellAlign && (
-              <Alert
-                type="info"
-                showIcon
-                className="mb-3 text-xs"
+              <WarningAlert
+                className="mb-3"
                 message="Bảng kế hoạch giảng dạy mẫu (Đại diện ca học)"
                 description="Cấu hình căn lề chi tiết từng ô trên bảng này sẽ tự động dùng chung cho tất cả các bảng ca học còn lại (buổi sáng, buổi tối, thực hành)."
               />

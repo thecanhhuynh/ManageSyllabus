@@ -3,6 +3,7 @@ import {Input, InputNumber, Select, Button, Row, Col, Collapse} from "antd";
 import {PlusOutlined, DeleteOutlined} from "@ant-design/icons";
 import {authApis, endpoints} from "../../config/Apis";
 import {useSyllabusStore} from "../../store/useSyllabusStore";
+import {WarningAlert} from "../../components/common";
 
 const {TextArea} = Input;
 const {Panel} = Collapse;
@@ -232,6 +233,90 @@ const SessionContent = ({
   );
 };
 
+const ScheduleGroupCard = ({
+  group,
+  groupIdx,
+  cloOptions,
+  assessmentOptions,
+  materialOptions,
+  onAddSession,
+  onUpdateSession,
+  onRemoveSession,
+}) => {
+  const groupName =
+    group?.schedule_group?.name || `Nhóm lịch trình ${groupIdx + 1}`;
+  const sessions = group?.teaching_sessions || [];
+
+  return (
+    <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+      <div className="px-5 py-3 border-b border-gray-100 bg-gray-50/80">
+        <span className="text-[12px] font-bold text-gray-600 uppercase tracking-wider">
+          {groupName}
+        </span>
+      </div>
+
+      <div className="p-4 w-full">
+        <div className="flex flex-col gap-3 w-full">
+          <Collapse className="w-full bg-transparent border-none">
+            {sessions.map((session, sIdx) => {
+              const sessionNo = session.session_no ?? sIdx + 1;
+              const panelKey = session.id
+                ? String(session.id)
+                : `${groupIdx}_${sIdx}`;
+
+              return (
+                <Panel
+                  header={
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-blue-600">
+                        Buổi học {sessionNo}
+                      </span>
+                      {!session.content?.trim() && (
+                        <span className="text-[11px] text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded font-normal italic">
+                          Chưa nhập nội dung
+                        </span>
+                      )}
+                    </div>
+                  }
+                  key={panelKey}
+                  extra={
+                    <DeleteOutlined
+                      className="text-red-400 hover:text-red-600"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onRemoveSession(sIdx);
+                      }}
+                    />
+                  }
+                  className="mb-3 bg-gray-50/40 border border-gray-200 rounded-lg shadow-sm"
+                >
+                  <SessionContent
+                    session={session}
+                    cloOptions={cloOptions}
+                    assessmentOptions={assessmentOptions}
+                    materialOptions={materialOptions}
+                    onChange={(updated) => onUpdateSession(sIdx, updated)}
+                  />
+                </Panel>
+              );
+            })}
+          </Collapse>
+
+          <Button
+            type="dashed"
+            onClick={onAddSession}
+            block
+            icon={<PlusOutlined />}
+            className="h-10 mt-2 border-gray-300 text-gray-500 font-medium rounded-lg hover:border-blue-500 hover:text-blue-500 bg-white"
+          >
+            Thêm buổi học ({groupName})
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const TeachingPlanEditor = ({item, basePath}) => {
   const [scheduleGroupOptions, setScheduleGroupOptions] = useState([]);
   const hasInitializedRef = useRef(false);
@@ -457,95 +542,33 @@ const TeachingPlanEditor = ({item, basePath}) => {
             </div>
           </div>
           {isDeviationHigh && (
-            <div className="text-[11px] text-amber-700 mt-2 font-medium italic">
-              * Cảnh báo BR-05: Tổng số giờ giảng dạy ({totalTeachingHours}h) đang lệch quá 20% so với định mức tín chỉ ({expectedTotalHours}h). Vui lòng điều chỉnh số giờ của các buổi học cho phù hợp.
-            </div>
+            <WarningAlert
+              compact
+              message={`Cảnh báo BR-05: Tổng số giờ giảng dạy (${totalTeachingHours}h) đang lệch quá 20% so với định mức tín chỉ (${expectedTotalHours}h). Vui lòng điều chỉnh số giờ của các buổi học cho phù hợp.`}
+              className="mt-2"
+            />
           )}
         </div>
       )}
-      {referenceData.map((group, groupIdx) => {
-        const groupName =
-          group?.schedule_group?.name || `Nhóm lịch trình ${groupIdx + 1}`;
-        const sessions = group?.teaching_sessions || [];
-
-        return (
-          <div
-            key={
-              group.schedule_group?.id
-                ? `sg_${group.schedule_group.id}`
-                : `g_${groupIdx}`
-            }
-            className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm"
-          >
-            <div className="px-5 py-3 border-b border-gray-100 bg-gray-50/80">
-              <span className="text-[12px] font-bold text-gray-600 uppercase tracking-wider">
-                {groupName}
-              </span>
-            </div>
-
-            <div className="p-4 w-full">
-              <div className="flex flex-col gap-3 w-full">
-                <Collapse className="w-full bg-transparent border-none">
-                  {sessions.map((session, sIdx) => {
-                    const sessionNo = session.session_no ?? sIdx + 1;
-                    const panelKey = session.id
-                      ? String(session.id)
-                      : `${groupIdx}_${sIdx}`;
-
-                    return (
-                      <Panel
-                        header={
-                          <div className="flex items-center gap-2">
-                            <span className="font-bold text-blue-600">
-                              Buổi học {sessionNo}
-                            </span>
-                            {!session.content?.trim() && (
-                              <span className="text-[11px] text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded font-normal italic">
-                                Chưa nhập nội dung
-                              </span>
-                            )}
-                          </div>
-                        }
-                        key={panelKey}
-                        extra={
-                          <DeleteOutlined
-                            className="text-red-400 hover:text-red-600"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleRemoveSession(groupIdx, sIdx);
-                            }}
-                          />
-                        }
-                        className="mb-3 bg-gray-50/40 border border-gray-200 rounded-lg shadow-sm"
-                      >
-                        <SessionContent
-                          session={session}
-                          cloOptions={cloOptions}
-                          assessmentOptions={assessmentOptions}
-                          materialOptions={materialOptions}
-                          onChange={(updated) =>
-                            handleUpdateSession(groupIdx, sIdx, updated)
-                          }
-                        />
-                      </Panel>
-                    );
-                  })}
-                </Collapse>
-
-                <Button
-                  type="dashed"
-                  onClick={() => handleAddSession(groupIdx)}
-                  block
-                  icon={<PlusOutlined />}
-                  className="h-10 mt-2 border-gray-300 text-gray-500 font-medium rounded-lg hover:border-blue-500 hover:text-blue-500 bg-white"
-                >
-                  Thêm buổi học ({groupName})
-                </Button>
-              </div>
-            </div>
-          </div>
-        );
-      })}
+      {referenceData.map((group, groupIdx) => (
+        <ScheduleGroupCard
+          key={
+            group.schedule_group?.id
+              ? `sg_${group.schedule_group.id}`
+              : `g_${groupIdx}`
+          }
+          group={group}
+          groupIdx={groupIdx}
+          cloOptions={cloOptions}
+          assessmentOptions={assessmentOptions}
+          materialOptions={materialOptions}
+          onAddSession={() => handleAddSession(groupIdx)}
+          onUpdateSession={(sIdx, updated) =>
+            handleUpdateSession(groupIdx, sIdx, updated)
+          }
+          onRemoveSession={(sIdx) => handleRemoveSession(groupIdx, sIdx)}
+        />
+      ))}
     </div>
   );
 };

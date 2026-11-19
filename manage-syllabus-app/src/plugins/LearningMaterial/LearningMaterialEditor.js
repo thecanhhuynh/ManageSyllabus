@@ -39,16 +39,9 @@ const MaterialTagItem = ({
       }
 
       const currentVal = (latestNameRef.current || "").trim();
-      console.log(">>> [CONFIRM CHECK]:", {
-        currentVal,
-        materialPropName: material.name,
-      });
-
       if (currentVal !== "") {
-        console.log("    -> Giữ tài liệu, đóng chế độ edit.");
         setIsEditing(false);
       } else {
-        console.warn("    -> Tên rỗng, xóa tài liệu khỏi danh sách!");
         onRemove();
       }
     }, 200);
@@ -101,7 +94,6 @@ const MaterialTagItem = ({
           </>
         )}
         onChange={(val) => {
-          console.log(">>> [AUTOCOMPLETE ON_CHANGE]:", val);
           latestNameRef.current = val;
           const matched = materialOptions.find((opt) => opt.value === val);
           onChangeMaterial({
@@ -111,7 +103,6 @@ const MaterialTagItem = ({
           });
         }}
         onSelect={(val, option) => {
-          console.log(">>> [AUTOCOMPLETE ON_SELECT]:", {val, option});
           isSelectingRef.current = true;
           latestNameRef.current = val;
           onChangeMaterial({
@@ -122,7 +113,6 @@ const MaterialTagItem = ({
           setIsEditing(false);
         }}
         onBlur={() => {
-          console.log(">>> [AUTOCOMPLETE ON_BLUR TRIGGERED]");
           onConfirm();
         }}
         className="w-[220px] text-[13px]"
@@ -246,7 +236,6 @@ const LearningMaterialEditor = ({item, basePath}) => {
       name: "",
       type_material: {id: matType.id, name: matType.name},
     };
-    console.log(">>> [STORE ADD MATERIAL]:", newItem);
     updateLocalBlock(item.code, {
       reference_data: [...currentList, newItem],
     });
@@ -257,10 +246,6 @@ const LearningMaterialEditor = ({item, basePath}) => {
       useSyllabusStore.getState().localBlocks[item.code]?.data
         ?.reference_data || [];
     const nextData = [...currentList];
-    console.log(
-      ">>> [STORE UPDATE MATERIAL AT INDEX " + globalIndex + "]:",
-      updatedMaterial,
-    );
     nextData[globalIndex] = updatedMaterial;
     updateLocalBlock(item.code, {reference_data: nextData});
   };
@@ -269,7 +254,6 @@ const LearningMaterialEditor = ({item, basePath}) => {
     const currentList =
       useSyllabusStore.getState().localBlocks[item.code]?.data
         ?.reference_data || [];
-    console.log(">>> [STORE REMOVE MATERIAL AT INDEX " + globalIndex + "]");
     const nextData = currentList.filter((_, idx) => idx !== globalIndex);
     updateLocalBlock(item.code, {reference_data: nextData});
   };

@@ -7,6 +7,7 @@ import {
 } from "@ant-design/icons";
 import {AppServices} from "../../services/AppServices";
 import {useSyllabusStore} from "../../store/useSyllabusStore";
+import {WarningAlert} from "../../components/common";
 
 const {TextArea} = Input;
 
@@ -125,10 +126,10 @@ const CloPloMatrix = ({
 
   if (displayPloOptions.length === 0) {
     return (
-      <div className="bg-orange-50 border border-orange-200 text-orange-600 rounded-xl p-6 mt-8 text-center font-medium">
-        Vui lòng ánh xạ Chuẩn đầu ra (PLO) cho các Mục tiêu học phần (CO) ở phần
-        trên để Ma trận hiển thị.
-      </div>
+      <WarningAlert
+        message="Vui lòng ánh xạ Chuẩn đầu ra (PLO) cho các Mục tiêu học phần (CO) ở phần trên để Ma trận hiển thị."
+        className="mt-8"
+      />
     );
   }
 
@@ -322,20 +323,19 @@ const CourseLearningOutcomeEditor = ({item, basePath}) => {
     const targetCo = {...nextData[coIdx]};
     const nextClos = [...(targetCo.clos || [])];
     const targetClo = {...nextClos[cloIdx]};
-    let newPlos = [...(targetClo.plos || [])];
+    const newPlos = [...(targetClo.plos || [])];
 
     const existingIndex = newPlos.findIndex(
       (p) => Number(p.plo_id) === Number(ploId),
     );
 
-    if (val === null || val === undefined || val === "") {
-      if (existingIndex > -1) newPlos.splice(existingIndex, 1);
-    } else {
-      if (existingIndex > -1) {
-        newPlos[existingIndex] = {...newPlos[existingIndex], rating: val};
-      } else {
-        newPlos.push({plo_id: ploId, rating: val});
-      }
+    const isClear = val === null || val === undefined || val === "";
+    if (isClear && existingIndex > -1) {
+      newPlos.splice(existingIndex, 1);
+    } else if (!isClear && existingIndex > -1) {
+      newPlos[existingIndex] = {...newPlos[existingIndex], rating: val};
+    } else if (!isClear) {
+      newPlos.push({plo_id: ploId, rating: val});
     }
 
     targetClo.plos = newPlos;
@@ -396,9 +396,11 @@ const CourseLearningOutcomeEditor = ({item, basePath}) => {
       {tabItems.length > 0 ? (
         <Tabs type="card" items={tabItems} className="saas-clo-tabs mb-8" />
       ) : (
-        <div className="text-center p-8 text-gray-400 border border-dashed rounded-xl mb-8">
-          Chưa có Mục tiêu (CO) nào được thiết lập ở mục trước.
-        </div>
+        <WarningAlert
+          compact
+          message="Chưa có Mục tiêu (CO) nào được thiết lập ở mục trước."
+          className="mb-8"
+        />
       )}
 
       <CloPloMatrix

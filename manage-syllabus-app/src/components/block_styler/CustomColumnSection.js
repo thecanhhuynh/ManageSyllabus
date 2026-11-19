@@ -1,6 +1,7 @@
 import React from "react";
-import { Divider, Button, Alert, Tag, Tooltip, Popconfirm } from "antd";
+import { Divider, Button, Tag, Tooltip, Popconfirm } from "antd";
 import { PlusOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
+import { WarningAlert } from "../common";
 import {
   TABLE_DEFAULT_COLUMNS,
   SCHEDULE_PRESETS,
@@ -111,10 +112,8 @@ export const CustomColumnSection = ({
       </div>
 
       {tableCode === "teaching_schedule" && (
-        <Alert
-          type="info"
-          showIcon
-          className="mb-3 text-xs"
+        <WarningAlert
+          className="mb-3"
           message="Khổ A4 Ngang (Landscape)"
           description="Cột tùy biến sẽ tự động được áp dụng đồng bộ cho tất cả các ca học (Sáng, Chiều/Tối, Thực hành)."
         />

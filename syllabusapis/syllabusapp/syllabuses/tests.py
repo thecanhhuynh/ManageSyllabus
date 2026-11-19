@@ -4791,6 +4791,53 @@ class HeaderFooterSignatureIntegrationTestCase(TestCase):
         formatted = self.renderer._format_date_text(text, self.syllabus)
         self.assertEqual(formatted, "Thành phố Hồ Chí Minh, ngày 20 tháng 11 năm 2026")
 
+    def test_date_line_formatting_custom_tokens(self):
+        from django.utils import timezone
+        import datetime
+        self.syllabus.status = Syllabus.Status.APPROVED
+        self.syllabus.approved_by = self.u_dean
+        self.syllabus.approved_date = timezone.make_aware(datetime.datetime(2026, 11, 20, 10, 30))
+        self.syllabus.save()
+
+        text1 = "Hà Nội, ngày {DD} tháng {MM} năm {YYYY}"
+        self.assertEqual(self.renderer._format_date_text(text1, self.syllabus), "Hà Nội, ngày 20 tháng 11 năm 2026")
+
+        text2 = "Ngày {DD}/{MM}/{YYYY}"
+        self.assertEqual(self.renderer._format_date_text(text2, self.syllabus), "Ngày 20/11/2026")
+
+        text3 = "Ban hành: DD/MM/YYYY"
+        self.assertEqual(self.renderer._format_date_text(text3, self.syllabus), "Ban hành: 20/11/2026")
+
+    def test_validate_date_line(self):
+        from handlers.header_footer_validator import validate_date_line
+
+        # Hợp lệ
+        ok, _ = validate_date_line("TP.HCM, ngày {DD} tháng {MM} năm {YYYY}")
+        self.assertTrue(ok)
+        ok, _ = validate_date_line("{DD}/{MM}/{YYYY}")
+        self.assertTrue(ok)
+        ok, _ = validate_date_line("")
+        self.assertTrue(ok)
+
+        # Thiếu mốc
+        ok, err = validate_date_line("Ngày {DD} tháng {MM}")
+        self.assertFalse(ok)
+        self.assertIn("{YYYY}", err)
+
+        # Cú pháp ngoặc sai
+        ok, err = validate_date_line("Ngày {DD tháng {MM} năm {YYYY}")
+        self.assertFalse(ok)
+
+        # Thẻ lạ không hợp lệ
+        ok, err = validate_date_line("Ngày {DD} tháng {MM} năm {YY}")
+        self.assertFalse(ok)
+        self.assertIn("{YY}", err)
+
+        # Trùng lặp thẻ
+        ok, err = validate_date_line("Ngày {DD} {DD} tháng {MM} năm {YYYY}")
+        self.assertFalse(ok)
+        self.assertIn("DD", err)
+
     def test_signature_table_role_resolution(self):
         doc = Document()
         config = {

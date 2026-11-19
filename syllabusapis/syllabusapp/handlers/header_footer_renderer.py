@@ -358,18 +358,26 @@ class HeaderFooterRenderer:
         if not raw_text:
             return f"Thành phố Hồ Chí Minh, ngày {d_str} tháng {m_str} năm {y_str}"
 
+        res = raw_text
         macro_map = {
             "{DD}": d_str, "{MM}": m_str, "{YYYY}": y_str,
+            "{dd}": d_str, "{mm}": m_str, "{yyyy}": y_str,
             "{day}": d_str, "{month}": m_str, "{year}": y_str,
         }
-        if any(m in raw_text for m in macro_map):
-            res = raw_text
+        has_macro = any(k in res for k in macro_map)
+        if has_macro:
             for k, v in macro_map.items():
                 res = res.replace(k, v)
             return res
 
+        import re
+        res = re.sub(r"\bDD\b", d_str, res)
+        res = re.sub(r"\bMM\b", m_str, res)
+        res = re.sub(r"\bYYYY\b", y_str, res)
+        if res != raw_text:
+            return res
+
         if syllabus and syllabus.is_approved:
-            import re
             pattern = r"(ngày\s+)\d{1,2}(\s+tháng\s+)\d{1,2}(\s+năm\s+)\d{4}"
             if re.search(pattern, raw_text):
                 return re.sub(pattern, rf"\g<1>{d_str}\g<2>{m_str}\g<3>{y_str}", raw_text)

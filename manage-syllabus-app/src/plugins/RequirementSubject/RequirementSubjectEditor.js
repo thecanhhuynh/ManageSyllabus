@@ -1,5 +1,5 @@
 import React, {useState, useEffect, memo} from "react";
-import {Button, message} from "antd";
+import {Button, Input, message} from "antd";
 import {PlusOutlined, BookOutlined, CloseOutlined} from "@ant-design/icons";
 import {AppServices} from "../../services/AppServices";
 import {useSyllabusStore} from "../../store/useSyllabusStore";
@@ -188,10 +188,7 @@ const RequirementSubjectEditor = ({item, basePath}) => {
   };
 
   const handleRemoveSubject = (targetId, reqTypeId) => {
-    if (targetId === undefined || targetId === null) {
-      console.warn("    [CẢNH BÁO] targetId bị null hoặc undefined, bỏ qua!");
-      return;
-    }
+    if (targetId === undefined || targetId === null) return;
 
     const currentList =
       useSyllabusStore.getState().localBlocks[item.code]?.data
@@ -248,9 +245,9 @@ const RequirementSubjectEditor = ({item, basePath}) => {
                   <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">
                     {col.column_label}
                   </div>
-                  <input
+                  <Input
                     placeholder={`Nhập ${col.column_label}...`}
-                    className="w-full rounded-md border border-gray-300 px-3 py-1.5 text-sm font-normal text-gray-700 outline-none focus:border-blue-500"
+                    className="w-full rounded-md text-sm font-normal text-gray-700"
                     value={val}
                     onChange={(e) => updateCustomValue(col.id, e.target.value)}
                   />

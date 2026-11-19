@@ -1,5 +1,6 @@
 import React from "react";
-import { Alert, Space, Typography } from "antd";
+import { Space, Typography } from "antd";
+import { WarningAlert } from "../common";
 import { getPlugin } from "../../plugins/Registry";
 
 const { Text } = Typography;
@@ -10,7 +11,7 @@ export const SubSectionRenderer = ({ item, basePath }) => {
 
   if (!TargetComponent) {
     return (
-      <Alert
+      <WarningAlert
         message="Cấu hình Component không hợp lệ"
         description={
           <Space direction="vertical" size={0}>
@@ -22,9 +23,7 @@ export const SubSectionRenderer = ({ item, basePath }) => {
             </Text>
           </Space>
         }
-        type="warning"
-        showIcon
-        style={{ marginBottom: 16, borderRadius: 8 }}
+        className="mb-4"
       />
     );
   }

@@ -1,20 +1,61 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { Input, Button, Card } from "antd";
 import {
   PlusOutlined,
   CalendarOutlined,
   EditOutlined,
   SafetyCertificateOutlined,
-  CheckCircleOutlined,
 } from "@ant-design/icons";
 import TypographyPopover from "./shared/TypographyPopover";
 import SignatureColumnCard from "./shared/SignatureColumnCard";
+import { validateDateLine } from "./headerFooterValidator";
+import { DangerAlert } from "../common";
 
 const getRoleShortLabel = (roleKey) => {
   if (roleKey === "faculty_dean") return "Lãnh đạo Khoa";
   if (roleKey === "lecturer") return "Giảng viên";
   if (roleKey === "head_of_dept") return "Trưởng bộ môn";
   return "Tùy biến";
+};
+
+const hasToken = (text, tokenKey) => {
+  if (!text) return false;
+  const pattern = new RegExp(`\\{${tokenKey}\\}|\\b${tokenKey}\\b`, "i");
+  return pattern.test(text);
+};
+
+const getDropCharIndex = (inputEl, clientX) => {
+  if (!inputEl) return null;
+  const rect = inputEl.getBoundingClientRect();
+  const style = window.getComputedStyle(inputEl);
+  const paddingLeft = parseFloat(style.paddingLeft) || 0;
+  const relativeX = clientX - rect.left - paddingLeft + inputEl.scrollLeft;
+
+  if (relativeX <= 0) return 0;
+  const text = inputEl.value || "";
+  if (!text) return 0;
+
+  try {
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return text.length;
+
+    ctx.font = `${style.fontStyle} ${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
+    let bestIdx = text.length;
+    let minDiff = Infinity;
+
+    for (let i = 0; i <= text.length; i++) {
+      const w = ctx.measureText(text.slice(0, i)).width;
+      const diff = Math.abs(w - relativeX);
+      if (diff < minDiff) {
+        minDiff = diff;
+        bestIdx = i;
+      }
+    }
+    return bestIdx;
+  } catch (err) {
+    return text.length;
+  }
 };
 
 const FooterFormTab = ({
@@ -24,6 +65,9 @@ const FooterFormTab = ({
   setActiveColIdx,
 }) => {
   const [internalColIdx, setInternalColIdx] = useState(0);
+  const inputRef = useRef(null);
+  const caretPosRef = useRef(null);
+
   const currentColIdx = setActiveColIdx ? activeColIdx : internalColIdx;
   const setColIdx = setActiveColIdx || setInternalColIdx;
 
@@ -31,11 +75,93 @@ const FooterFormTab = ({
   const columns = footer.signature_table?.columns || [];
   const safeColIdx = Math.min(Math.max(currentColIdx, 0), Math.max(columns.length - 1, 0));
 
+  const currentText = dateLine.text || "";
+  const hasDD = hasToken(currentText, "DD");
+  const hasMM = hasToken(currentText, "MM");
+  const hasYYYY = hasToken(currentText, "YYYY");
+  const validation = validateDateLine(currentText);
+
+  const getInputElement = () => {
+    if (!inputRef.current) return null;
+    return inputRef.current.input || inputRef.current;
+  };
+
   const updateDateLineText = (text) => {
     setFooter((prev) => ({
       ...prev,
       date_line: { ...(prev.date_line || {}), text },
     }));
+  };
+
+  const handleUpdateCaret = () => {
+    const el = getInputElement();
+    if (el && typeof el.selectionStart === "number") {
+      caretPosRef.current = el.selectionStart;
+    }
+  };
+
+  const insertTokenAt = (token, pos) => {
+    const safePos = typeof pos === "number" && pos >= 0 ? Math.min(pos, currentText.length) : currentText.length;
+    const before = currentText.slice(0, safePos);
+    const after = currentText.slice(safePos);
+
+    const needLeading = before.length > 0 && !/\s$/.test(before) && !/[({[/,]$/.test(before);
+    const needTrailing = after.length > 0 && !/^\s/.test(after) && !/^[)}/,\].]/.test(after);
+
+    const inserted = `${needLeading ? " " : ""}${token}${needTrailing ? " " : ""}`;
+    const newText = `${before}${inserted}${after}`;
+    updateDateLineText(newText);
+
+    const newCursor = safePos + inserted.length;
+    caretPosRef.current = newCursor;
+
+    setTimeout(() => {
+      const el = getInputElement();
+      if (!el) return;
+      el.focus();
+      el.setSelectionRange(newCursor, newCursor);
+    }, 0);
+  };
+
+  const handleDragStart = (e, tokenKey) => {
+    e.dataTransfer.setData("text/plain", `{${tokenKey}}`);
+    e.dataTransfer.effectAllowed = "copy";
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "copy";
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    const token = e.dataTransfer.getData("text/plain");
+    if (!token) return;
+
+    const el = getInputElement();
+    let dropPos = getDropCharIndex(el, e.clientX);
+
+    if (dropPos === null && el && typeof el.selectionStart === "number") {
+      dropPos = el.selectionStart;
+    }
+
+    if (dropPos === null) {
+      dropPos = caretPosRef.current !== null ? caretPosRef.current : currentText.length;
+    }
+
+    insertTokenAt(token, dropPos);
+  };
+
+  const handleLabelClick = (tokenKey) => {
+    const pos = caretPosRef.current !== null ? caretPosRef.current : currentText.length;
+    insertTokenAt(`{${tokenKey}}`, pos);
+  };
+
+  const removeToken = (tokenKey) => {
+    const pattern = new RegExp(`\\s*\\{?${tokenKey}\\}?\\s*`, "i");
+    const updated = currentText.replace(pattern, " ").replace(/\s{2,}/g, " ").trim();
+    updateDateLineText(updated);
+    caretPosRef.current = Math.min(caretPosRef.current || 0, updated.length);
   };
 
   const updateDateLineStyle = (key, val) => {
@@ -142,6 +268,41 @@ const FooterFormTab = ({
     });
   };
 
+  const renderTag = (tokenKey, isUsed) => {
+    if (isUsed) {
+      return (
+        <span
+          key={tokenKey}
+          title={`Mốc [ ${tokenKey} ] đã chèn. Rê chuột vào × để gỡ`}
+          className="group relative inline-flex items-center gap-1 px-2 py-0.5 text-xs font-mono font-medium rounded border border-blue-200 bg-blue-50 text-blue-700 select-none shadow-2xs transition-all"
+        >
+          <span>[ {tokenKey} ]</span>
+          <button
+            type="button"
+            onClick={() => removeToken(tokenKey)}
+            title={`Gỡ mốc [ ${tokenKey} ]`}
+            className="w-3.5 h-3.5 flex items-center justify-center rounded-full hover:bg-red-100 hover:text-red-600 text-gray-400 opacity-60 group-hover:opacity-100 transition-all cursor-pointer border-none bg-transparent p-0 text-[11px] leading-none"
+          >
+            ×
+          </button>
+        </span>
+      );
+    }
+
+    return (
+      <div
+        key={tokenKey}
+        draggable
+        onDragStart={(e) => handleDragStart(e, tokenKey)}
+        onClick={() => handleLabelClick(tokenKey)}
+        title={`Kéo hoặc nhấp để chèn mốc [ ${tokenKey} ] vào vị trí con trỏ`}
+        className="px-2 py-0.5 text-xs font-mono font-medium rounded border border-blue-300 bg-blue-50 text-blue-600 select-none flex items-center justify-center cursor-grab active:cursor-grabbing hover:bg-blue-100 hover:border-blue-400 shadow-2xs transition-all"
+      >
+        [ {tokenKey} ]
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-4">
       {/* SECTION 1: DATE LINE */}
@@ -156,11 +317,29 @@ const FooterFormTab = ({
         className="shadow-xs border-gray-200"
       >
         <div className="space-y-2">
+          {/* Tag Tray: Always display the 3 tokens on the left */}
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] text-gray-500 font-medium shrink-0">Tags:</span>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {renderTag("DD", hasDD)}
+              {renderTag("MM", hasMM)}
+              {renderTag("YYYY", hasYYYY)}
+            </div>
+          </div>
+
+          {/* Input field with Caret tracking & drop zone */}
           <div className="flex gap-2 items-center">
             <Input
+              ref={inputRef}
               size="small"
               value={dateLine.text || ""}
+              status={!validation.isValid ? "error" : ""}
               onChange={(e) => updateDateLineText(e.target.value)}
+              onSelect={handleUpdateCaret}
+              onClick={handleUpdateCaret}
+              onKeyUp={handleUpdateCaret}
+              onDragOver={handleDragOver}
+              onDrop={handleDrop}
               placeholder="VD: Thành phố Hồ Chí Minh, ngày {DD} tháng {MM} năm {YYYY}"
               className="flex-1 italic text-xs"
             />
@@ -171,23 +350,9 @@ const FooterFormTab = ({
               onUpdate={updateDateLineStyle}
             />
           </div>
-
-          <div className="flex items-center justify-between pt-1">
-            <Button
-              size="small"
-              type="dashed"
-              icon={<CheckCircleOutlined className="text-blue-600" />}
-              onClick={() =>
-                updateDateLineText("Thành phố Hồ Chí Minh, ngày {DD} tháng {MM} năm {YYYY}")
-              }
-              className="text-[11px] text-blue-600 border-blue-300 hover:bg-blue-50"
-            >
-              Đặt mẫu ngày tự động ({'{DD}/{MM}/{YYYY}'})
-            </Button>
-            <span className="text-[10.5px] text-gray-400 italic">
-              Tự động điền ngày duyệt thực tế
-            </span>
-          </div>
+          {!validation.isValid && (
+            <DangerAlert compact message={validation.error} className="mt-1" />
+          )}
         </div>
       </Card>
 

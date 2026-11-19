@@ -18,6 +18,7 @@ import {
   normalizeHeaderConfig,
   normalizeFooterConfig,
 } from "./headerFooterDefaults";
+import { validateDateLine } from "./headerFooterValidator";
 
 export const HeaderFooterEditor = ({ templateId, onUpdated, onClose }) => {
   const [loading, setLoading] = useState(false);
@@ -60,6 +61,14 @@ export const HeaderFooterEditor = ({ templateId, onUpdated, onClose }) => {
 
   const handleSave = async () => {
     if (!templateId || !isDirty) return;
+
+    const dateLineText = footer?.date_line?.text;
+    const dateValidation = validateDateLine(dateLineText);
+    if (!dateValidation.isValid) {
+      message.error(dateValidation.error);
+      return;
+    }
+
     try {
       setSaving(true);
       const payload = { header, footer };

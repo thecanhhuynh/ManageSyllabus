@@ -30,11 +30,12 @@ const buildInlineStyle = (
 };
 
 const formatPreviewDate = (rawText) => {
-  if (!rawText)
+  if (!rawText) {
     return {
       text: "Thành phố Hồ Chí Minh, ngày ... tháng ... năm 202...",
       hasMacro: false,
     };
+  }
   const now = new Date();
   const dd = String(now.getDate()).padStart(2, "0");
   const mm = String(now.getMonth() + 1).padStart(2, "0");
@@ -42,12 +43,9 @@ const formatPreviewDate = (rawText) => {
 
   let result = rawText;
   const macroMap = {
-    "{DD}": dd,
-    "{MM}": mm,
-    "{YYYY}": yyyy,
-    "{day}": dd,
-    "{month}": mm,
-    "{year}": yyyy,
+    "{DD}": dd, "{MM}": mm, "{YYYY}": yyyy,
+    "{dd}": dd, "{mm}": mm, "{yyyy}": yyyy,
+    "{day}": dd, "{month}": mm, "{year}": yyyy,
   };
 
   let hasMacro = false;
@@ -57,6 +55,18 @@ const formatPreviewDate = (rawText) => {
       hasMacro = true;
     }
   }
+
+  if (!hasMacro) {
+    const wordReplaced = result
+      .replace(/\bDD\b/g, dd)
+      .replace(/\bMM\b/g, mm)
+      .replace(/\bYYYY\b/g, yyyy);
+    if (wordReplaced !== result) {
+      result = wordReplaced;
+      hasMacro = true;
+    }
+  }
+
   return {text: result, hasMacro};
 };
 

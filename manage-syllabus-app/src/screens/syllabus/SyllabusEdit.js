@@ -8,9 +8,9 @@ import {
   Tag,
   Tooltip,
   Modal,
-  Alert,
   Input,
 } from "antd";
+import { SuccessAlert, WarningAlert } from "../../components/common";
 import {useEffect, useState, useRef, useContext} from "react";
 import {useParams} from "react-router-dom";
 import {
@@ -533,22 +533,18 @@ const SyllabusEdit = () => {
       </div>
 
         {isApproved && (
-          <Alert
+          <SuccessAlert
             message="Đề cương đã được phê duyệt chính thức"
             description={`Đề cương này đã được phê duyệt bởi ${syllabusData.approved_by_name || "Lãnh đạo Khoa"}${syllabusData.approved_date ? ` lúc ${syllabusData.approved_date}` : ""}. Toàn bộ nội dung hiện đang được khóa ở chế độ chỉ đọc. Nếu cần chỉnh sửa lại, vui lòng liên hệ Lãnh đạo Khoa để hủy duyệt.`}
-            type="success"
-            showIcon
-            style={{marginBottom: 16, borderRadius: 8}}
+            className="mb-4"
           />
         )}
 
         {isSubmitted && !isApproved && (
-          <Alert
+          <WarningAlert
             message="Đề cương đang chờ Lãnh đạo Khoa phê duyệt"
             description="Đề cương đã được Giảng viên biên soạn ký số và gửi lên Ban Chủ nhiệm Khoa. Trong thời gian chờ phê duyệt, nội dung đề cương được chuyển sang chế độ chỉ đọc để đảm bảo tính toàn vẹn."
-            type="info"
-            showIcon
-            style={{marginBottom: 16, borderRadius: 8}}
+            className="mb-4"
           />
         )}
 

@@ -14,8 +14,8 @@ import {
   Row,
   Col,
   Statistic,
-  Alert,
 } from "antd";
+import { WarningAlert } from "../../components/common";
 import {
   CheckCircleOutlined,
   ClockCircleOutlined,
@@ -827,12 +827,10 @@ const FacultyApprovals = () => {
               )}
             </div>
 
-            <Alert
+            <WarningAlert
               message="Lưu ý"
               description="Sau khi phê duyệt, đề cương sẽ được đóng dấu xác nhận và cho phép xuất file DOCX chính thức kèm chữ ký số của Lãnh đạo Khoa."
-              type="info"
-              showIcon
-              style={{marginTop: 16}}
+              className="mt-4"
             />
           </div>
         )}
